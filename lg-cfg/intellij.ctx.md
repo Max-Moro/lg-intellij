@@ -15,9 +15,9 @@ ${src}
 
 > Показаны только главы, нужные для разработки на текущей фазе.
 
-${md@self:intellij-platform-docs/01-getting-started.md}
+${md@self:intellij-platform-docs/10-external-processes.md}
 
-${md@self:intellij-platform-docs/03-plugin-structure.md}
+${md@self:intellij-platform-docs/12-background-tasks.md}
 
 ---
 

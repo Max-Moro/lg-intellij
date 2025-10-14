@@ -1,6 +1,8 @@
 src:
-  extensions: [".kt", ".kts"]
+  extensions: [".kt", ".kts", ".xml", ".properties"]
   filters:
-    mode: block
-    block:
-      - "/src/test/"
+    mode: allow
+    allow:
+      - "/build.gradle.kts"
+      - "/settings.gradle.kts"
+      - "/src/main/"

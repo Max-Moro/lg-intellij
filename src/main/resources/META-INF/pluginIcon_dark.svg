@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <!-- Background circle -->
+  <circle cx="20" cy="20" r="18" fill="#CED0D6" opacity="0.1"/>
+  
+  <!-- Document/listing icon -->
+  <rect x="10" y="8" width="20" height="24" rx="2" ry="2" stroke="#CED0D6" stroke-width="2" fill="none"/>
+  
+  <!-- Text lines (representing code listing) -->
+  <path d="M13 14h8" stroke="#CED0D6" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M13 18h14" stroke="#CED0D6" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M13 22h10" stroke="#CED0D6" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M13 26h12" stroke="#CED0D6" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

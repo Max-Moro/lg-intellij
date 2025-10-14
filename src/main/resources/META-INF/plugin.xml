@@ -1,15 +1,63 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
+    <!-- Unique plugin identifier -->
     <id>lg.intellij</id>
+    
+    <!-- Plugin display name -->
     <name>Listing Generator</name>
-    <vendor>max-moro</vendor>
-
+    
+    <!-- Plugin version (managed by Gradle) -->
+    <version>1.0.0</version>
+    
+    <!-- Vendor information -->
+    <vendor email="mmocentre@gmail.com" url="https://github.com/Max-Moro/lg-intellij">
+        Max-Moro
+    </vendor>
+    
+    <!-- Plugin description with HTML formatting -->
+    <description><![CDATA[
+        <p>IntelliJ Platform integration for the <b>Listing Generator CLI</b> tool.</p>
+        <br/>
+        <p>Provides interactive UI for generating dense code contexts optimized for AI assistants like ChatGPT, Copilot, Claude, and Gemini.</p>
+        <br/>
+        <h3>Features:</h3>
+        <ul>
+            <li>Visual configuration of sections and contexts from <code>lg-cfg/</code></li>
+            <li>Adaptive settings: modes, tags, and filters</li>
+            <li>Live statistics with token estimation</li>
+            <li>Direct integration with AI providers</li>
+            <li>Git branch comparison support</li>
+        </ul>
+        <br/>
+        <p>Visit <a href="https://github.com/Max-Moro/listing-generator">Listing Generator Documentation</a> for more information.</p>
+    ]]></description>
+    
+    <!-- Change notes for this version -->
+    <change-notes><![CDATA[
+        <h3>Version 1.0.0</h3>
+        <ul>
+            <li>Initial release</li>
+            <li>Basic Tool Window with Control Panel</li>
+            <li>Settings configuration page</li>
+        </ul>
+    ]]></change-notes>
+    
+    <!-- Compatibility with IDE versions -->
+    <idea-version since-build="241" until-build="243.*"/>
+    
+    <!-- Platform dependency -->
     <depends>com.intellij.modules.platform</depends>
-
-    <resource-bundle>messages.MyBundle</resource-bundle>
-
+    
+    <!-- Resource bundle for localization -->
+    <resource-bundle>messages.LgBundle</resource-bundle>
+    
+    <!-- Extensions -->
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="lg.intellij.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="lg.intellij.startup.MyProjectActivity" />
+        <!-- Tool Window -->
+        <toolWindow 
+            id="Listing Generator"
+            anchor="right"
+            factoryClass="lg.intellij.toolWindow.LgToolWindowFactory"
+            icon="icons.LgIcons.ToolWindow"/>
     </extensions>
 </idea-plugin>

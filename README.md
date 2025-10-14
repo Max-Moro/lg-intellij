@@ -1,18 +1,16 @@
 # Listing Generator — IntelliJ Platform Plugin
 
-> Интерактивный UI для работы с Listing Generator CLI: генерация контекстов, управление секциями, отправка в AI — все в привычном интерфейсе любой JetBrains IDE.
+<!-- Plugin description -->
+IntelliJ Platform integration for the **Listing Generator CLI** tool.
 
----
+Provides interactive UI for generating dense code contexts optimized for AI assistants like ChatGPT, Copilot, Claude, and Gemini.
 
-## Что это
+**Features:**
+- Visual configuration of sections and contexts from `lg-cfg/`
+- Adaptive settings: modes, tags, and filters
+- Live statistics with token estimation
+- Direct integration with AI providers
+- Git branch comparison support
 
-**IntelliJ Platform Plugin для [Listing Generator](../README.md)** — графическая оболочка над мощным CLI-инструментом формирования AI-контекстов.
-
-Расширение автоматизирует рутину:
-- **Не нужно помнить команды** — все действия через панели и кнопки
-- **Визуальная настройка** — режимы, теги, фильтры файлов в удобных формах
-- **Живая статистика** — видите размер контекста и расход токенов до отправки
-
-## Статус
-
-Плагин находится в активной стадии разработки.
+Visit [Listing Generator Documentation](https://github.com/Max-Moro/lg-cli) for more information.
+<!-- Plugin description end -->

@@ -1114,4 +1114,3 @@ dependencies {
 
 - **Git4Idea** — для Git integration (опционально)
 - Никаких внешних HTTP клиентов (используется Java 11+ `HttpClient` для OpenAI API)
-

@@ -14,7 +14,11 @@ ${src}
 # IntelliJ Platform — Документация для разработки плагинов
 
 ${md@self:intellij-platform-docs/*}
-{% endif %} {% if task AND scope:local %}
+{% endif %} 
+---
+
+${md@self:architecture}
+{% if task AND scope:local %}
 ---
 
 # Описание текущей задачи

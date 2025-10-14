@@ -1,4 +1,4 @@
-${md:README}
+{# ${md:README}
 
 ---
 {% if tag:review %}
@@ -8,7 +8,7 @@ ${md:README}
 {% endif %}
 
 ${src}
-{% if tag:docs %}
+#}{% if tag:docs %}
 ---
 
 # IntelliJ Platform — Документация для разработки плагинов

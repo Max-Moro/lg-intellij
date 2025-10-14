@@ -54,7 +54,7 @@ lg-intellij/
 ├── settings.gradle.kts
 ├── src/
 │   ├── main/
-│   │   ├── kotlin/com/github/maxmoro/lgintellij/
+│   │   ├── kotlin/com/github/maxmoro/intellij/
 │   │   │   ├── actions/              # Команды пользователя
 │   │   │   ├── cli/                  # CLI интеграция
 │   │   │   ├── services/             # Бизнес-логика
@@ -1115,64 +1115,3 @@ dependencies {
 - **Git4Idea** — для Git integration (опционально)
 - Никаких внешних HTTP клиентов (используется Java 11+ `HttpClient` для OpenAI API)
 
----
-
-## Development Roadmap (этапы реализации)
-
-### Phase 1: Foundation
-- Структура проекта (Gradle, plugin.xml)
-- Settings service и Configurable UI
-- CLI integration layer (executor, resolver, parser)
-- Basic catalog service
-
-### Phase 2: Core UI
-- Tool Window factory
-- Control Panel с основными controls (template/section selectors)
-- Basic actions (Generate Listing, Generate Context)
-- Virtual file service для отображения результатов
-
-### Phase 3: Advanced UI
-- Included Files tab с tree view
-- Stats Dialog с grouped table
-- Tokenization settings integration
-- Task input field
-
-### Phase 4: Adaptive Features
-- Mode-sets UI (dynamic ComboBox generation)
-- Tag-sets UI (checkboxes в panel/dialog)
-- Target branch selector с Git integration
-- Conditional visibility logic
-
-### Phase 5: AI Integration
-- AI provider registry
-- Clipboard provider (baseline)
-- OpenAI API provider
-- Provider detection и auto-configuration
-
-### Phase 6: Polish
-- Doctor dialog
-- Notifications для всех операций
-- Error handling и recovery
-- Localization (Russian)
-- Testing suite
-
----
-
-## Заключение
-
-Архитектура спроектирована с учётом специфики IntelliJ Platform:
-
-✅ **Platform-Native:** использование Services, Actions, Extensions вместо custom подходов  
-✅ **Threading-Correct:** Kotlin Coroutines с правильными Dispatchers  
-✅ **State Management:** PersistentStateComponent для персистентности  
-✅ **UI-Native:** Swing/IntelliJ UI вместо web technologies  
-✅ **Disposable-Aware:** корректный cleanup ресурсов  
-✅ **Extensible:** чёткие границы между слоями  
-✅ **Production-Ready:** error handling, cancellation, progress reporting
-
-Эта архитектура позволяет:
-- Начать разработку с минимального MVP (Phase 1-2)
-- Итеративно добавлять функциональность
-- Поддерживать high code quality
-- Легко тестировать компоненты в изоляции
-- Масштабировать при росте функциональности

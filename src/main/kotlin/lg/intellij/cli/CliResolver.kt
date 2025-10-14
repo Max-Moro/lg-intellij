@@ -185,8 +185,4 @@ class CliResolver {
             false
         }
     }
-    
-    companion object {
-        private val LOG = logger<CliResolver>()
-    }
 }

@@ -10,7 +10,7 @@ class LgProjectService(project: Project) {
 
     init {
         thisLogger().info(LgBundle.message("projectService", project.name))
-        // TODO: Remove sample code after Phase 0 completion
+        // TODO: Remove sample code
     }
 
     fun getRandomNumber() = (1..100).random()

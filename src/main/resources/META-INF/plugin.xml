@@ -76,21 +76,7 @@
             key="settings.display.name"
             bundle="messages.LgBundle"/>
     </extensions>
-    
-    <!-- Actions -->
-    <actions>
-        <!-- Test action for Phase 1 CLI integration testing -->
-        <!-- Will be removed in later phases -->
-        <group id="LgTestGroup" text="Listing Generator" popup="true">
-            <action id="LgTestCli"
-                    class="lg.intellij.actions.LgTestCliAction"
-                    text="Test CLI Connection"
-                    description="Test Listing Generator CLI connection"/>
-            
-            <add-to-group group-id="ToolsMenu" anchor="last"/>
-        </group>
-    </actions>
-    
+
     <!-- Listeners -->
     <applicationListeners>
         <listener 

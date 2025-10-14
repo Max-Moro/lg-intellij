@@ -2,3 +2,5 @@ src:
   extensions: [".kt", ".kts"]
   filters:
     mode: block
+    block:
+      - "/src/test/"

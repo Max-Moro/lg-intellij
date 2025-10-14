@@ -41,8 +41,8 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
                 ).bindText(
                     getter = { settings.state.cliPath ?: "" },
                     setter = { settings.state.cliPath = it }
-                )
-            }.comment(LgBundle.message("settings.cli.path.comment"))
+                ).comment(LgBundle.message("settings.cli.path.comment"))
+            }
             
             row(LgBundle.message("settings.python.interpreter.label")) {
                 textFieldWithBrowseButton(
@@ -51,13 +51,14 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
                 ).bindText(
                     getter = { settings.state.pythonInterpreter ?: "" },
                     setter = { settings.state.pythonInterpreter = it }
-                )
-            }.comment(LgBundle.message("settings.python.interpreter.comment"))
+                ).comment(LgBundle.message("settings.python.interpreter.comment"))
+            }
             
             row(LgBundle.message("settings.install.strategy.label")) {
                 comboBox(LgSettingsService.InstallStrategy.entries)
                     .bindItem(settings.state::installStrategy.toNullableProperty())
-            }.comment(LgBundle.message("settings.install.strategy.comment"))
+                    .comment(LgBundle.message("settings.install.strategy.comment"))
+            }
         }
         
         group(LgBundle.message("settings.group.ai")) {
@@ -69,6 +70,7 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
             row(LgBundle.message("settings.openai.key.label")) {
                 cell(com.intellij.ui.components.JBPasswordField())
                     .columns(40)
+                    .comment(LgBundle.message("settings.openai.key.comment"))
                 
                 button(LgBundle.message("settings.openai.key.configure")) {
                     // TODO: Phase 19 - Implement PasswordSafe integration
@@ -77,7 +79,7 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
                         LgBundle.message("settings.openai.key.configure.title")
                     )
                 }
-            }.comment(LgBundle.message("settings.openai.key.row.comment"))
+            }
         }
         
         group(LgBundle.message("settings.group.editor")) {

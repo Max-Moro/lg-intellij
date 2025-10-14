@@ -97,22 +97,5 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
                     .bindSelected(settings.state::openAsEditable)
             }.comment(LgBundle.message("settings.open.editable.comment"))
         }
-        
-        separator()
-        
-        row {
-            button(LgBundle.message("settings.reset.defaults")) {
-                val result = com.intellij.openapi.ui.Messages.showYesNoDialog(
-                    LgBundle.message("settings.reset.defaults.confirm"),
-                    LgBundle.message("settings.reset.defaults.title"),
-                    com.intellij.openapi.ui.Messages.getQuestionIcon()
-                )
-                
-                if (result == com.intellij.openapi.ui.Messages.YES) {
-                    settings.loadState(LgSettingsService.State())
-                    reset()
-                }
-            }
-        }
     }
 }

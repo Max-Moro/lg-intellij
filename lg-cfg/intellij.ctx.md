@@ -1,4 +1,4 @@
-{# ${md:README}
+# ${md:README}
 
 ---
 {% if tag:review %}
@@ -8,16 +8,24 @@
 {% endif %}
 
 ${src}
-#}{% if tag:docs %}
+
 ---
 
 # IntelliJ Platform — Документация для разработки плагинов
 
-${md@self:intellij-platform-docs/*}
-{% endif %} 
+> Показаны только главы, нужные для разработки на текущей фазе.
+
+${md@self:intellij-platform-docs/01-getting-started.md}
+
+${md@self:intellij-platform-docs/03-plugin-structure.md}
+
 ---
 
 ${md@self:architecture}
+
+---
+
+${md@self:plan-mini}
 {% if task AND scope:local %}
 ---
 

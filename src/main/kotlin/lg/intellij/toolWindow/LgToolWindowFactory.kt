@@ -5,6 +5,7 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.content.ContentFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,9 +18,9 @@ import kotlin.io.path.Path
 /**
  * Factory for creating Listing Generator Tool Window.
  * 
- * Creates a Tool Window with two tabs:
- * - Control Panel: main configuration and generation controls
- * - Included Files: tree view of files included in selected section
+ * Creates a Tool Window with vertical splitter layout:
+ * - Top: Control Panel (main configuration and generation controls)
+ * - Bottom: Included Files (tree view of files, collapsible)
  * 
  * Tool Window is shown only for projects containing lg-cfg/ directory.
  */
@@ -45,31 +46,38 @@ class LgToolWindowFactory : ToolWindowFactory, DumbAware {
     }
     
     /**
-     * Creates Tool Window content with two tabs.
+     * Creates Tool Window content with vertical splitter.
      */
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val contentManager = toolWindow.contentManager
         val contentFactory = ContentFactory.getInstance()
         
-        // Tab 1: Control Panel
+        // Create panels
         val controlPanel = LgControlPanel(project, toolWindow)
-        val controlContent = contentFactory.createContent(
-            controlPanel,
-            LgBundle.message("toolwindow.control.tab"),
-            false
-        )
-        controlContent.isCloseable = false
-        contentManager.addContent(controlContent)
-        
-        // Tab 2: Included Files
         val includedFilesPanel = LgIncludedFilesPanel(project, toolWindow)
-        val includedContent = contentFactory.createContent(
-            includedFilesPanel,
-            LgBundle.message("toolwindow.included.tab"),
+        
+        // Create vertical splitter
+        // OnePixelSplitter(vertical = true) creates horizontal divider (splits vertically)
+        val splitter = OnePixelSplitter(true, 0.7f).apply {
+            firstComponent = controlPanel
+            secondComponent = includedFilesPanel
+            
+            // Allow collapsing the bottom panel
+            setResizeEnabled(true)
+            setShowDividerControls(true)
+            
+            // TODO Phase 6: Load proportion from LgWorkspaceStateService
+            // TODO Phase 6: Save proportion changes to state
+        }
+        
+        // Create single content with splitter
+        val content = contentFactory.createContent(
+            splitter,
+            null, // No tab name needed
             false
         )
-        includedContent.isCloseable = false
-        contentManager.addContent(includedContent)
+        content.isCloseable = false
+        contentManager.addContent(content)
         
         LOG.info("Tool Window content created for project: ${project.name}")
     }

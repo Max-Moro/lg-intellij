@@ -20,7 +20,7 @@
 
 1. **Переименование идентификаторов:**
    - `plugin.xml`: обновить `<id>`, `<name>`, `<vendor>`
-   - Переименовать пакет `com.github.maxmoro.lgintellij` → `lg.intellij`
+   - Проверить все персональные названия: `lg.intellij`, `Listing Generator` и так далее
    - Переименовать все классы: `My*` → `Lg*`
      - `MyBundle` → `LgBundle`
      - `MyProjectService` → `LgProjectService` (временный каркас)

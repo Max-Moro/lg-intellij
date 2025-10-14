@@ -1,18 +1,24 @@
 package lg.intellij.cli
 
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.util.SystemInfo
+import lg.intellij.services.state.LgSettingsService
+import java.io.File
 
 /**
  * Resolves the path to listing-generator CLI executable.
  * 
  * Resolution strategies (in order):
- * 1. Explicit path from Settings (lg.cli.path)
- * 2. Search in system PATH
- * 3. Fallback to Python module invocation (python -m lg.cli)
+ * 1. Explicit path from Settings (cliPath)
+ * 2. Search in system PATH for "listing-generator"
+ * 3. Try Python module invocation (python -m lg.cli) if interpreter configured
+ * 4. Fallback to "python -m lg.cli" with auto-detected Python
  * 
- * Phase 1 Note: This is a STUB implementation that always returns "listing-generator".
- * Real resolution logic will be implemented in Phase 2 after Settings infrastructure is ready.
+ * Equivalent to CliResolver.ts from VS Code extension.
  */
 @Service(Service.Level.APP)
 class CliResolver {
@@ -35,8 +41,6 @@ class CliResolver {
             return it 
         }
         
-        // STUB: Always return hardcoded value for Phase 1
-        // Real implementation will check Settings and PATH in Phase 2
         val resolved = resolveInternal()
         cachedPath = resolved
         
@@ -56,92 +60,131 @@ class CliResolver {
     /**
      * Internal resolution logic.
      * 
-     * STUB for Phase 1: returns hardcoded "listing-generator"
-     * TODO Phase 2: Implement real resolution:
-     * - Check Settings.state.cliPath
-     * - Search in PATH (using ProcessBuilder or which/where command)
-     * - Try python -m lg.cli
-     * - Throw CliNotFoundException if all fail
+     * Implements full resolution chain matching VS Code extension behavior.
      */
     private fun resolveInternal(): String {
-        LOG.warn("Using stub CLI resolver - returns hardcoded 'listing-generator'")
+        val settings = service<LgSettingsService>()
         
-        // STUB: Return hardcoded value
-        // This assumes listing-generator is in PATH or developer has it available
-        return "listing-generator"
-        
-        // TODO Phase 2: Real implementation
-        /*
-        // 1. Check explicit path from Settings
-        val explicitPath = service<LgSettingsService>().state.cliPath
-        if (explicitPath.isNotBlank() && isExecutable(explicitPath)) {
-            return explicitPath
+        // Strategy 1: Explicit path from Settings
+        val explicitPath = settings.state.cliPath?.trim() ?: ""
+        if (explicitPath.isNotEmpty()) {
+            if (isExecutable(explicitPath)) {
+                LOG.info("Using explicit CLI path from Settings: $explicitPath")
+                return explicitPath
+            } else {
+                LOG.warn("Configured CLI path not executable or not found: $explicitPath")
+            }
         }
         
-        // 2. Search in PATH
+        // Strategy 2: System strategy - use configured Python interpreter
+        if (settings.state.installStrategy == LgSettingsService.InstallStrategy.SYSTEM) {
+            val interpreter = settings.state.pythonInterpreter?.trim() ?: ""
+            if (interpreter.isNotEmpty() && isExecutable(interpreter)) {
+                LOG.info("Using system Python interpreter: $interpreter")
+                return interpreter
+            }
+        }
+        
+        // Strategy 3: Search in PATH for "listing-generator"
         val inPath = findInPath("listing-generator")
         if (inPath != null) {
+            LOG.info("Found listing-generator in PATH: $inPath")
             return inPath
         }
         
-        // 3. Try Python module
-        if (isPythonAvailable()) {
-            return "python -m lg.cli"  // Will need special handling in CliExecutor
+        // Strategy 4: Try Python module with configured interpreter
+        val configuredPython = settings.state.pythonInterpreter?.trim() ?: ""
+        if (configuredPython.isNotEmpty() && isExecutable(configuredPython)) {
+            LOG.info("Falling back to Python module with configured interpreter: $configuredPython")
+            return configuredPython
         }
         
-        // 4. Give up
+        // Strategy 5: Auto-detect Python and use module
+        val detectedPython = findPython()
+        if (detectedPython != null) {
+            LOG.info("Falling back to Python module with auto-detected Python: $detectedPython")
+            return detectedPython
+        }
+        
+        // Give up
         throw CliNotFoundException(
-            "listing-generator CLI not found. Please configure path in Settings."
+            "listing-generator CLI not found. Please configure CLI path or Python interpreter in Settings."
         )
-        */
     }
     
-    // TODO Phase 2: Helper methods for real resolution
-    /*
+    /**
+     * Checks if file exists and is executable.
+     */
     private fun isExecutable(path: String): Boolean {
         val file = File(path)
         return file.exists() && file.canExecute()
     }
     
+    /**
+     * Searches for executable in system PATH.
+     * 
+     * @param command Executable name (e.g., "listing-generator")
+     * @return Absolute path if found, null otherwise
+     */
     private fun findInPath(command: String): String? {
         val pathVar = System.getenv("PATH") ?: return null
         val separator = if (SystemInfo.isWindows) ";" else ":"
+        val extensions = if (SystemInfo.isWindows) listOf(".exe", ".cmd", ".bat", "") else listOf("")
         
         for (dir in pathVar.split(separator)) {
-            val executable = if (SystemInfo.isWindows) {
-                File(dir, "$command.exe")
-            } else {
-                File(dir, command)
-            }
-            
-            if (executable.exists() && executable.canExecute()) {
-                return executable.absolutePath
+            for (ext in extensions) {
+                val executable = File(dir, command + ext)
+                if (executable.exists() && executable.canExecute()) {
+                    return executable.absolutePath
+                }
             }
         }
         
         return null
     }
     
-    private fun isPythonAvailable(): Boolean {
-        // Try common Python commands
-        for (cmd in listOf("python3", "python", "py")) {
-            try {
-                val process = ProcessBuilder(cmd, "--version")
-                    .redirectErrorStream(true)
-                    .start()
-                
-                val exitCode = process.waitFor()
-                if (exitCode == 0) {
-                    return true
-                }
-            } catch (e: Exception) {
-                continue
+    /**
+     * Auto-detects Python interpreter.
+     * 
+     * Tries common Python commands: python3, python, py (Windows).
+     * 
+     * @return Path to Python executable if found, null otherwise
+     */
+    private fun findPython(): String? {
+        val candidates = if (SystemInfo.isWindows) {
+            listOf("py", "python3", "python")
+        } else {
+            listOf("python3", "python")
+        }
+        
+        for (cmd in candidates) {
+            val python = findInPath(cmd)
+            if (python != null && isPythonValid(python)) {
+                return python
             }
         }
         
-        return false
+        return null
     }
-    */
+    
+    /**
+     * Validates Python executable by running --version.
+     * 
+     * @param pythonPath Path to Python executable
+     * @return true if Python works, false otherwise
+     */
+    private fun isPythonValid(pythonPath: String): Boolean {
+        return try {
+            val commandLine = GeneralCommandLine(pythonPath, "--version")
+            val handler = CapturingProcessHandler(commandLine)
+            val result = handler.runProcess(4000) // 4 second timeout
+            
+            result.exitCode == 0
+        } catch (e: Exception) {
+            LOG.debug("Failed to validate Python at $pythonPath: ${e.message}")
+            false
+        }
+    }
     
     companion object {
         private val LOG = logger<CliResolver>()

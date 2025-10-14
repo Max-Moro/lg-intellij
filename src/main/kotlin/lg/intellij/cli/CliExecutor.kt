@@ -111,15 +111,34 @@ class CliExecutor(private val project: Project) {
     
     /**
      * Builds GeneralCommandLine with proper configuration.
+     * 
+     * Handles both direct CLI execution and Python module invocation.
      */
     private fun buildCommandLine(
         cliCommand: String,
         args: List<String>,
         workingDirectory: String?
     ): GeneralCommandLine {
-        val commandLine = GeneralCommandLine()
-            .withExePath(cliCommand)
-            .withParameters(args)
+        val settings = service<lg.intellij.services.state.LgSettingsService>()
+        
+        // Determine if we're using Python module invocation
+        val isPythonModule = settings.state.installStrategy == 
+            lg.intellij.services.state.LgSettingsService.InstallStrategy.SYSTEM &&
+            (cliCommand.endsWith("python") || cliCommand.endsWith("python3") || cliCommand.endsWith("py"))
+        
+        val commandLine = if (isPythonModule) {
+            // Python module invocation: python -m lg.cli <args>
+            GeneralCommandLine()
+                .withExePath(cliCommand)
+                .withParameters(listOf("-m", "lg.cli") + args)
+        } else {
+            // Direct CLI execution: listing-generator <args>
+            GeneralCommandLine()
+                .withExePath(cliCommand)
+                .withParameters(args)
+        }
+        
+        commandLine
             .withCharset(StandardCharsets.UTF_8)
             .withEnvironment(mapOf(
                 "PYTHONIOENCODING" to "utf-8",

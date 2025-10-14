@@ -1,0 +1,4 @@
+src:
+  extensions: [".kt", ".kts"]
+  filters:
+    mode: block

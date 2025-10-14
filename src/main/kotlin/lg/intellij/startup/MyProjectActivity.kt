@@ -1,4 +1,4 @@
-package com.github.maxmoro.lgintellij.startup
+package lg.intellij.startup
 
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project

@@ -1,4 +1,4 @@
-package com.github.maxmoro.lgintellij.toolWindow
+package lg.intellij.toolWindow
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
@@ -8,8 +8,8 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.content.ContentFactory
-import com.github.maxmoro.lgintellij.MyBundle
-import com.github.maxmoro.lgintellij.services.MyProjectService
+import lg.intellij.MyBundle
+import lg.intellij.services.MyProjectService
 import javax.swing.JButton
 
 

@@ -216,7 +216,7 @@ class LgResultsService {
         content: String,
         filename: String
     ) {
-        val tempDir = Files.createTempDirectory("lg-intellij").toFile()
+        val tempDir = Files.createTempDirectory("lg").toFile()
         val tempFile = File(tempDir, filename)
         tempFile.writeText(content)
         

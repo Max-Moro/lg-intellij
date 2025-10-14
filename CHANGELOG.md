@@ -1,6 +1,6 @@
 <!-- Keep a Changelog guide -> https://keepachangelog.com -->
 
-# lg-intellij Changelog
+# Listing Generator Changelog
 
 ## [Unreleased]
 ### Added

@@ -54,7 +54,7 @@ lg-intellij/
 ├── settings.gradle.kts
 ├── src/
 │   ├── main/
-│   │   ├── kotlin/com/github/maxmoro/intellij/
+│   │   ├── kotlin/lg/intellij/
 │   │   │   ├── actions/              # Команды пользователя
 │   │   │   ├── cli/                  # CLI интеграция
 │   │   │   ├── services/             # Бизнес-логика
@@ -926,7 +926,7 @@ Subscriptions removed
 ```xml
 <idea-plugin>
     <!-- Базовая информация -->
-    <id>com.github.maxmoro.lg-intellij</id>
+    <id>lg.intellij</id>
     <name>Listing Generator</name>
     <version>1.0.0</version>
     <vendor email="..." url="...">Author</vendor>

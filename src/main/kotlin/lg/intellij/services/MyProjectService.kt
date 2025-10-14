@@ -1,9 +1,9 @@
-package com.github.maxmoro.lgintellij.services
+package lg.intellij.services
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
-import com.github.maxmoro.lgintellij.MyBundle
+import lg.intellij.MyBundle
 
 @Service(Service.Level.PROJECT)
 class MyProjectService(project: Project) {

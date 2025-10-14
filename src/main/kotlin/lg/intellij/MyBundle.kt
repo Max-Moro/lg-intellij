@@ -1,4 +1,4 @@
-package com.github.maxmoro.lgintellij
+package lg.intellij
 
 import com.intellij.DynamicBundle
 import org.jetbrains.annotations.NonNls

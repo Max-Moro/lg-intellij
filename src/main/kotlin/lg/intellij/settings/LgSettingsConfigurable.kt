@@ -4,6 +4,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.ui.DialogPanel
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.dsl.builder.*
 import lg.intellij.LgBundle
 import lg.intellij.listeners.LgSettingsChangeListener
@@ -55,16 +56,24 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
             }
             
             row(LgBundle.message("settings.install.strategy.label")) {
-                comboBox(LgSettingsService.InstallStrategy.entries)
-                    .bindItem(settings.state::installStrategy.toNullableProperty())
-                    .comment(LgBundle.message("settings.install.strategy.comment"))
+                comboBox(
+                    LgSettingsService.InstallStrategy.entries,
+                    SimpleListCellRenderer.create { label, value, _ ->
+                        label.text = LgBundle.message("settings.install.strategy.${value.name}")
+                    }
+                ).bindItem(settings.state::installStrategy.toNullableProperty())
+                .comment(LgBundle.message("settings.install.strategy.comment"))
             }
         }
         
         group(LgBundle.message("settings.group.ai")) {
             row(LgBundle.message("settings.ai.provider.label")) {
-                comboBox(LgSettingsService.AiProvider.entries)
-                    .bindItem(settings.state::aiProvider.toNullableProperty())
+                comboBox(
+                    LgSettingsService.AiProvider.entries,
+                    SimpleListCellRenderer.create { label, value, _ ->
+                        label.text = LgBundle.message("settings.ai.provider.${value.name}")
+                    }
+                ).bindItem(settings.state::aiProvider.toNullableProperty())
             }.comment(LgBundle.message("settings.ai.provider.comment"))
             
             row(LgBundle.message("settings.openai.key.label")) {

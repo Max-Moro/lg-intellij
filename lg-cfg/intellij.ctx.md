@@ -2,13 +2,19 @@ ${md:README}
 
 ---
 {% if tag:review %}
-# Измененный исходный код VS Code Extension в текущей ветке
+# Измененный исходный код LG IntelliJ Platform Plugin в текущей ветке
 {% else %}
-# Исходный код VS Code Extension
+# Исходный код LG IntelliJ Platform Plugin
 {% endif %}
 
 ${src}
-{% if task AND scope:local %}
+{% if tag:docs %}
+---
+
+# IntelliJ Platform — Документация для разработки плагинов
+
+${md@self:intellij-platform-docs/*}
+{% endif %} {% if task AND scope:local %}
 ---
 
 # Описание текущей задачи

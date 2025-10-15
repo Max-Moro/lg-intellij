@@ -2,19 +2,35 @@ package lg.intellij.ui.toolwindow
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.actions.ShowSettingsUtilImpl
+import com.intellij.ide.ui.UISettingsUtils
+import com.intellij.ide.ui.laf.darcula.ui.DarculaEditorTextFieldBorder
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.service
+import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.editor.colors.EditorColorsScheme
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
+import com.intellij.openapi.editor.ex.EditorEx
+import com.intellij.openapi.fileTypes.PlainTextLanguage
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.wm.ToolWindow
-import com.intellij.ui.components.JBTextArea
+import com.intellij.ui.*
 import com.intellij.ui.dsl.builder.*
+import com.intellij.ui.dsl.builder.Cell
+import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
 import lg.intellij.LgBundle
 import lg.intellij.services.state.LgPanelStateService
 import lg.intellij.utils.LgStubNotifications
+import java.awt.BorderLayout
+import javax.swing.BorderFactory
 import javax.swing.JComponent
+import javax.swing.JPanel
 
 /**
  * Control Panel for Listing Generator Tool Window.
@@ -89,7 +105,7 @@ class LgControlPanel(
             }
         }.apply {
             // Add padding around the entire panel for better visual separation
-            border = com.intellij.util.ui.JBUI.Borders.empty(8, 12)
+            border = JBUI.Borders.empty(8, 12)
         }
     }
     
@@ -100,30 +116,38 @@ class LgControlPanel(
     private fun Panel.createAiContextsSection() {
         // Task text input (multi-line, expandable)
         row {
-            val textArea = JBTextArea(3, 40)
-            textArea.lineWrap = true
-            textArea.wrapStyleWord = true
-            textArea.emptyText.text = LgBundle.message("control.task.placeholder")
+            val editorField = createTaskTextField()
             
-            // Manual binding for JBTextArea (not supported directly by Kotlin UI DSL)
-            textArea.text = stateService.state.taskText ?: ""
-            textArea.document.addDocumentListener(object : javax.swing.event.DocumentListener {
-                override fun insertUpdate(e: javax.swing.event.DocumentEvent?) {
-                    stateService.state.taskText = textArea.text
+            // Wrapper panel that will handle updateUI() to refresh color scheme and border on theme change
+            val wrapperPanel = object : JPanel(BorderLayout()) {
+                override fun updateUI() {
+                    super.updateUI()
+                    // Re-apply color scheme customization on theme change
+                    val editor = editorField.editor
+                    if (editor is EditorEx) {
+                        editor.setBackgroundColor(null)
+                        editor.colorsScheme = getEditorColorScheme(editor)
+                        
+                        // Re-create border to support theme change
+                        editorField.border = DarculaEditorTextFieldBorder(
+                            editorField,
+                            editor
+                        )
+                    }
                 }
-                override fun removeUpdate(e: javax.swing.event.DocumentEvent?) {
-                    stateService.state.taskText = textArea.text
-                }
-                override fun changedUpdate(e: javax.swing.event.DocumentEvent?) {
-                    stateService.state.taskText = textArea.text
+            }.apply {
+                add(editorField, BorderLayout.CENTER)
+                isOpaque = false
+            }
+            
+            // Manual binding
+            editorField.addDocumentListener(object : DocumentListener {
+                override fun documentChanged(event: DocumentEvent) {
+                    stateService.state.taskText = editorField.text
                 }
             })
             
-            val scrollPane = com.intellij.ui.components.JBScrollPane(textArea)
-            scrollPane.horizontalScrollBarPolicy = javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
-            scrollPane.verticalScrollBarPolicy = javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
-            
-            cell(scrollPane)
+            cell(wrapperPanel)
                 .align(AlignX.FILL)
         }
         
@@ -336,12 +360,12 @@ class LgControlPanel(
      */
     private fun createToolbar(): JComponent {
         val actionGroup = DefaultActionGroup().apply {
-            add(object : com.intellij.openapi.actionSystem.AnAction(
+            add(object : AnAction(
                 LgBundle.message("control.btn.refresh"),
                 null,
                 AllIcons.Actions.Refresh
             ) {
-                override fun actionPerformed(e: com.intellij.openapi.actionSystem.AnActionEvent) {
+                override fun actionPerformed(e: AnActionEvent) {
                     LgStubNotifications.showNotImplemented(
                         project,
                         LgBundle.message("control.stub.refresh"),
@@ -359,7 +383,7 @@ class LgControlPanel(
     }
     
     /**
-     * Opens the Settings dialog.
+     * Opens the settings dialog.
      */
     private fun openSettings() {
         ShowSettingsUtilImpl.showSettingsDialog(
@@ -367,5 +391,70 @@ class LgControlPanel(
             "lg.intellij.settings",
             null
         )
+    }
+    
+    /**
+     * Creates multi-line EditorTextField for task input.
+     * Uses EditorTextFieldProvider with customizations for proper theming and borders.
+     * Supports theme switching and focus indication.
+     */
+    private fun createTaskTextField(): EditorTextField {
+        val features = mutableSetOf<com.intellij.ui.EditorCustomization>()
+        
+        features.add(SoftWrapsEditorCustomization.ENABLED)
+        features.add(AdditionalPageAtBottomEditorCustomization.DISABLED)
+        
+        // Color scheme customization for proper background and theme switching
+        features.add(com.intellij.ui.EditorCustomization { editor ->
+            if (editor is EditorEx) {
+                editor.setBackgroundColor(null) // use background from color scheme
+                editor.colorsScheme = getEditorColorScheme(editor)
+                
+                // Add internal padding (contentInsets)
+                editor.settings.additionalLinesCount = 0
+                editor.settings.isAdditionalPageAtBottom = false
+                
+                // Set content insets for internal padding
+                editor.contentComponent.border = BorderFactory.createEmptyBorder(4, 6, 4, 6)
+            }
+        })
+        
+        val editorField = EditorTextFieldProvider.getInstance()
+            .getEditorField(PlainTextLanguage.INSTANCE, project, features)
+        
+        editorField.setFontInheritedFromLAF(false)
+        editorField.setPlaceholder(LgBundle.message("control.task.placeholder"))
+        editorField.setShowPlaceholderWhenFocused(true)
+        editorField.text = stateService.state.taskText ?: ""
+        editorField.preferredSize = java.awt.Dimension(400, 60)
+        
+        // Add border with focus support and theme switching
+        editorField.border = DarculaEditorTextFieldBorder(
+            editorField,
+            editorField.editor as? EditorEx
+        )
+        
+        return editorField
+    }
+    
+    /**
+     * Gets proper color scheme for editor based on current UI theme.
+     * Ensures editor colors match the current LaF (Light/Dark theme).
+     */
+    private fun getEditorColorScheme(editor: EditorEx): EditorColorsScheme {
+        val isLaFDark = ColorUtil.isDark(UIUtil.getPanelBackground())
+        val isEditorDark = EditorColorsManager.getInstance().isDarkEditor
+        
+        val colorsScheme = if (isLaFDark == isEditorDark) {
+            EditorColorsManager.getInstance().globalScheme
+        } else {
+            EditorColorsManager.getInstance().schemeForCurrentUITheme
+        }
+        
+        // Wrap in delegate to avoid editing global scheme
+        val wrappedScheme = editor.createBoundColorSchemeDelegate(colorsScheme)
+        wrappedScheme.editorFontSize = UISettingsUtils.getInstance().scaledEditorFontSize.toInt()
+        
+        return wrappedScheme
     }
 }

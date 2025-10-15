@@ -4,6 +4,7 @@ import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
     id("java") // Java support
+    id("idea") // Enable IDEA project model to auto-download sources/Javadoc
     alias(libs.plugins.kotlin) // Kotlin support
     alias(libs.plugins.intelliJPlatform) // IntelliJ Platform Gradle Plugin
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
@@ -154,5 +155,13 @@ intellijPlatformTesting {
                 robotServerPlugin()
             }
         }
+    }
+}
+
+// Ensure Gradle downloads sources and Javadoc for dependencies on sync/import
+idea {
+    module {
+        isDownloadSources = true
+        isDownloadJavadoc = true
     }
 }

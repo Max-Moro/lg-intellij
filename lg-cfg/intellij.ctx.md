@@ -15,9 +15,11 @@ ${src}
 
 > Показаны только главы, нужные для разработки на текущей фазе.
 
-${md@self:intellij-platform-docs/02-architecture.md}
+${md@self:intellij-platform-docs/05-ui-components.md}
 
-${md@self:intellij-platform-docs/06-tool-windows.md}
+${md@self:intellij-platform-docs/07-kotlin-ui-dsl.md}
+
+${md@self:intellij-platform-docs/13-notifications.md}
 
 ---
 

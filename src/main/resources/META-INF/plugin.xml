@@ -60,6 +60,12 @@
         
         <!-- Project-level services -->
         <projectService serviceImplementation="lg.intellij.cli.CliExecutor"/>
+        <projectService serviceImplementation="lg.intellij.services.state.LgPanelStateService"/>
+        
+        <!-- Notification Groups -->
+        <notificationGroup 
+            id="LG Stub Notifications"
+            displayType="BALLOON"/>
         
         <!-- Tool Window -->
         <toolWindow 

@@ -57,6 +57,8 @@ class LgControlPanel(
     
     /**
      * Creates the main control panel with all UI groups.
+     * 
+     * Uses standard IntelliJ Platform spacing with JBUI.Borders for proper padding.
      */
     private fun createControlPanel(): JComponent {
         return panel {
@@ -84,6 +86,9 @@ class LgControlPanel(
             group(LgBundle.message("control.group.utilities")) {
                 createUtilitiesSection()
             }
+        }.apply {
+            // Add padding around the entire panel for better visual separation
+            border = com.intellij.util.ui.JBUI.Borders.empty(8, 12)
         }
     }
     

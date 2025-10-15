@@ -53,7 +53,7 @@ class LgToolWindowFactory : ToolWindowFactory, DumbAware {
         val contentFactory = ContentFactory.getInstance()
         
         // Create panels
-        val controlPanel = LgControlPanel(project, toolWindow)
+        val controlPanel = LgControlPanel(project)
         val includedFilesPanel = LgIncludedFilesPanel(project, toolWindow)
         
         // Create vertical splitter

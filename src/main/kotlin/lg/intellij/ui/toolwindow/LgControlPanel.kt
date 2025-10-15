@@ -18,7 +18,6 @@ import com.intellij.openapi.fileTypes.PlainTextLanguage
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.*
 import com.intellij.ui.dsl.builder.*
 import com.intellij.ui.dsl.builder.Cell
@@ -26,9 +25,11 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import lg.intellij.LgBundle
 import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.ui.components.LgWrappingPanel
 import lg.intellij.utils.LgStubNotifications
 import java.awt.BorderLayout
 import javax.swing.BorderFactory
+import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
 
@@ -47,8 +48,7 @@ import javax.swing.JPanel
  * - Group 5: Utilities (config management, diagnostics)
  */
 class LgControlPanel(
-    private val project: Project,
-    private val toolWindow: ToolWindow
+    private val project: Project
 ) : SimpleToolWindowPanel(
     true,   // vertical = true (toolbar at top)
     true    // borderless = true
@@ -69,6 +69,18 @@ class LgControlPanel(
     init {
         setContent(createControlPanel())
         toolbar = createToolbar()
+    }
+    
+    /**
+     * Creates a non-breakable label+component pair.
+     * Label and component stay together when wrapping.
+     */
+    private fun createLabeledComponent(labelText: String, component: JComponent): JPanel {
+        return JPanel(BorderLayout(2, 0)).apply {
+            isOpaque = false
+            add(com.intellij.ui.components.JBLabel(labelText), BorderLayout.WEST)
+            add(component, BorderLayout.CENTER)
+        }
     }
     
     /**
@@ -151,40 +163,55 @@ class LgControlPanel(
                 .align(AlignX.FILL)
         }
         
-        // Template selector + buttons
-        row(LgBundle.message("control.template.label")) {
-            comboBox(mockTemplates)
-                .bindItem(
-                    getter = { stateService.state.selectedTemplate },
-                    setter = { stateService.state.selectedTemplate = it }
-                )
-        }
-        
+        // Template selector + buttons (adaptive flow layout)
         row {
-            button(LgBundle.message("control.btn.send.ai")) {
-                LgStubNotifications.showNotImplemented(
-                    project,
-                    LgBundle.message("control.stub.send.ai"),
-                    10
-                )
+            val flowPanel = LgWrappingPanel().apply {
+                // Template ComboBox
+                val templateCombo = ComboBox(mockTemplates.toTypedArray()).apply {
+                    selectedItem = stateService.state.selectedTemplate
+                    addActionListener {
+                        stateService.state.selectedTemplate = selectedItem as? String
+                    }
+                }
+                add(templateCombo)
+                
+                // Send to AI button
+                add(JButton(LgBundle.message("control.btn.send.ai")).apply {
+                    addActionListener {
+                        LgStubNotifications.showNotImplemented(
+                            project,
+                            LgBundle.message("control.stub.send.ai"),
+                            10
+                        )
+                    }
+                })
+                
+                // Generate Context button
+                add(JButton(LgBundle.message("control.btn.generate.context")).apply {
+                    addActionListener {
+                        LgStubNotifications.showNotImplemented(
+                            project,
+                            LgBundle.message("control.stub.generate.context"),
+                            7
+                        )
+                    }
+                })
+                
+                // Show Context Stats button
+                add(JButton(LgBundle.message("control.btn.show.context.stats")).apply {
+                    addActionListener {
+                        LgStubNotifications.showNotImplemented(
+                            project,
+                            LgBundle.message("control.stub.show.context.stats"),
+                            9
+                        )
+                    }
+                })
             }
             
-            button(LgBundle.message("control.btn.generate.context")) {
-                LgStubNotifications.showNotImplemented(
-                    project,
-                    LgBundle.message("control.stub.generate.context"),
-                    7
-                )
-            }
-            
-            button(LgBundle.message("control.btn.show.context.stats")) {
-                LgStubNotifications.showNotImplemented(
-                    project,
-                    LgBundle.message("control.stub.show.context.stats"),
-                    9
-                )
-            }
-        }
+            cell(flowPanel)
+                .align(AlignX.FILL)
+        }.resizableRow()
     }
     
     /**
@@ -238,40 +265,54 @@ class LgControlPanel(
      * Section selector, inspection actions.
      */
     private fun Panel.createInspectSection() {
-        // Section selector
-        row(LgBundle.message("control.section.label")) {
-            comboBox(mockSections)
-                .bindItem(
-                    getter = { stateService.state.selectedSection },
-                    setter = { stateService.state.selectedSection = it }
-                )
-        }
-        
-        // Action buttons
+        // Section selector + action buttons (adaptive flow layout)
         row {
-            button(LgBundle.message("control.btn.show.included")) {
-                LgStubNotifications.showNotImplemented(
-                    project,
-                    LgBundle.message("control.stub.show.included"),
-                    11
-                )
+            val flowPanel = LgWrappingPanel().apply {
+                // Section ComboBox
+                val sectionCombo = ComboBox(mockSections.toTypedArray()).apply {
+                    selectedItem = stateService.state.selectedSection
+                    addActionListener {
+                        stateService.state.selectedSection = selectedItem as? String
+                    }
+                }
+                add(sectionCombo)
+                
+                // Show Included button
+                add(JButton(LgBundle.message("control.btn.show.included")).apply {
+                    addActionListener {
+                        LgStubNotifications.showNotImplemented(
+                            project,
+                            LgBundle.message("control.stub.show.included"),
+                            11
+                        )
+                    }
+                })
+                
+                // Generate Listing button
+                add(JButton(LgBundle.message("control.btn.generate.listing")).apply {
+                    addActionListener {
+                        LgStubNotifications.showNotImplemented(
+                            project,
+                            LgBundle.message("control.stub.generate.listing"),
+                            7
+                        )
+                    }
+                })
+                
+                // Show Stats button
+                add(JButton(LgBundle.message("control.btn.show.stats")).apply {
+                    addActionListener {
+                        LgStubNotifications.showNotImplemented(
+                            project,
+                            LgBundle.message("control.stub.show.stats"),
+                            9
+                        )
+                    }
+                })
             }
             
-            button(LgBundle.message("control.btn.generate.listing")) {
-                LgStubNotifications.showNotImplemented(
-                    project,
-                    LgBundle.message("control.stub.generate.listing"),
-                    7
-                )
-            }
-            
-            button(LgBundle.message("control.btn.show.stats")) {
-                LgStubNotifications.showNotImplemented(
-                    project,
-                    LgBundle.message("control.stub.show.stats"),
-                    9
-                )
-            }
+            cell(flowPanel)
+                .align(AlignX.FILL)
         }
     }
     
@@ -280,32 +321,49 @@ class LgControlPanel(
      * Library, encoder, context limit configuration.
      */
     private fun Panel.createTokenizationSection() {
-        // Library selector
-        row(LgBundle.message("control.library.label")) {
-            comboBox(mockLibraries)
-                .bindItem(
-                    getter = { stateService.state.tokenizerLib },
-                    setter = { stateService.state.tokenizerLib = it }
-                )
-        }
-        
-        // Encoder input
-        row(LgBundle.message("control.encoder.label")) {
-            textField()
-                .bindText(
-                    getter = { stateService.state.encoder ?: "" },
-                    setter = { stateService.state.encoder = it }
-                )
-        }
-        
-        // Context limit
-        row(LgBundle.message("control.ctx.limit.label")) {
-            intTextField(range = 1000..2_000_000)
-                .bindIntText(
-                    getter = { stateService.state.ctxLimit },
-                    setter = { stateService.state.ctxLimit = it }
-                )
-                .columns(10)
+        // Library selector + Encoder input + Context limit (adaptive flow layout)
+        row {
+            val flowPanel = LgWrappingPanel().apply {
+                // Tokenizer Library ComboBox
+                val libraryCombo = ComboBox(mockLibraries.toTypedArray()).apply {
+                    selectedItem = stateService.state.tokenizerLib
+                    addActionListener {
+                        stateService.state.tokenizerLib = selectedItem as? String
+                    }
+                }
+                add(createLabeledComponent(LgBundle.message("control.library.label"), libraryCombo))
+                
+                // Encoder TextField
+                val encoderField = com.intellij.ui.components.JBTextField(20).apply {
+                    text = stateService.state.encoder ?: ""
+                    document.addDocumentListener(object : javax.swing.event.DocumentListener {
+                        override fun insertUpdate(e: javax.swing.event.DocumentEvent?) = update()
+                        override fun removeUpdate(e: javax.swing.event.DocumentEvent?) = update()
+                        override fun changedUpdate(e: javax.swing.event.DocumentEvent?) = update()
+                        private fun update() {
+                            stateService.state.encoder = text
+                        }
+                    })
+                }
+                add(createLabeledComponent(LgBundle.message("control.encoder.label"), encoderField))
+                
+                // Context Limit TextField
+                val ctxLimitField = com.intellij.ui.components.JBTextField(10).apply {
+                    text = stateService.state.ctxLimit.toString()
+                    document.addDocumentListener(object : javax.swing.event.DocumentListener {
+                        override fun insertUpdate(e: javax.swing.event.DocumentEvent?) = update()
+                        override fun removeUpdate(e: javax.swing.event.DocumentEvent?) = update()
+                        override fun changedUpdate(e: javax.swing.event.DocumentEvent?) = update()
+                        private fun update() {
+                            stateService.state.ctxLimit = text.toIntOrNull()?.coerceIn(1000, 2_000_000) ?: 128000
+                        }
+                    })
+                }
+                add(createLabeledComponent(LgBundle.message("control.ctx.limit.label"), ctxLimitField))
+            }
+            
+            cell(flowPanel)
+                .align(AlignX.FILL)
         }
     }
     
@@ -315,43 +373,61 @@ class LgControlPanel(
      */
     private fun Panel.createUtilitiesSection() {
         row {
-            button(LgBundle.message("control.btn.create.config")) {
-                LgStubNotifications.showNotImplemented(
-                    project,
-                    LgBundle.message("control.stub.create.config"),
-                    15
-                )
+            val flowPanel = LgWrappingPanel().apply {
+                // Create Config button
+                add(JButton(LgBundle.message("control.btn.create.config")).apply {
+                    addActionListener {
+                        LgStubNotifications.showNotImplemented(
+                            project,
+                            LgBundle.message("control.stub.create.config"),
+                            15
+                        )
+                    }
+                })
+                
+                // Open Config button
+                add(JButton(LgBundle.message("control.btn.open.config")).apply {
+                    addActionListener {
+                        LgStubNotifications.showNotImplemented(
+                            project,
+                            LgBundle.message("control.stub.open.config"),
+                            15
+                        )
+                    }
+                })
+                
+                // Doctor button
+                add(JButton(LgBundle.message("control.btn.doctor")).apply {
+                    addActionListener {
+                        LgStubNotifications.showNotImplemented(
+                            project,
+                            LgBundle.message("control.stub.doctor"),
+                            14
+                        )
+                    }
+                })
+                
+                // Reset Cache button
+                add(JButton(LgBundle.message("control.btn.reset.cache")).apply {
+                    addActionListener {
+                        LgStubNotifications.showNotImplemented(
+                            project,
+                            LgBundle.message("control.stub.reset.cache"),
+                            14
+                        )
+                    }
+                })
+                
+                // Settings button
+                add(JButton(LgBundle.message("control.btn.settings")).apply {
+                    addActionListener {
+                        openSettings()
+                    }
+                })
             }
             
-            button(LgBundle.message("control.btn.open.config")) {
-                LgStubNotifications.showNotImplemented(
-                    project,
-                    LgBundle.message("control.stub.open.config"),
-                    15
-                )
-            }
-        }
-        
-        row {
-            button(LgBundle.message("control.btn.doctor")) {
-                LgStubNotifications.showNotImplemented(
-                    project,
-                    LgBundle.message("control.stub.doctor"),
-                    14
-                )
-            }
-            
-            button(LgBundle.message("control.btn.reset.cache")) {
-                LgStubNotifications.showNotImplemented(
-                    project,
-                    LgBundle.message("control.stub.reset.cache"),
-                    14
-                )
-            }
-            
-            button(LgBundle.message("control.btn.settings")) {
-                openSettings()
-            }
+            cell(flowPanel)
+                .align(AlignX.FILL)
         }
     }
     
@@ -399,24 +475,22 @@ class LgControlPanel(
      * Supports theme switching and focus indication.
      */
     private fun createTaskTextField(): EditorTextField {
-        val features = mutableSetOf<com.intellij.ui.EditorCustomization>()
+        val features = mutableSetOf<EditorCustomization>()
         
         features.add(SoftWrapsEditorCustomization.ENABLED)
         features.add(AdditionalPageAtBottomEditorCustomization.DISABLED)
         
         // Color scheme customization for proper background and theme switching
-        features.add(com.intellij.ui.EditorCustomization { editor ->
-            if (editor is EditorEx) {
-                editor.setBackgroundColor(null) // use background from color scheme
-                editor.colorsScheme = getEditorColorScheme(editor)
-                
-                // Add internal padding (contentInsets)
-                editor.settings.additionalLinesCount = 0
-                editor.settings.isAdditionalPageAtBottom = false
-                
-                // Set content insets for internal padding
-                editor.contentComponent.border = BorderFactory.createEmptyBorder(4, 6, 4, 6)
-            }
+        features.add(EditorCustomization { editor ->
+            editor.setBackgroundColor(null) // use background from color scheme
+            editor.colorsScheme = getEditorColorScheme(editor)
+
+            // Add internal padding (contentInsets)
+            editor.settings.additionalLinesCount = 0
+            editor.settings.isAdditionalPageAtBottom = false
+
+            // Set content insets for internal padding
+            editor.contentComponent.border = BorderFactory.createEmptyBorder(4, 6, 4, 6)
         })
         
         val editorField = EditorTextFieldProvider.getInstance()

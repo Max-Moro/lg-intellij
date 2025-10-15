@@ -119,7 +119,11 @@ class LgControlPanel(
                 }
             })
             
-            cell(textArea)
+            val scrollPane = com.intellij.ui.components.JBScrollPane(textArea)
+            scrollPane.horizontalScrollBarPolicy = javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+            scrollPane.verticalScrollBarPolicy = javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
+            
+            cell(scrollPane)
                 .align(AlignX.FILL)
         }
         

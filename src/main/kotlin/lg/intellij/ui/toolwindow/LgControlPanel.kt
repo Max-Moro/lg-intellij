@@ -59,31 +59,32 @@ class LgControlPanel(
      * Creates the main control panel with all UI groups.
      * 
      * Uses standard IntelliJ Platform spacing with JBUI.Borders for proper padding.
+     * Groups use indent=false to align content with group titles.
      */
     private fun createControlPanel(): JComponent {
         return panel {
             // Group 1: AI Contexts
-            group(LgBundle.message("control.group.ai.contexts")) {
+            group(LgBundle.message("control.group.ai.contexts"), indent = false) {
                 createAiContextsSection()
             }
             
             // Group 2: Adaptive Settings
-            group(LgBundle.message("control.group.adaptive.settings")) {
+            group(LgBundle.message("control.group.adaptive.settings"), indent = false) {
                 createAdaptiveSettingsSection()
             }
             
             // Group 3: Inspect
-            group(LgBundle.message("control.group.inspect")) {
+            group(LgBundle.message("control.group.inspect"), indent = false) {
                 createInspectSection()
             }
             
             // Group 4: Tokenization Settings
-            group(LgBundle.message("control.group.tokenization")) {
+            group(LgBundle.message("control.group.tokenization"), indent = false) {
                 createTokenizationSection()
             }
             
             // Group 5: Utilities
-            group(LgBundle.message("control.group.utilities")) {
+            group(LgBundle.message("control.group.utilities"), indent = false) {
                 createUtilitiesSection()
             }
         }.apply {

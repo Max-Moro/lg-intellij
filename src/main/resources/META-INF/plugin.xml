@@ -53,15 +53,6 @@
     
     <!-- Extensions -->
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Services -->
-        <!-- Application-level services -->
-        <applicationService serviceImplementation="lg.intellij.cli.CliResolver"/>
-        <applicationService serviceImplementation="lg.intellij.services.state.LgSettingsService"/>
-        
-        <!-- Project-level services -->
-        <projectService serviceImplementation="lg.intellij.cli.CliExecutor"/>
-        <projectService serviceImplementation="lg.intellij.services.state.LgPanelStateService"/>
-        
         <!-- Notification Groups -->
         <notificationGroup 
             id="LG Stub Notifications"

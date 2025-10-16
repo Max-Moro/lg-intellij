@@ -289,7 +289,7 @@ class LgControlPanel(
                         stateService.state.selectedSection = selectedItem as? String
                     }
                 }
-                add(sectionCombo)
+                add(createLabeledComponent(LgBundle.message("control.section.label"), sectionCombo))
                 
                 // Show Included button
                 add(JButton(LgBundle.message("control.btn.show.included")).apply {

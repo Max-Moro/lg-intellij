@@ -8,3 +8,6 @@ build
 
 # LG cache directory
 .lg-cache/
+
+cloned/
+.ai-chat/

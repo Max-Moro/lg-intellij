@@ -19,6 +19,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.*
+import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.dsl.builder.*
 import com.intellij.ui.dsl.builder.Cell
 import com.intellij.util.ui.JBUI
@@ -67,8 +69,20 @@ class LgControlPanel(
     private lateinit var modeComboCell: Cell<ComboBox<String>>
     
     init {
-        setContent(createControlPanel())
+        setContent(createScrollableContent())
         toolbar = createToolbar()
+    }
+    
+    /**
+     * Wraps the control panel in a scroll pane for proper vertical scrolling.
+     */
+    private fun createScrollableContent(): JComponent {
+        val scrollPane = JBScrollPane(createControlPanel()).apply {
+            border = null
+            horizontalScrollBarPolicy = javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+            verticalScrollBarPolicy = javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
+        }
+        return scrollPane
     }
     
     /**
@@ -78,7 +92,7 @@ class LgControlPanel(
     private fun createLabeledComponent(labelText: String, component: JComponent): JPanel {
         return JPanel(BorderLayout(2, 0)).apply {
             isOpaque = false
-            add(com.intellij.ui.components.JBLabel(labelText), BorderLayout.WEST)
+            add(JBLabel(labelText), BorderLayout.WEST)
             add(component, BorderLayout.CENTER)
         }
     }

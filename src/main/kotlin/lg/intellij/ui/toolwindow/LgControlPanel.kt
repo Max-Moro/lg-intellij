@@ -186,7 +186,7 @@ class LgControlPanel(
                 add(templateCombo)
                 
                 // Send to AI button
-                add(JButton(LgBundle.message("control.btn.send.ai")).apply {
+                add(JButton(LgBundle.message("control.btn.send.ai"), AllIcons.Actions.Execute).apply {
                     addActionListener {
                         LgStubNotifications.showNotImplemented(
                             project,
@@ -197,7 +197,7 @@ class LgControlPanel(
                 })
                 
                 // Generate Context button
-                add(JButton(LgBundle.message("control.btn.generate.context")).apply {
+                add(JButton(LgBundle.message("control.btn.generate.context"), AllIcons.Actions.ShowCode).apply {
                     addActionListener {
                         LgStubNotifications.showNotImplemented(
                             project,
@@ -208,7 +208,7 @@ class LgControlPanel(
                 })
                 
                 // Show Context Stats button
-                add(JButton(LgBundle.message("control.btn.show.context.stats")).apply {
+                add(JButton(LgBundle.message("control.btn.show.context.stats"), AllIcons.FileTypes.Csv).apply {
                     addActionListener {
                         LgStubNotifications.showNotImplemented(
                             project,
@@ -260,13 +260,15 @@ class LgControlPanel(
         
         // Configure Tags button
         row {
-            button(LgBundle.message("control.btn.configure.tags")) {
-                LgStubNotifications.showNotImplemented(
-                    project,
-                    LgBundle.message("control.stub.configure.tags"),
-                    13
-                )
-            }
+            cell(JButton(LgBundle.message("control.btn.configure.tags"), AllIcons.General.Filter).apply {
+                addActionListener {
+                    LgStubNotifications.showNotImplemented(
+                        project,
+                        LgBundle.message("control.stub.configure.tags"),
+                        13
+                    )
+                }
+            })
         }
     }
     
@@ -288,7 +290,7 @@ class LgControlPanel(
                 add(createLabeledComponent(LgBundle.message("control.section.label"), sectionCombo))
                 
                 // Show Included button
-                add(JButton(LgBundle.message("control.btn.show.included")).apply {
+                add(JButton(LgBundle.message("control.btn.show.included"), AllIcons.Actions.ShowAsTree).apply {
                     addActionListener {
                         LgStubNotifications.showNotImplemented(
                             project,
@@ -299,7 +301,7 @@ class LgControlPanel(
                 })
                 
                 // Generate Listing button
-                add(JButton(LgBundle.message("control.btn.generate.listing")).apply {
+                add(JButton(LgBundle.message("control.btn.generate.listing"), AllIcons.Actions.ShowCode).apply {
                     addActionListener {
                         LgStubNotifications.showNotImplemented(
                             project,
@@ -310,7 +312,7 @@ class LgControlPanel(
                 })
                 
                 // Show Stats button
-                add(JButton(LgBundle.message("control.btn.show.stats")).apply {
+                add(JButton(LgBundle.message("control.btn.show.stats"), AllIcons.FileTypes.Csv).apply {
                     addActionListener {
                         LgStubNotifications.showNotImplemented(
                             project,

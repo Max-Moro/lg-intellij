@@ -125,10 +125,6 @@ class LgControlPanel(
                 createTokenizationSection()
             }
             
-            // Group 5: Utilities
-            group(LgBundle.message("control.group.utilities"), indent = false) {
-                createUtilitiesSection()
-            }
         }.apply {
             // Add padding around the entire panel for better visual separation
             border = JBUI.Borders.empty(8, 12)
@@ -381,78 +377,16 @@ class LgControlPanel(
         }
     }
     
-    /**
-     * Group 5: Utilities
-     * Configuration management, diagnostics, settings.
-     */
-    private fun Panel.createUtilitiesSection() {
-        row {
-            val flowPanel = LgWrappingPanel().apply {
-                // Create Config button
-                add(JButton(LgBundle.message("control.btn.create.config")).apply {
-                    addActionListener {
-                        LgStubNotifications.showNotImplemented(
-                            project,
-                            LgBundle.message("control.stub.create.config"),
-                            15
-                        )
-                    }
-                })
-                
-                // Open Config button
-                add(JButton(LgBundle.message("control.btn.open.config")).apply {
-                    addActionListener {
-                        LgStubNotifications.showNotImplemented(
-                            project,
-                            LgBundle.message("control.stub.open.config"),
-                            15
-                        )
-                    }
-                })
-                
-                // Doctor button
-                add(JButton(LgBundle.message("control.btn.doctor")).apply {
-                    addActionListener {
-                        LgStubNotifications.showNotImplemented(
-                            project,
-                            LgBundle.message("control.stub.doctor"),
-                            14
-                        )
-                    }
-                })
-                
-                // Reset Cache button
-                add(JButton(LgBundle.message("control.btn.reset.cache")).apply {
-                    addActionListener {
-                        LgStubNotifications.showNotImplemented(
-                            project,
-                            LgBundle.message("control.stub.reset.cache"),
-                            14
-                        )
-                    }
-                })
-                
-                // Settings button
-                add(JButton(LgBundle.message("control.btn.settings")).apply {
-                    addActionListener {
-                        openSettings()
-                    }
-                })
-            }
-            
-            cell(flowPanel)
-                .align(AlignX.FILL)
-        }
-    }
     
     /**
-     * Creates the toolbar with Refresh action.
+     * Creates the toolbar with all actions grouped and separated.
      */
     private fun createToolbar(): JComponent {
         val actionGroup = DefaultActionGroup().apply {
+            // Группа 1: Refresh
             add(object : AnAction(
                 LgBundle.message("control.btn.refresh"),
-                null,
+                LgBundle.message("control.stub.refresh"),
                 AllIcons.Actions.Refresh
             ) {
                 override fun actionPerformed(e: AnActionEvent) {
@@ -460,6 +394,95 @@ class LgControlPanel(
                         project,
                         LgBundle.message("control.stub.refresh"),
                         5
+                    )
+                }
+            })
+            
+            addSeparator()
+            
+            // Группа 2: Config Management
+            add(object : AnAction(
+                LgBundle.message("control.btn.create.config"),
+                LgBundle.message("control.stub.create.config"),
+                AllIcons.General.Add
+            ) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    LgStubNotifications.showNotImplemented(
+                        project,
+                        LgBundle.message("control.stub.create.config"),
+                        15
+                    )
+                }
+            })
+            
+            add(object : AnAction(
+                LgBundle.message("control.btn.open.config"),
+                LgBundle.message("control.stub.open.config"),
+                AllIcons.Actions.MenuOpen
+            ) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    LgStubNotifications.showNotImplemented(
+                        project,
+                        LgBundle.message("control.stub.open.config"),
+                        15
+                    )
+                }
+            })
+            
+            addSeparator()
+            
+            // Группа 3: Diagnostics & Settings
+            add(object : AnAction(
+                LgBundle.message("control.btn.doctor"),
+                LgBundle.message("control.stub.doctor"),
+                AllIcons.General.InspectionsOK
+            ) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    LgStubNotifications.showNotImplemented(
+                        project,
+                        LgBundle.message("control.stub.doctor"),
+                        14
+                    )
+                }
+            })
+            
+            add(object : AnAction(
+                LgBundle.message("control.btn.reset.cache"),
+                LgBundle.message("control.stub.reset.cache"),
+                AllIcons.Actions.GC
+            ) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    LgStubNotifications.showNotImplemented(
+                        project,
+                        LgBundle.message("control.stub.reset.cache"),
+                        14
+                    )
+                }
+            })
+            
+            add(object : AnAction(
+                LgBundle.message("control.btn.settings"),
+                LgBundle.message("control.stub.settings"),
+                AllIcons.General.Settings
+            ) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    openSettings()
+                }
+            })
+            
+            addSeparator()
+            
+            // Группа 4: View Mode Toggle (заглушка для Фазы 11)
+            add(object : AnAction(
+                LgBundle.message("control.btn.toggle.view"),
+                LgBundle.message("control.stub.toggle.view"),
+                AllIcons.Actions.ListFiles
+            ) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    LgStubNotifications.showNotImplemented(
+                        project,
+                        LgBundle.message("control.stub.toggle.view"),
+                        11
                     )
                 }
             })

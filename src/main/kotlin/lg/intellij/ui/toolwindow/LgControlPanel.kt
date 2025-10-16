@@ -404,7 +404,7 @@ class LgControlPanel(
             add(object : AnAction(
                 LgBundle.message("control.btn.create.config"),
                 LgBundle.message("control.stub.create.config"),
-                AllIcons.General.Add
+                AllIcons.Actions.AddDirectory
             ) {
                 override fun actionPerformed(e: AnActionEvent) {
                     LgStubNotifications.showNotImplemented(
@@ -418,7 +418,7 @@ class LgControlPanel(
             add(object : AnAction(
                 LgBundle.message("control.btn.open.config"),
                 LgBundle.message("control.stub.open.config"),
-                AllIcons.Actions.MenuOpen
+                AllIcons.Ide.ConfigFile
             ) {
                 override fun actionPerformed(e: AnActionEvent) {
                     LgStubNotifications.showNotImplemented(
@@ -435,7 +435,7 @@ class LgControlPanel(
             add(object : AnAction(
                 LgBundle.message("control.btn.doctor"),
                 LgBundle.message("control.stub.doctor"),
-                AllIcons.General.InspectionsOK
+                AllIcons.Actions.Checked
             ) {
                 override fun actionPerformed(e: AnActionEvent) {
                     LgStubNotifications.showNotImplemented(
@@ -476,7 +476,7 @@ class LgControlPanel(
             add(object : AnAction(
                 LgBundle.message("control.btn.toggle.view"),
                 LgBundle.message("control.stub.toggle.view"),
-                AllIcons.Actions.ListFiles
+                AllIcons.Actions.ShowAsTree
             ) {
                 override fun actionPerformed(e: AnActionEvent) {
                     LgStubNotifications.showNotImplemented(

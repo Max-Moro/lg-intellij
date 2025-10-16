@@ -30,10 +30,7 @@ import lg.intellij.services.state.LgPanelStateService
 import lg.intellij.ui.components.LgWrappingPanel
 import lg.intellij.utils.LgStubNotifications
 import java.awt.BorderLayout
-import javax.swing.BorderFactory
-import javax.swing.JButton
-import javax.swing.JComponent
-import javax.swing.JPanel
+import javax.swing.*
 
 /**
  * Control Panel for Listing Generator Tool Window.
@@ -79,8 +76,8 @@ class LgControlPanel(
     private fun createScrollableContent(): JComponent {
         val scrollPane = JBScrollPane(createControlPanel()).apply {
             border = null
-            horizontalScrollBarPolicy = javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
-            verticalScrollBarPolicy = javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
+            horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+            verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
         }
         return scrollPane
     }
@@ -207,8 +204,10 @@ class LgControlPanel(
                     }
                 })
                 
-                // Show Context Stats button
-                add(JButton(LgBundle.message("control.btn.show.context.stats"), AllIcons.FileTypes.Csv).apply {
+                // Show Context Stats button (primary action)
+                add(object : JButton(LgBundle.message("control.btn.show.context.stats"), AllIcons.Actions.ListFiles) {
+                    override fun isDefaultButton(): Boolean = true
+                }.apply {
                     addActionListener {
                         LgStubNotifications.showNotImplemented(
                             project,
@@ -312,7 +311,7 @@ class LgControlPanel(
                 })
                 
                 // Show Stats button
-                add(JButton(LgBundle.message("control.btn.show.stats"), AllIcons.FileTypes.Csv).apply {
+                add(JButton(LgBundle.message("control.btn.show.stats"), AllIcons.Actions.ListFiles).apply {
                     addActionListener {
                         LgStubNotifications.showNotImplemented(
                             project,

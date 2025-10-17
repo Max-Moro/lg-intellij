@@ -6,6 +6,7 @@ plugins {
     id("java") // Java support
     id("idea") // Enable IDEA project model to auto-download sources/Javadoc
     alias(libs.plugins.kotlin) // Kotlin support
+    alias(libs.plugins.serialization) // Kotlin serialization support (for generated models)
     alias(libs.plugins.intelliJPlatform) // IntelliJ Platform Gradle Plugin
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
     alias(libs.plugins.qodana) // Gradle Qodana Plugin
@@ -32,6 +33,9 @@ repositories {
 
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
+    // Kotlin serialization for generated models
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
 

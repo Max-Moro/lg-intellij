@@ -1,12 +1,15 @@
 package lg.intellij.services.state
 
 import com.intellij.openapi.components.*
+import com.intellij.openapi.project.Project
 
 /**
  * Project-level service for storing Control Panel UI state.
  * 
- * Phase 4: Mock implementation with basic state properties.
- * All fields are initialized with hardcoded defaults.
+ * Phase 6: Full implementation with collections (modes/tags) and effective values.
+ * 
+ * Empty string fields ("") mean "use application defaults".
+ * Effective values methods provide fallback to LgSettingsService defaults.
  * 
  * Storage: workspace file (.idea/workspace.xml) - not committed to VCS.
  * Persistence: automatic via SimplePersistentStateComponent.
@@ -17,42 +20,81 @@ import com.intellij.openapi.components.*
     storages = [Storage(StoragePathMacros.WORKSPACE_FILE)],
     category = SettingsCategory.TOOLS
 )
-class LgPanelStateService : SimplePersistentStateComponent<LgPanelStateService.State>(State()) {
+class LgPanelStateService(private val project: Project) : SimplePersistentStateComponent<LgPanelStateService.State>(State()) {
     
     /**
      * Persistent state class.
      */
     class State : BaseState() {
         /** Selected template (context) name */
-        var selectedTemplate by string("default")
+        var selectedTemplate by string("")
         
         /** Selected section name */
         var selectedSection by string("all")
         
-        /** Tokenizer library (tiktoken, tokenizers, sentencepiece) */
-        var tokenizerLib by string("tiktoken")
+        /** Tokenizer library (empty = use default from app settings) */
+        var tokenizerLib by string("")
         
-        /** Encoder name */
-        var encoder by string("cl100k_base")
+        /** Encoder name (empty = use default) */
+        var encoder by string("")
         
-        /** Context limit in tokens */
-        var ctxLimit by property(128000)
+        /** Context limit in tokens (0 = use default) */
+        var ctxLimit by property(0)
         
-        /** Selected mode for dev-stage mode-set */
-        var selectedMode by string("development")
+        /** Selected modes: modeSetId -> modeId */
+        var modes by map<String, String>()
+        
+        /** Active tags */
+        var tags by stringSet()
         
         /** Task description text */
         var taskText by string("")
         
         /** Target branch for review mode */
-        var targetBranch by string("main")
+        var targetBranch by string("")
+    }
+
+    /**
+     * Returns effective tokenizer library (with fallback to application defaults).
+     */
+    fun getEffectiveTokenizerLib(): String {
+        val value = state.tokenizerLib
+        if (!value.isNullOrBlank()) {
+            return value
+        }
+
+        return "tiktoken"
+    }
+
+    /**
+     * Returns effective encoder (with fallback to application defaults).
+     */
+    fun getEffectiveEncoder(): String {
+        val value = state.encoder
+        if (!value.isNullOrBlank()) {
+            return value
+        }
+
+        return "cl100k_base"
+    }
+
+    /**
+     * Returns effective context limit (with fallback to application defaults).
+     */
+    fun getEffectiveContextLimit(): Int {
+        val value = state.ctxLimit
+        if (value > 0) {
+            return value
+        }
+
+        return 128000
     }
     
     companion object {
         /**
          * Returns the project-scoped instance of LgPanelStateService.
          */
-        fun getInstance(project: com.intellij.openapi.project.Project): LgPanelStateService {
+        fun getInstance(project: Project): LgPanelStateService {
             return project.service()
         }
     }

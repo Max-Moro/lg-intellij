@@ -166,37 +166,33 @@ class LgControlPanel(
     private fun updateSectionsUI(sections: List<String>) {
         if (!::sectionCombo.isInitialized) return
         
-        val currentSelection = sectionCombo.selectedItem as? String
+        val savedSection = stateService.state.selectedSection
         
         sectionCombo.removeAllItems()
         sections.forEach { sectionCombo.addItem(it) }
         
-        // Restore selection if still valid
-        if (currentSelection != null && currentSelection in sections) {
-            sectionCombo.selectedItem = currentSelection
+        // Restore selection from state
+        if (!savedSection.isNullOrBlank() && savedSection in sections) {
+            sectionCombo.selectedItem = savedSection
         } else if (sections.isNotEmpty()) {
             sectionCombo.selectedIndex = 0
         }
-        
-        LOG.debug("Updated sections UI: ${sections.size} items")
     }
     
     private fun updateContextsUI(contexts: List<String>) {
         if (!::templateCombo.isInitialized) return
         
-        val currentSelection = templateCombo.selectedItem as? String
+        val savedTemplate = stateService.state.selectedTemplate
         
         templateCombo.removeAllItems()
         contexts.forEach { templateCombo.addItem(it) }
         
-        // Restore selection
-        if (currentSelection != null && currentSelection in contexts) {
-            templateCombo.selectedItem = currentSelection
+        // Restore selection from state
+        if (!savedTemplate.isNullOrBlank() && savedTemplate in contexts) {
+            templateCombo.selectedItem = savedTemplate
         } else if (contexts.isNotEmpty()) {
             templateCombo.selectedIndex = 0
         }
-        
-        LOG.debug("Updated contexts UI: ${contexts.size} items")
     }
     
     private fun updateModeSetsUI(modeSets: lg.intellij.cli.models.ModeSetsListSchema?) {
@@ -210,15 +206,17 @@ class LgControlPanel(
             val firstModeSet = currentModeSets.first()
             val modes = firstModeSet.modes.map { it.id }
             
-            val currentSelection = modeCombo.selectedItem as? String
-            
             modeCombo.removeAllItems()
             modes.forEach { modeCombo.addItem(it) }
             
-            if (currentSelection != null && currentSelection in modes) {
-                modeCombo.selectedItem = currentSelection
+            // Restore from saved state
+            val savedMode = stateService.state.modes[firstModeSet.id]
+            
+            if (savedMode != null && savedMode in modes) {
+                modeCombo.selectedItem = savedMode
             } else if (modes.isNotEmpty()) {
                 modeCombo.selectedIndex = 0
+                stateService.state.modes[firstModeSet.id] = modes[0]
             }
         }
         
@@ -237,19 +235,17 @@ class LgControlPanel(
     private fun updateLibrariesUI(libraries: List<String>) {
         if (!::libraryCombo.isInitialized) return
         
-        val currentSelection = libraryCombo.selectedItem as? String
+        val effectiveLib = stateService.getEffectiveTokenizerLib()
         
         libraryCombo.removeAllItems()
         libraries.forEach { libraryCombo.addItem(it) }
         
-        // Restore selection
-        if (currentSelection != null && currentSelection in libraries) {
-            libraryCombo.selectedItem = currentSelection
+        if (effectiveLib in libraries) {
+            libraryCombo.selectedItem = effectiveLib
         } else if (libraries.isNotEmpty()) {
             libraryCombo.selectedIndex = 0
+            stateService.state.tokenizerLib = libraries[0]
         }
-        
-        LOG.debug("Updated libraries UI: ${libraries.size} items")
     }
     
     // =============== UI Creation ===============
@@ -336,9 +332,11 @@ class LgControlPanel(
             val flowPanel = LgWrappingPanel().apply {
                 // Template ComboBox
                 templateCombo = ComboBox<String>().apply {
-                    selectedItem = stateService.state.selectedTemplate
                     addActionListener {
-                        stateService.state.selectedTemplate = selectedItem as? String
+                        val selected = selectedItem as? String
+                        if (selected != null) {
+                            stateService.state.selectedTemplate = selected
+                        }
                     }
                 }
                 add(templateCombo)
@@ -374,11 +372,21 @@ class LgControlPanel(
     private fun Panel.createAdaptiveSettingsSection() {
         // Mode selector (single for now, динамический в Phase 13)
         row(LgBundle.message("control.mode.label")) {
-            modeCombo = comboBox(emptyList<String>())
-                .bindItem(
-                    getter = { stateService.state.selectedMode },
-                    setter = { stateService.state.selectedMode = it }
-                ).component
+            modeCombo = ComboBox<String>().apply {
+                // Will be populated by updateModeSetsUI when data loads
+                addActionListener {
+                    val selectedMode = selectedItem as? String
+                    if (selectedMode != null && currentModeSets.isNotEmpty()) {
+                        val firstModeSet = currentModeSets.first()
+                        stateService.state.modes[firstModeSet.id] = selectedMode
+                        
+                        // Update target branch visibility
+                        val isReview = selectedMode == "review"
+                        targetBranchRow.visible(isReview)
+                    }
+                }
+            }
+            cell(modeCombo)
         }
         
         // Target Branch selector
@@ -390,13 +398,10 @@ class LgControlPanel(
                 )
         }
         
-        // Update visibility based on mode
-        modeCombo.addActionListener {
-            val isReview = modeCombo.selectedItem == "review"
-            targetBranchRow.visible(isReview)
-        }
-        
-        targetBranchRow.visible(stateService.state.selectedMode == "review")
+        // Initial visibility state based on saved mode
+        val firstModeSetId = currentModeSets.firstOrNull()?.id
+        val savedMode = if (firstModeSetId != null) stateService.state.modes[firstModeSetId] else null
+        targetBranchRow.visible(savedMode == "review")
         
         // Configure Tags button (Phase 13)
         row {
@@ -413,9 +418,11 @@ class LgControlPanel(
             val flowPanel = LgWrappingPanel().apply {
                 // Section ComboBox
                 sectionCombo = ComboBox<String>().apply {
-                    selectedItem = stateService.state.selectedSection
                     addActionListener {
-                        stateService.state.selectedSection = selectedItem as? String
+                        val selected = selectedItem as? String
+                        if (selected != null) {
+                            stateService.state.selectedSection = selected
+                        }
                     }
                 }
                 add(createLabeledComponent(LgBundle.message("control.section.label"), sectionCombo))
@@ -451,14 +458,15 @@ class LgControlPanel(
             val flowPanel = LgWrappingPanel().apply {
                 // Library ComboBox
                 libraryCombo = ComboBox<String>().apply {
-                    selectedItem = stateService.state.tokenizerLib
                     addActionListener {
-                        val newLib = selectedItem as? String ?: return@addActionListener
-                        stateService.state.tokenizerLib = newLib
-                        
-                        // Reload encoders для новой библиотеки
-                        scope.launch {
-                            tokenizerService.getEncoders(newLib, project)
+                        val newLib = selectedItem as? String
+                        if (newLib != null) {
+                            stateService.state.tokenizerLib = newLib
+                            
+                            // Reload encoders для новой библиотеки
+                            scope.launch {
+                                tokenizerService.getEncoders(newLib, project)
+                            }
                         }
                     }
                 }
@@ -466,7 +474,9 @@ class LgControlPanel(
                 
                 // Encoder TextField (custom values supported)
                 encoderField = com.intellij.ui.components.JBTextField(20).apply {
-                    text = stateService.state.encoder ?: ""
+                    // Use effective encoder (with fallback to application defaults)
+                    text = stateService.getEffectiveEncoder()
+                    
                     document.addDocumentListener(object : javax.swing.event.DocumentListener {
                         override fun insertUpdate(e: javax.swing.event.DocumentEvent?) = update()
                         override fun removeUpdate(e: javax.swing.event.DocumentEvent?) = update()
@@ -480,13 +490,19 @@ class LgControlPanel(
                 
                 // Context Limit TextField
                 val ctxLimitField = com.intellij.ui.components.JBTextField(10).apply {
-                    text = stateService.state.ctxLimit.toString()
+                    // Use effective context limit (with fallback to application defaults)
+                    val effectiveLimit = stateService.getEffectiveContextLimit()
+                    text = effectiveLimit.toString()
+                    
                     document.addDocumentListener(object : javax.swing.event.DocumentListener {
                         override fun insertUpdate(e: javax.swing.event.DocumentEvent?) = update()
                         override fun removeUpdate(e: javax.swing.event.DocumentEvent?) = update()
                         override fun changedUpdate(e: javax.swing.event.DocumentEvent?) = update()
                         private fun update() {
-                            stateService.state.ctxLimit = text.toIntOrNull()?.coerceIn(1000, 2_000_000) ?: 128000
+                            val parsed = text.toIntOrNull()?.coerceIn(1000, 2_000_000)
+                            if (parsed != null) {
+                                stateService.state.ctxLimit = parsed
+                            }
                         }
                     })
                 }

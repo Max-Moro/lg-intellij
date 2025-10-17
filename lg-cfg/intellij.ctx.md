@@ -15,11 +15,9 @@ ${src}
 
 > Показаны только главы, нужные для разработки на текущей фазе.
 
-${md@self:intellij-platform-docs/04-services.md}
+${md@self:intellij-platform-docs/14-persistence.md}
 
-${md@self:intellij-platform-docs/12-background-tasks.md}
-
-${md@self:intellij-platform-docs/09-vfs.md}
+${md@self:intellij-platform-docs/07-kotlin-ui-dsl.md}
 
 ---
 

@@ -1,5 +1,6 @@
 package lg.intellij.toolWindow
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
@@ -11,8 +12,10 @@ import com.intellij.ui.content.ContentFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lg.intellij.LgBundle
+import lg.intellij.services.state.LgWorkspaceStateService
 import lg.intellij.ui.toolwindow.LgControlPanel
 import lg.intellij.ui.toolwindow.LgIncludedFilesPanel
+import java.beans.PropertyChangeListener
 import java.nio.file.Files
 import kotlin.io.path.Path
 
@@ -52,14 +55,19 @@ class LgToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val contentManager = toolWindow.contentManager
         val contentFactory = ContentFactory.getInstance()
+        val workspaceState = project.service<LgWorkspaceStateService>()
         
         // Create panels
         val controlPanel = LgControlPanel(project)
         val includedFilesPanel = LgIncludedFilesPanel(project, toolWindow)
         
+        // Restore saved splitter proportion (default 0.7 if not set)
+        val savedProportion = workspaceState.state.splitterProportion
+        val initialProportion = if (savedProportion > 0f) savedProportion else 0.7f
+        
         // Create vertical splitter
         // OnePixelSplitter(vertical = true) creates horizontal divider (splits vertically)
-        val splitter = OnePixelSplitter(true, 0.7f).apply {
+        val splitter = OnePixelSplitter(true, initialProportion).apply {
             firstComponent = controlPanel
             secondComponent = includedFilesPanel
             
@@ -67,9 +75,18 @@ class LgToolWindowFactory : ToolWindowFactory, DumbAware {
             setResizeEnabled(true)
             setShowDividerControls(true)
             
-            // TODO Phase 6: Load proportion from LgWorkspaceStateService
-            // TODO Phase 6: Save proportion changes to state
+            // Save proportion changes to workspace state
+            addPropertyChangeListener(
+                OnePixelSplitter.PROP_PROPORTION,
+                PropertyChangeListener { evt ->
+                    val newProportion = evt.newValue as? Float ?: return@PropertyChangeListener
+                    workspaceState.state.splitterProportion = newProportion
+                    LOG.debug("Splitter proportion saved: $newProportion")
+                }
+            )
         }
+        
+        LOG.debug("Splitter initialized with proportion: $initialProportion")
         
         // Create single content with splitter
         val content = contentFactory.createContent(

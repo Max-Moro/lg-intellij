@@ -4,11 +4,14 @@ import com.intellij.icons.AllIcons
 import com.intellij.ide.actions.ShowSettingsUtilImpl
 import com.intellij.ide.ui.UISettingsUtils
 import com.intellij.ide.ui.laf.darcula.ui.DarculaEditorTextFieldBorder
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.colors.EditorColorsScheme
 import com.intellij.openapi.editor.event.DocumentEvent
@@ -22,10 +25,16 @@ import com.intellij.ui.*
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.dsl.builder.*
-import com.intellij.ui.dsl.builder.Cell
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
 import lg.intellij.LgBundle
+import lg.intellij.actions.LgRefreshCatalogsAction
+import lg.intellij.cli.models.ModeSet
+import lg.intellij.cli.models.TagSet
+import lg.intellij.services.catalog.LgCatalogService
+import lg.intellij.services.catalog.TokenizerCatalogService
 import lg.intellij.services.state.LgPanelStateService
 import lg.intellij.ui.components.LgWrappingPanel
 import lg.intellij.utils.LgStubNotifications
@@ -35,44 +44,216 @@ import javax.swing.*
 /**
  * Control Panel for Listing Generator Tool Window.
  * 
- * Phase 4: Full UI implementation with Kotlin UI DSL.
- * All buttons are functional but show stub notifications.
- * Data in selectors is hardcoded (mock).
- * 
- * Layout structure:
- * - Group 1: AI Contexts (template selection, generation, task input)
- * - Group 2: Adaptive Settings (modes, tags, target branch)
- * - Group 3: Inspect (section selection, included files, stats)
- * - Group 4: Tokenization Settings (library, encoder, context limit)
- * - Group 5: Utilities (config management, diagnostics)
+ * Integrates:
+ * - LgCatalogService (sections/contexts/mode-sets/tag-sets)
+ * - TokenizerCatalogService (libraries/encoders)
+ * - Reactive updates через Flow collectors
+ * - Auto-reload через VFS listener
  */
 class LgControlPanel(
     private val project: Project
 ) : SimpleToolWindowPanel(
     true,   // vertical = true (toolbar at top)
     true    // borderless = true
-) {
+), Disposable {
     
     private val stateService = project.service<LgPanelStateService>()
+    private val catalogService = project.service<LgCatalogService>()
+    private val tokenizerService = TokenizerCatalogService.getInstance()
     
-    // Mock data for Phase 4
-    private val mockTemplates = listOf("default", "api-docs", "review")
-    private val mockSections = listOf("all", "core", "tests")
-    private val mockLibraries = listOf("tiktoken", "tokenizers", "sentencepiece")
-    private val mockModes = listOf("planning", "development", "review")
-    private val mockBranches = listOf("main", "develop", "feature/xyz")
+    // Scope для coroutines (отменяется при dispose)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     
-    // Cell references for conditional visibility
-    private lateinit var modeComboCell: Cell<ComboBox<String>>
+    // UI component references для dynamic updates
+    private lateinit var templateCombo: ComboBox<String>
+    private lateinit var sectionCombo: ComboBox<String>
+    private lateinit var libraryCombo: ComboBox<String>
+    private lateinit var encoderField: com.intellij.ui.components.JBTextField
+    private lateinit var modeCombo: ComboBox<String>
+    private lateinit var targetBranchRow: Row
+    
+    // Mode-sets data (для dynamic rendering)
+    private var currentModeSets: List<ModeSet> = emptyList()
+    private var currentTagSets: List<TagSet> = emptyList()
     
     init {
         setContent(createScrollableContent())
         toolbar = createToolbar()
+        
+        // Запустить загрузку данных
+        loadDataAsync()
+        
+        // Подписаться на updates
+        subscribeToDataUpdates()
     }
     
     /**
-     * Wraps the control panel in a scroll pane for proper vertical scrolling.
+     * Запускает асинхронную загрузку всех каталогов.
      */
+    private fun loadDataAsync() {
+        scope.launch {
+            try {
+                // Загрузить catalog data
+                catalogService.loadAll()
+                
+                // Загрузить tokenizer libraries
+                tokenizerService.loadLibraries(project)
+                
+                // Загрузить encoders для текущей библиотеки
+                val currentLib = stateService.state.tokenizerLib ?: "tiktoken"
+                tokenizerService.getEncoders(currentLib, project)
+                
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                LOG.error("Failed to load initial catalog data", e)
+            }
+        }
+    }
+    
+    /**
+     * Подписывается на Flow updates от catalog services.
+     */
+    private fun subscribeToDataUpdates() {
+        // Sections
+        scope.launch {
+            catalogService.sections.collectLatest { sections ->
+                withContext(Dispatchers.EDT) {
+                    updateSectionsUI(sections)
+                }
+            }
+        }
+        
+        // Contexts
+        scope.launch {
+            catalogService.contexts.collectLatest { contexts ->
+                withContext(Dispatchers.EDT) {
+                    updateContextsUI(contexts)
+                }
+            }
+        }
+        
+        // Mode-sets
+        scope.launch {
+            catalogService.modeSets.collectLatest { modeSets ->
+                withContext(Dispatchers.EDT) {
+                    updateModeSetsUI(modeSets)
+                }
+            }
+        }
+        
+        // Tag-sets
+        scope.launch {
+            catalogService.tagSets.collectLatest { tagSets ->
+                withContext(Dispatchers.EDT) {
+                    updateTagSetsUI(tagSets)
+                }
+            }
+        }
+        
+        // Tokenizer libraries
+        scope.launch {
+            tokenizerService.libraries.collectLatest { libraries ->
+                withContext(Dispatchers.EDT) {
+                    updateLibrariesUI(libraries)
+                }
+            }
+        }
+    }
+    
+    // =============== UI Updates ===============
+    
+    private fun updateSectionsUI(sections: List<String>) {
+        if (!::sectionCombo.isInitialized) return
+        
+        val currentSelection = sectionCombo.selectedItem as? String
+        
+        sectionCombo.removeAllItems()
+        sections.forEach { sectionCombo.addItem(it) }
+        
+        // Restore selection if still valid
+        if (currentSelection != null && currentSelection in sections) {
+            sectionCombo.selectedItem = currentSelection
+        } else if (sections.isNotEmpty()) {
+            sectionCombo.selectedIndex = 0
+        }
+        
+        LOG.debug("Updated sections UI: ${sections.size} items")
+    }
+    
+    private fun updateContextsUI(contexts: List<String>) {
+        if (!::templateCombo.isInitialized) return
+        
+        val currentSelection = templateCombo.selectedItem as? String
+        
+        templateCombo.removeAllItems()
+        contexts.forEach { templateCombo.addItem(it) }
+        
+        // Restore selection
+        if (currentSelection != null && currentSelection in contexts) {
+            templateCombo.selectedItem = currentSelection
+        } else if (contexts.isNotEmpty()) {
+            templateCombo.selectedIndex = 0
+        }
+        
+        LOG.debug("Updated contexts UI: ${contexts.size} items")
+    }
+    
+    private fun updateModeSetsUI(modeSets: lg.intellij.cli.models.ModeSetsListSchema?) {
+        if (modeSets == null) return
+        
+        currentModeSets = modeSets.modeSets
+        
+        // TODO Phase 13: Dynamic mode-sets rendering
+        // Пока обновляем только один режим (dev-stage)
+        if (currentModeSets.isNotEmpty() && ::modeCombo.isInitialized) {
+            val firstModeSet = currentModeSets.first()
+            val modes = firstModeSet.modes.map { it.id }
+            
+            val currentSelection = modeCombo.selectedItem as? String
+            
+            modeCombo.removeAllItems()
+            modes.forEach { modeCombo.addItem(it) }
+            
+            if (currentSelection != null && currentSelection in modes) {
+                modeCombo.selectedItem = currentSelection
+            } else if (modes.isNotEmpty()) {
+                modeCombo.selectedIndex = 0
+            }
+        }
+        
+        LOG.debug("Updated mode-sets UI: ${modeSets.modeSets.size} sets")
+    }
+    
+    private fun updateTagSetsUI(tagSets: lg.intellij.cli.models.TagSetsListSchema?) {
+        if (tagSets == null) return
+        
+        currentTagSets = tagSets.tagSets
+        
+        // TODO Phase 13: Tags configuration UI
+        LOG.debug("Updated tag-sets UI: ${tagSets.tagSets.size} sets")
+    }
+    
+    private fun updateLibrariesUI(libraries: List<String>) {
+        if (!::libraryCombo.isInitialized) return
+        
+        val currentSelection = libraryCombo.selectedItem as? String
+        
+        libraryCombo.removeAllItems()
+        libraries.forEach { libraryCombo.addItem(it) }
+        
+        // Restore selection
+        if (currentSelection != null && currentSelection in libraries) {
+            libraryCombo.selectedItem = currentSelection
+        } else if (libraries.isNotEmpty()) {
+            libraryCombo.selectedIndex = 0
+        }
+        
+        LOG.debug("Updated libraries UI: ${libraries.size} items")
+    }
+    
+    // =============== UI Creation ===============
+    
     private fun createScrollableContent(): JComponent {
         val scrollPane = JBScrollPane(createControlPanel()).apply {
             border = null
@@ -94,12 +275,6 @@ class LgControlPanel(
         }
     }
     
-    /**
-     * Creates the main control panel with all UI groups.
-     * 
-     * Uses standard IntelliJ Platform spacing with JBUI.Borders for proper padding.
-     * Groups use indent=false to align content with group titles.
-     */
     private fun createControlPanel(): JComponent {
         return panel {
             // Group 1: AI Contexts
@@ -123,35 +298,23 @@ class LgControlPanel(
             }
             
         }.apply {
-            // Add padding around the entire panel for better visual separation
             border = JBUI.Borders.empty(8, 12)
         }
     }
     
-    /**
-     * Group 1: AI Contexts
-     * Template selector, task input, generation buttons.
-     */
     private fun Panel.createAiContextsSection() {
-        // Task text input (multi-line, expandable)
+        // Task text input
         row {
             val editorField = createTaskTextField()
             
-            // Wrapper panel that will handle updateUI() to refresh color scheme and border on theme change
             val wrapperPanel = object : JPanel(BorderLayout()) {
                 override fun updateUI() {
                     super.updateUI()
-                    // Re-apply color scheme customization on theme change
                     val editor = editorField.editor
                     if (editor is EditorEx) {
                         editor.setBackgroundColor(null)
                         editor.colorsScheme = getEditorColorScheme(editor)
-                        
-                        // Re-create border to support theme change
-                        editorField.border = DarculaEditorTextFieldBorder(
-                            editorField,
-                            editor
-                        )
+                        editorField.border = DarculaEditorTextFieldBorder(editorField, editor)
                     }
                 }
             }.apply {
@@ -159,22 +322,20 @@ class LgControlPanel(
                 isOpaque = false
             }
             
-            // Manual binding
             editorField.addDocumentListener(object : DocumentListener {
                 override fun documentChanged(event: DocumentEvent) {
                     stateService.state.taskText = editorField.text
                 }
             })
             
-            cell(wrapperPanel)
-                .align(AlignX.FILL)
+            cell(wrapperPanel).align(AlignX.FILL)
         }
         
-        // Template selector + buttons (adaptive flow layout)
+        // Template selector + buttons
         row {
             val flowPanel = LgWrappingPanel().apply {
                 // Template ComboBox
-                val templateCombo = ComboBox(mockTemplates.toTypedArray()).apply {
+                templateCombo = ComboBox<String>().apply {
                     selectedItem = stateService.state.selectedTemplate
                     addActionListener {
                         stateService.state.selectedTemplate = selectedItem as? String
@@ -185,102 +346,73 @@ class LgControlPanel(
                 // Send to AI button
                 add(JButton(LgBundle.message("control.btn.send.ai"), AllIcons.Actions.Execute).apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(
-                            project,
-                            LgBundle.message("control.stub.send.ai"),
-                            10
-                        )
+                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.send.ai"), 10)
                     }
                 })
                 
                 // Generate Context button
                 add(JButton(LgBundle.message("control.btn.generate.context"), AllIcons.Actions.ShowCode).apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(
-                            project,
-                            LgBundle.message("control.stub.generate.context"),
-                            7
-                        )
+                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.generate.context"), 7)
                     }
                 })
                 
-                // Show Context Stats button (primary action)
+                // Show Context Stats button
                 add(object : JButton(LgBundle.message("control.btn.show.context.stats"), AllIcons.Actions.ListFiles) {
                     override fun isDefaultButton(): Boolean = true
                 }.apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(
-                            project,
-                            LgBundle.message("control.stub.show.context.stats"),
-                            9
-                        )
+                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.show.context.stats"), 9)
                     }
                 })
             }
             
-            cell(flowPanel)
-                .align(AlignX.FILL)
+            cell(flowPanel).align(AlignX.FILL)
         }.resizableRow()
     }
     
-    /**
-     * Group 2: Adaptive Settings
-     * Mode selector, tags button, target branch (conditional).
-     */
     private fun Panel.createAdaptiveSettingsSection() {
-        // Mode selector
+        // Mode selector (single for now, динамический в Phase 13)
         row(LgBundle.message("control.mode.label")) {
-            modeComboCell = comboBox(mockModes)
+            modeCombo = comboBox(emptyList<String>())
                 .bindItem(
                     getter = { stateService.state.selectedMode },
                     setter = { stateService.state.selectedMode = it }
-                )
+                ).component
         }
         
-        // Target Branch selector (visible only when mode == "review")
-        // Note: Simple implementation without ComponentPredicate for Phase 4
-        // Will be improved in later phases if needed
-        val targetBranchRow = row(LgBundle.message("control.target.branch.label")) {
-            comboBox(mockBranches)
+        // Target Branch selector
+        targetBranchRow = row(LgBundle.message("control.target.branch.label")) {
+            comboBox(emptyList<String>())
                 .bindItem(
                     getter = { stateService.state.targetBranch },
                     setter = { stateService.state.targetBranch = it }
                 )
         }
         
-        // Update visibility based on mode changes
-        modeComboCell.component.addActionListener {
-            val isReview = modeComboCell.component.selectedItem == "review"
+        // Update visibility based on mode
+        modeCombo.addActionListener {
+            val isReview = modeCombo.selectedItem == "review"
             targetBranchRow.visible(isReview)
         }
         
-        // Set initial visibility
         targetBranchRow.visible(stateService.state.selectedMode == "review")
         
-        // Configure Tags button
+        // Configure Tags button (Phase 13)
         row {
             cell(JButton(LgBundle.message("control.btn.configure.tags"), AllIcons.General.Filter).apply {
                 addActionListener {
-                    LgStubNotifications.showNotImplemented(
-                        project,
-                        LgBundle.message("control.stub.configure.tags"),
-                        13
-                    )
+                    LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.configure.tags"), 13)
                 }
             })
         }
     }
     
-    /**
-     * Group 3: Inspect
-     * Section selector, inspection actions.
-     */
     private fun Panel.createInspectSection() {
-        // Section selector + action buttons (adaptive flow layout)
         row {
             val flowPanel = LgWrappingPanel().apply {
                 // Section ComboBox
-                val sectionCombo = ComboBox(mockSections.toTypedArray()).apply {
+                sectionCombo = ComboBox<String>().apply {
                     selectedItem = stateService.state.selectedSection
                     addActionListener {
                         stateService.state.selectedSection = selectedItem as? String
@@ -291,61 +423,49 @@ class LgControlPanel(
                 // Show Included button
                 add(JButton(LgBundle.message("control.btn.show.included"), AllIcons.Actions.ShowAsTree).apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(
-                            project,
-                            LgBundle.message("control.stub.show.included"),
-                            11
-                        )
+                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.show.included"), 11)
                     }
                 })
                 
                 // Generate Listing button
                 add(JButton(LgBundle.message("control.btn.generate.listing"), AllIcons.Actions.ShowCode).apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(
-                            project,
-                            LgBundle.message("control.stub.generate.listing"),
-                            7
-                        )
+                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.generate.listing"), 7)
                     }
                 })
                 
                 // Show Stats button
                 add(JButton(LgBundle.message("control.btn.show.stats"), AllIcons.Actions.ListFiles).apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(
-                            project,
-                            LgBundle.message("control.stub.show.stats"),
-                            9
-                        )
+                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.show.stats"), 9)
                     }
                 })
             }
             
-            cell(flowPanel)
-                .align(AlignX.FILL)
+            cell(flowPanel).align(AlignX.FILL)
         }
     }
     
-    /**
-     * Group 4: Tokenization Settings
-     * Library, encoder, context limit configuration.
-     */
     private fun Panel.createTokenizationSection() {
-        // Library selector + Encoder input + Context limit (adaptive flow layout)
         row {
             val flowPanel = LgWrappingPanel().apply {
-                // Tokenizer Library ComboBox
-                val libraryCombo = ComboBox(mockLibraries.toTypedArray()).apply {
+                // Library ComboBox
+                libraryCombo = ComboBox<String>().apply {
                     selectedItem = stateService.state.tokenizerLib
                     addActionListener {
-                        stateService.state.tokenizerLib = selectedItem as? String
+                        val newLib = selectedItem as? String ?: return@addActionListener
+                        stateService.state.tokenizerLib = newLib
+                        
+                        // Reload encoders для новой библиотеки
+                        scope.launch {
+                            tokenizerService.getEncoders(newLib, project)
+                        }
                     }
                 }
                 add(createLabeledComponent(LgBundle.message("control.library.label"), libraryCombo))
                 
-                // Encoder TextField
-                val encoderField = com.intellij.ui.components.JBTextField(20).apply {
+                // Encoder TextField (custom values supported)
+                encoderField = com.intellij.ui.components.JBTextField(20).apply {
                     text = stateService.state.encoder ?: ""
                     document.addDocumentListener(object : javax.swing.event.DocumentListener {
                         override fun insertUpdate(e: javax.swing.event.DocumentEvent?) = update()
@@ -373,46 +493,25 @@ class LgControlPanel(
                 add(createLabeledComponent(LgBundle.message("control.ctx.limit.label"), ctxLimitField))
             }
             
-            cell(flowPanel)
-                .align(AlignX.FILL)
+            cell(flowPanel).align(AlignX.FILL)
         }
     }
     
-    
-    /**
-     * Creates the toolbar with all actions grouped and separated.
-     */
     private fun createToolbar(): JComponent {
         val actionGroup = DefaultActionGroup().apply {
-            // Группа 1: Refresh
-            add(object : AnAction(
-                LgBundle.message("control.btn.refresh"),
-                LgBundle.message("control.stub.refresh"),
-                AllIcons.Actions.Refresh
-            ) {
-                override fun actionPerformed(e: AnActionEvent) {
-                    LgStubNotifications.showNotImplemented(
-                        project,
-                        LgBundle.message("control.stub.refresh"),
-                        5
-                    )
-                }
-            })
+            // Refresh
+            add(LgRefreshCatalogsAction())
             
             addSeparator()
             
-            // Группа 2: Config Management
+            // Config Management
             add(object : AnAction(
                 LgBundle.message("control.btn.create.config"),
                 LgBundle.message("control.stub.create.config"),
                 AllIcons.Actions.AddDirectory
             ) {
                 override fun actionPerformed(e: AnActionEvent) {
-                    LgStubNotifications.showNotImplemented(
-                        project,
-                        LgBundle.message("control.stub.create.config"),
-                        15
-                    )
+                    LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.create.config"), 15)
                 }
             })
             
@@ -422,28 +521,20 @@ class LgControlPanel(
                 AllIcons.Ide.ConfigFile
             ) {
                 override fun actionPerformed(e: AnActionEvent) {
-                    LgStubNotifications.showNotImplemented(
-                        project,
-                        LgBundle.message("control.stub.open.config"),
-                        15
-                    )
+                    LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.open.config"), 15)
                 }
             })
             
             addSeparator()
             
-            // Группа 3: Diagnostics & Settings
+            // Diagnostics
             add(object : AnAction(
                 LgBundle.message("control.btn.doctor"),
                 LgBundle.message("control.stub.doctor"),
                 AllIcons.Actions.Checked
             ) {
                 override fun actionPerformed(e: AnActionEvent) {
-                    LgStubNotifications.showNotImplemented(
-                        project,
-                        LgBundle.message("control.stub.doctor"),
-                        14
-                    )
+                    LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.doctor"), 14)
                 }
             })
             
@@ -453,11 +544,7 @@ class LgControlPanel(
                 AllIcons.Actions.GC
             ) {
                 override fun actionPerformed(e: AnActionEvent) {
-                    LgStubNotifications.showNotImplemented(
-                        project,
-                        LgBundle.message("control.stub.reset.cache"),
-                        14
-                    )
+                    LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.reset.cache"), 14)
                 }
             })
             
@@ -470,10 +557,10 @@ class LgControlPanel(
                     openSettings()
                 }
             })
-            
+
             addSeparator()
-            
-            // Группа 4: View Mode Toggle (заглушка для Фазы 11)
+
+            // View Mode Toggle (заглушка для Фазы 11)
             add(object : AnAction(
                 LgBundle.message("control.btn.toggle.view"),
                 LgBundle.message("control.stub.toggle.view"),
@@ -489,22 +576,13 @@ class LgControlPanel(
             })
         }
         
-        val toolbar = ActionManager.getInstance()
-            .createActionToolbar("LgControlPanel", actionGroup, true)
-        
+        val toolbar = ActionManager.getInstance().createActionToolbar("LgControlPanel", actionGroup, true)
         toolbar.targetComponent = this
         return toolbar.component
     }
     
-    /**
-     * Opens the settings dialog.
-     */
     private fun openSettings() {
-        ShowSettingsUtilImpl.showSettingsDialog(
-            project,
-            "lg.intellij.settings",
-            null
-        )
+        ShowSettingsUtilImpl.showSettingsDialog(project, "lg.intellij.settings", null)
     }
     
     /**
@@ -518,16 +596,11 @@ class LgControlPanel(
         features.add(SoftWrapsEditorCustomization.ENABLED)
         features.add(AdditionalPageAtBottomEditorCustomization.DISABLED)
         
-        // Color scheme customization for proper background and theme switching
         features.add(EditorCustomization { editor ->
-            editor.setBackgroundColor(null) // use background from color scheme
+            editor.setBackgroundColor(null)
             editor.colorsScheme = getEditorColorScheme(editor)
-
-            // Add internal padding (contentInsets)
             editor.settings.additionalLinesCount = 0
             editor.settings.isAdditionalPageAtBottom = false
-
-            // Set content insets for internal padding
             editor.contentComponent.border = BorderFactory.createEmptyBorder(4, 6, 4, 6)
         })
         
@@ -539,12 +612,7 @@ class LgControlPanel(
         editorField.setShowPlaceholderWhenFocused(true)
         editorField.text = stateService.state.taskText ?: ""
         editorField.preferredSize = java.awt.Dimension(400, 60)
-        
-        // Add border with focus support and theme switching
-        editorField.border = DarculaEditorTextFieldBorder(
-            editorField,
-            editorField.editor as? EditorEx
-        )
+        editorField.border = DarculaEditorTextFieldBorder(editorField, editorField.editor as? EditorEx)
         
         return editorField
     }
@@ -563,10 +631,19 @@ class LgControlPanel(
             EditorColorsManager.getInstance().schemeForCurrentUITheme
         }
         
-        // Wrap in delegate to avoid editing global scheme
         val wrappedScheme = editor.createBoundColorSchemeDelegate(colorsScheme)
         wrappedScheme.editorFontSize = UISettingsUtils.getInstance().scaledEditorFontSize.toInt()
         
         return wrappedScheme
     }
+    
+    override fun dispose() {
+        scope.cancel()
+        LOG.debug("Control Panel disposed")
+    }
+    
+    companion object {
+        private val LOG = logger<LgControlPanel>()
+    }
 }
+

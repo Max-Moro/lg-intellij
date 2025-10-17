@@ -55,8 +55,13 @@
     <extensions defaultExtensionNs="com.intellij">
         <!-- Notification Groups -->
         <notificationGroup 
-            id="LG Stub Notifications"
+            id="LG Notifications"
             displayType="BALLOON"/>
+        
+        <!-- Important notifications (sticky, for errors) -->
+        <notificationGroup 
+            id="LG Important"
+            displayType="STICKY_BALLOON"/>
         
         <!-- Tool Window -->
         <toolWindow 
@@ -81,4 +86,11 @@
             topic="lg.intellij.listeners.LgSettingsChangeListener"
             class="lg.intellij.listeners.CliResolverCacheInvalidator"/>
     </applicationListeners>
+    
+    <projectListeners>
+        <!-- VFS changes listener for auto-reload lg-cfg/ -->
+        <listener 
+            topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"
+            class="lg.intellij.listeners.LgConfigFileListener"/>
+    </projectListeners>
 </idea-plugin>

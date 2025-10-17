@@ -25,7 +25,7 @@ object LgStubNotifications {
         phase: Int
     ) {
         NotificationGroupManager.getInstance()
-            .getNotificationGroup("LG Stub Notifications")
+            .getNotificationGroup("LG Notifications")
             .createNotification(
                 "Feature Not Implemented",
                 "$featureName will be available in Phase $phase",

@@ -152,7 +152,12 @@ class CliExecutor(private val project: Project) {
             
             output.exitCode != 0 -> {
                 LOG.warn("CLI failed with exit code ${output.exitCode}: $commandString")
-                LOG.debug("stderr: ${output.stderr}")
+                
+                // ВАЖНО: stderr содержит Python traceback - всегда включаем в результат
+                if (output.stderr.isNotEmpty()) {
+                    LOG.debug("Full stderr output:\n${output.stderr}")
+                }
+                
                 CliResult.Failure(
                     exitCode = output.exitCode,
                     stderr = output.stderr,

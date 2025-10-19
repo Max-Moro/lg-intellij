@@ -1,14 +1,12 @@
 package lg.intellij.ui.toolwindow
 
 import com.intellij.icons.AllIcons
+import com.intellij.ide.DataManager
 import com.intellij.ide.actions.ShowSettingsUtilImpl
 import com.intellij.ide.ui.UISettingsUtils
 import com.intellij.ide.ui.laf.darcula.ui.DarculaEditorTextFieldBorder
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
@@ -30,6 +28,8 @@ import com.intellij.util.ui.UIUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import lg.intellij.LgBundle
+import lg.intellij.actions.LgGenerateContextAction
+import lg.intellij.actions.LgGenerateListingAction
 import lg.intellij.actions.LgRefreshCatalogsAction
 import lg.intellij.cli.models.ModeSet
 import lg.intellij.cli.models.TagSet
@@ -351,7 +351,17 @@ class LgControlPanel(
                 // Generate Context button
                 add(JButton(LgBundle.message("control.btn.generate.context"), AllIcons.Actions.ShowCode).apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.generate.context"), 7)
+                        val action = LgGenerateContextAction()
+                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
+                        val event = AnActionEvent.createEvent(
+                            action,
+                            dataContext,
+                            null,
+                            ActionPlaces.TOOLWINDOW_CONTENT,
+                            ActionUiKind.NONE,
+                            null
+                        )
+                        action.actionPerformed(event)
                     }
                 })
                 
@@ -433,11 +443,21 @@ class LgControlPanel(
                         LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.show.included"), 11)
                     }
                 })
-                
+
                 // Generate Listing button
                 add(JButton(LgBundle.message("control.btn.generate.listing"), AllIcons.Actions.ShowCode).apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.generate.listing"), 7)
+                        val action = LgGenerateListingAction()
+                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
+                        val event = AnActionEvent.createEvent(
+                            action,
+                            dataContext,
+                            null,
+                            ActionPlaces.TOOLWINDOW_CONTENT,
+                            ActionUiKind.NONE,
+                            null
+                        )
+                        action.actionPerformed(event)
                     }
                 })
                 

@@ -28,8 +28,8 @@ import lg.intellij.services.catalog.TokenizerCatalogService
  * Shows progress notification and success/error feedback.
  */
 class LgRefreshCatalogsAction : AnAction(
-    "Refresh",
-    "Refresh catalog data from CLI",
+    LgBundle.message("action.refresh.text"),
+    LgBundle.message("action.refresh.description"),
     AllIcons.Actions.Refresh
 ) {
     

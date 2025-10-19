@@ -562,7 +562,6 @@
 ✅ Read-only mode: файл нельзя редактировать (LightVirtualFile)  
 ✅ Editable mode: temp файл на диске, можно редактировать  
 ✅ Переключение режима через Settings работает  
-✅ Несколько генераций → несколько табов в editor  
 
 ### Референсы из VS Code Extension
 - `src/views/VirtualDocProvider.ts` (полностью) → логика выбора режима, sanitization

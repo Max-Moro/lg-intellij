@@ -27,11 +27,7 @@
 
 ## 📋 [✅] Фаза 7: Generation Services Foundation
 
-## 📋 [] Фаза 8: Virtual File Integration (Editor Display)
-
-### Цель
-Заменить modal dialog на отображение результатов в **редакторе** с syntax highlighting через `LightVirtualFile` или temporary files (в зависимости от Settings).
-
+## 📋 [✅] Фаза 8: Virtual File Integration (Editor Display)
 
 ## 📋 [] Фаза 9: Statistics Dialog (базовая версия)
 

@@ -14,14 +14,14 @@ import lg.intellij.services.generation.GenerationException
 import lg.intellij.services.generation.GenerationTarget
 import lg.intellij.services.generation.LgGenerationService
 import lg.intellij.services.state.LgPanelStateService
-import lg.intellij.ui.dialogs.OutputPreviewDialog
+import lg.intellij.services.vfs.LgVirtualFileService
 import javax.swing.Icon
 
 /**
  * Universal action for generating content (listings or contexts).
  * 
- * Phase 7: Single action class with target type parameter (DRY principle).
- * Phase 8: TODO - Replace dialog with VirtualFile display in editor.
+ * Phase 7: Single action class with target type parameter.
+ * Phase 8: Displays results in editor via LgVirtualFileService (read-only or editable).
  */
 open class LgGenerateAction(
     text: String,
@@ -67,16 +67,22 @@ open class LgGenerateAction(
             override fun onSuccess() {
                 val result = output
                 if (result != null) {
-                    showOutputDialog(project, result, targetName)
+                    openInEditor(project, result, targetName)
                 }
             }
         }.queue()
     }
     
-    private fun showOutputDialog(project: Project, content: String, targetName: String) {
-        val title = LgBundle.message("dialog.output.${targetType.displayName}.title", targetName)
-        val dialog = OutputPreviewDialog(project, content, title)
-        dialog.show()
+    /**
+     * Opens generated content in editor via LgVirtualFileService.
+     */
+    private fun openInEditor(project: Project, content: String, targetName: String) {
+        val virtualFileService = project.service<LgVirtualFileService>()
+        
+        when (targetType) {
+            GenerationTarget.SECTION -> virtualFileService.openListing(content, targetName)
+            GenerationTarget.CONTEXT -> virtualFileService.openContext(content, targetName)
+        }
     }
     
     override fun update(e: AnActionEvent) {

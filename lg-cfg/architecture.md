@@ -62,6 +62,7 @@ lg-intellij/
 │   │   │   │   ├── catalog/          # Каталог sections/contexts
 │   │   │   │   ├── generation/       # Генерация контента
 │   │   │   │   ├── state/            # Управление состоянием
+│   │   │   │   ├── vfs/              # Virtual File System интеграция
 │   │   │   │   └── ai/               # AI интеграция
 │   │   │   ├── ui/                   # UI компоненты
 │   │   │   │   ├── toolwindow/       # Tool Window панели
@@ -69,7 +70,6 @@ lg-intellij/
 │   │   │   │   ├── components/       # Переиспользуемые компоненты
 │   │   │   │   └── renderers/        # Tree/List renderers
 │   │   │   ├── settings/             # Настройки плагина
-│   │   │   ├── vfs/                  # Virtual File System интеграция
 │   │   │   ├── git/                  # Git интеграция
 │   │   │   ├── listeners/            # Event listeners
 │   │   │   ├── models/               # Data models
@@ -201,7 +201,7 @@ lg-intellij/
 
 ##### `services/ai/AiIntegrationService` (Application-level)
 - Центральный сервис для AI провайдеров
-- Registry паттерн для провайдеров (clipboard, copilot, cursor, openai.api и др.)
+- Registry паттерн для провайдеров (clipboard, местные копайлоты — JetBrains AI Assistant + Junie, openai.api и др.)
 - Детекция доступных провайдеров при старте
 - Единая точка отправки контента в AI
 - Методы: `detectProviders()`, `sendTo(providerId, content)`, `getAvailableProviders()`

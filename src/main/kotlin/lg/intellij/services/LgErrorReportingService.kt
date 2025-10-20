@@ -10,7 +10,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
-import lg.intellij.cli.models.CliResult
+import lg.intellij.models.CliResult
 import java.awt.datatransfer.StringSelection
 
 /**

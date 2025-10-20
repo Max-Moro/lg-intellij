@@ -3,12 +3,9 @@
 // val json              = Json { allowStructuredMapKeys = true }
 // val tagSetsListSchema = json.parse(TagSetsListSchema.serializer(), jsonString)
 
-package lg.intellij.cli.models
+package lg.intellij.models
 
 import kotlinx.serialization.*
-import kotlinx.serialization.json.*
-import kotlinx.serialization.descriptors.*
-import kotlinx.serialization.encoding.*
 
 /**
  * Response schema for 'lg list tag-sets' command

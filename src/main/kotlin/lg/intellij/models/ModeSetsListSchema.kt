@@ -3,12 +3,10 @@
 // val json               = Json { allowStructuredMapKeys = true }
 // val modeSetsListSchema = json.parse(ModeSetsListSchema.serializer(), jsonString)
 
-package lg.intellij.cli.models
+package lg.intellij.models
 
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
-import kotlinx.serialization.descriptors.*
-import kotlinx.serialization.encoding.*
 
 /**
  * Response schema for 'lg list mode-sets' command

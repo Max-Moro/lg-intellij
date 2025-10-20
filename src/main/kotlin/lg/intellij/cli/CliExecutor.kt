@@ -9,7 +9,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lg.intellij.cli.models.CliResult
+import lg.intellij.models.CliResult
 import java.nio.charset.StandardCharsets
 
 /**

@@ -31,8 +31,10 @@ import lg.intellij.LgBundle
 import lg.intellij.actions.LgGenerateContextAction
 import lg.intellij.actions.LgGenerateListingAction
 import lg.intellij.actions.LgRefreshCatalogsAction
-import lg.intellij.cli.models.ModeSet
-import lg.intellij.cli.models.TagSet
+import lg.intellij.models.ModeSet
+import lg.intellij.models.ModeSetsListSchema
+import lg.intellij.models.TagSet
+import lg.intellij.models.TagSetsListSchema
 import lg.intellij.services.catalog.LgCatalogService
 import lg.intellij.services.catalog.TokenizerCatalogService
 import lg.intellij.services.state.LgPanelStateService
@@ -195,7 +197,7 @@ class LgControlPanel(
         }
     }
     
-    private fun updateModeSetsUI(modeSets: lg.intellij.cli.models.ModeSetsListSchema?) {
+    private fun updateModeSetsUI(modeSets: ModeSetsListSchema?) {
         if (modeSets == null) return
         
         currentModeSets = modeSets.modeSets
@@ -223,7 +225,7 @@ class LgControlPanel(
         LOG.debug("Updated mode-sets UI: ${modeSets.modeSets.size} sets")
     }
     
-    private fun updateTagSetsUI(tagSets: lg.intellij.cli.models.TagSetsListSchema?) {
+    private fun updateTagSetsUI(tagSets: TagSetsListSchema?) {
         if (tagSets == null) return
         
         currentTagSets = tagSets.tagSets

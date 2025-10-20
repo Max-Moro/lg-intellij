@@ -12,8 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import lg.intellij.cli.CliExecutor
-import lg.intellij.cli.models.EncodersListSchema
-import lg.intellij.cli.models.TokenizerLibsListSchema
+import lg.intellij.models.EncodersListSchema
+import lg.intellij.models.TokenizerLibsListSchema
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.TimeSource

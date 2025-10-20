@@ -1,4 +1,4 @@
-package lg.intellij.cli.models
+package lg.intellij.models
 
 import kotlinx.serialization.*
 

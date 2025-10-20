@@ -1,0 +1,14 @@
+tag-sets:
+  intellij-plugin:
+    title: "Listing Generator IntelliJ Plugin"
+    tags:
+      core:
+        title: "Ядро"
+      control:
+        title: "Контрольная панель"
+      vfs:
+        title: "Virtual File Integration"
+      catalog:
+        title: "Catalog Services"
+      cli:
+        title: "CLI executable"

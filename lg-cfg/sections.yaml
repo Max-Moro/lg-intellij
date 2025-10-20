@@ -6,3 +6,41 @@ src:
       - "/build.gradle.kts"
       - "/settings.gradle.kts"
       - "/src/main/"
+    children:
+      src:
+        mode: block
+        children:
+          main:
+            mode: block
+            children:
+              kotlin:
+                mode: block
+                children:
+                  lg:
+                    mode: block
+                    children:
+                      intellij:
+                        mode: block
+                        when:
+                        - condition: "NOT TAGSET:intellij-plugin:control"
+                          block:
+                            - "/ui/toolwindow/LgControlPanel.kt"
+                            - "/ui/components/LgWrappingPanel.kt"
+                        - condition: "NOT TAGSET:intellij-plugin:vfs"
+                          block:
+                            - "/services/vfs/LgVirtualFileService.kt"
+                            - "/actions/LgGenerateAction.kt"
+                        - condition: "NOT TAGSET:intellij-plugin:catalog"
+                          block:
+                            - "/actions/LgRefreshCatalogsAction.kt"
+                            - "/cli/models/ContextsListSchema.kt"
+                            - "/cli/models/EncodersListSchema.kt"
+                            - "/cli/models/SectionsListSchema.kt"
+                            - "/cli/models/TokenizerLibsListSchema.kt"
+                            - "/listeners/LgConfigFileListener.kt"
+                            - "/services/catalog/LgCatalogService.kt"
+                            - "/services/catalog/TokenizerCatalogService.kt"
+                        - condition: "NOT TAGSET:intellij-plugin:cli"
+                          block:
+                            - "/cli/CliResolver.kt"
+                            - "/cli/CliException.kt"

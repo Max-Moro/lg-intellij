@@ -194,7 +194,7 @@ lg-intellij/
 
 ##### `services/generation/LgStatsCollector` (Project-level)
 - Получение статистики через `lg report`
-- Парсинг RunResult JSON
+- Парсинг ReportSchema JSON
 - Предоставление typed моделей для UI
 
 #### AI Integration
@@ -251,7 +251,7 @@ lg-intellij/
 
 ##### `ui/dialogs/LgStatsDialog`
 - Наследуется от `DialogWrapper`
-- Отображает детальную статистику по RunResult
+- Отображает детальную статистику по ReportSchema
 - Содержит: summary cards (files count, tokens, size), grouped table с файлами (с фильтрацией и сортировкой), adapter metrics (collapsible sections)
 - Toolbar: Refresh, Send to AI, Generate
 - Copy to clipboard action
@@ -748,7 +748,7 @@ Services возвращают `CliResult<T>`, UI pattern-matching для обр�
 
 Kotlin data classes для typed парсинга JSON ответов CLI:
 
-#### `models/RunResult`
+#### `models/ReportSchema`
 - Маппинг JSON schema из CLI
 - Properties: protocol, scope, target, tokenizerLib, encoder, ctxLimit, total, files, context
 - Nested data classes: `TotalsData`, `FileRow`, `ContextBlock`

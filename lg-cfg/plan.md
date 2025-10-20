@@ -583,14 +583,14 @@
 1. **`services/generation/LgStatsService` (Project-level):**
    - Метод:
      ```kotlin
-     suspend fun getStats(target: String): RunResult
+     suspend fun getStats(target: String): ReportSchema
      ```
    - Вызов `lg report ctx:... / sec:...` через `CliExecutor`
-   - Парсинг JSON в typed `RunResult` data class
+   - Парсинг JSON в typed `ReportSchema` data class
 
-2. **`models/RunResult` и nested classes:**
+2. **`models/ReportSchema` и nested classes:**
    - По JSON schema из CLI
-   - `RunResult`, `TotalsData`, `FileRow`, `ContextBlock`
+   - `ReportSchema`, `TotalsData`, `FileRow`, `ContextBlock`
 
 3. **`ui/dialogs/LgStatsDialog`:**
    - Наследуется от `DialogWrapper`
@@ -758,7 +758,7 @@
 
 5. **`actions/LgShowIncludedFilesAction` (реализация):**
    - Вызов `lg report sec:...` для получения списка файлов
-   - Парсинг `files[]` массива из `RunResult`
+   - Парсинг `files[]` массива из `ReportSchema`
    - Обновление `LgIncludedFilesPanel.setPaths()`
    - Auto-switch на вкладку "Included Files"
 
@@ -826,7 +826,7 @@
 
 3. **Интеграция в `LgStatsDialog`:**
    - Заменить простой `JBTable` на `LgGroupedTable`
-   - Передать columns config и data из `RunResult.files`
+   - Передать columns config и data из `ReportSchema.files`
    - Удалить TODO комментарий
 
 ### Критерии готовности

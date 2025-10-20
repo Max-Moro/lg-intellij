@@ -3,34 +3,22 @@ package lg.intellij.ui.toolwindow
 import com.intellij.icons.AllIcons
 import com.intellij.ide.DataManager
 import com.intellij.ide.actions.ShowSettingsUtilImpl
-import com.intellij.ide.ui.UISettingsUtils
-import com.intellij.ide.ui.laf.darcula.ui.DarculaEditorTextFieldBorder
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.editor.colors.EditorColorsManager
-import com.intellij.openapi.editor.colors.EditorColorsScheme
-import com.intellij.openapi.editor.event.DocumentEvent
-import com.intellij.openapi.editor.event.DocumentListener
-import com.intellij.openapi.editor.ex.EditorEx
-import com.intellij.openapi.fileTypes.PlainTextLanguage
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import com.intellij.ui.*
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.dsl.builder.*
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.UIUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import lg.intellij.LgBundle
-import lg.intellij.actions.LgGenerateContextAction
-import lg.intellij.actions.LgGenerateListingAction
-import lg.intellij.actions.LgRefreshCatalogsAction
+import lg.intellij.actions.*
 import lg.intellij.models.ModeSet
 import lg.intellij.models.ModeSetsListSchema
 import lg.intellij.models.TagSet
@@ -38,10 +26,15 @@ import lg.intellij.models.TagSetsListSchema
 import lg.intellij.services.catalog.LgCatalogService
 import lg.intellij.services.catalog.TokenizerCatalogService
 import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.ui.components.LgTaskTextField
+import lg.intellij.ui.components.LgTaskTextField.addChangeListener
 import lg.intellij.ui.components.LgWrappingPanel
 import lg.intellij.utils.LgStubNotifications
 import java.awt.BorderLayout
-import javax.swing.*
+import javax.swing.JButton
+import javax.swing.JComponent
+import javax.swing.JPanel
+import javax.swing.ScrollPaneConstants
 
 /**
  * Control Panel for Listing Generator Tool Window.
@@ -67,6 +60,7 @@ class LgControlPanel(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     
     // UI component references для dynamic updates
+    private lateinit var taskTextField: LgTaskTextField.TaskFieldWrapper
     private lateinit var templateCombo: ComboBox<String>
     private lateinit var sectionCombo: ComboBox<String>
     private lateinit var libraryCombo: ComboBox<String>
@@ -161,6 +155,15 @@ class LgControlPanel(
                 }
             }
         }
+        
+        // Task text (from Stats Dialog or other sources)
+        scope.launch {
+            stateService.taskTextFlow.collectLatest { newText ->
+                withContext(Dispatchers.EDT) {
+                    updateTaskTextUI(newText)
+                }
+            }
+        }
     }
     
     // =============== UI Updates ===============
@@ -250,6 +253,16 @@ class LgControlPanel(
         }
     }
     
+    private fun updateTaskTextUI(newText: String) {
+        if (!::taskTextField.isInitialized) return
+        
+        // Update UI only if text differs (avoid loops)
+        val currentText = taskTextField.editorField.text
+        if (currentText != newText) {
+            taskTextField.editorField.text = newText
+        }
+    }
+    
     // =============== UI Creation ===============
     
     private fun createScrollableContent(): JComponent {
@@ -303,30 +316,17 @@ class LgControlPanel(
     private fun Panel.createAiContextsSection() {
         // Task text input
         row {
-            val editorField = createTaskTextField()
+            taskTextField = LgTaskTextField.create(
+                project = project,
+                initialText = stateService.state.taskText ?: "",
+                placeholder = LgBundle.message("control.task.placeholder")
+            )
             
-            val wrapperPanel = object : JPanel(BorderLayout()) {
-                override fun updateUI() {
-                    super.updateUI()
-                    val editor = editorField.editor
-                    if (editor is EditorEx) {
-                        editor.setBackgroundColor(null)
-                        editor.colorsScheme = getEditorColorScheme(editor)
-                        editorField.border = DarculaEditorTextFieldBorder(editorField, editor)
-                    }
-                }
-            }.apply {
-                add(editorField, BorderLayout.CENTER)
-                isOpaque = false
+            taskTextField.editorField.addChangeListener { newText ->
+                stateService.updateTaskText(newText)
             }
             
-            editorField.addDocumentListener(object : DocumentListener {
-                override fun documentChanged(event: DocumentEvent) {
-                    stateService.state.taskText = editorField.text
-                }
-            })
-            
-            cell(wrapperPanel).align(AlignX.FILL)
+            cell(taskTextField).align(AlignX.FILL)
         }
         
         // Template selector + buttons
@@ -372,7 +372,17 @@ class LgControlPanel(
                     override fun isDefaultButton(): Boolean = true
                 }.apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.show.context.stats"), 9)
+                        val action = LgShowContextStatsAction()
+                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
+                        val event = AnActionEvent.createEvent(
+                            action,
+                            dataContext,
+                            null,
+                            ActionPlaces.TOOLWINDOW_CONTENT,
+                            ActionUiKind.NONE,
+                            null
+                        )
+                        action.actionPerformed(event)
                     }
                 })
             }
@@ -466,7 +476,17 @@ class LgControlPanel(
                 // Show Stats button
                 add(JButton(LgBundle.message("control.btn.show.stats"), AllIcons.Actions.ListFiles).apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.show.stats"), 9)
+                        val action = LgShowSectionStatsAction()
+                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
+                        val event = AnActionEvent.createEvent(
+                            action,
+                            dataContext,
+                            null,
+                            ActionPlaces.TOOLWINDOW_CONTENT,
+                            ActionUiKind.NONE,
+                            null
+                        )
+                        action.actionPerformed(event)
                     }
                 })
             }
@@ -622,59 +642,7 @@ class LgControlPanel(
     private fun openSettings() {
         ShowSettingsUtilImpl.showSettingsDialog(project, "lg.intellij.settings", null)
     }
-    
-    /**
-     * Creates multi-line EditorTextField for task input.
-     * Uses EditorTextFieldProvider with customizations for proper theming and borders.
-     * Supports theme switching and focus indication.
-     */
-    private fun createTaskTextField(): EditorTextField {
-        val features = mutableSetOf<EditorCustomization>()
-        
-        features.add(SoftWrapsEditorCustomization.ENABLED)
-        features.add(AdditionalPageAtBottomEditorCustomization.DISABLED)
-        
-        features.add(EditorCustomization { editor ->
-            editor.setBackgroundColor(null)
-            editor.colorsScheme = getEditorColorScheme(editor)
-            editor.settings.additionalLinesCount = 0
-            editor.settings.isAdditionalPageAtBottom = false
-            editor.contentComponent.border = BorderFactory.createEmptyBorder(4, 6, 4, 6)
-        })
-        
-        val editorField = EditorTextFieldProvider.getInstance()
-            .getEditorField(PlainTextLanguage.INSTANCE, project, features)
-        
-        editorField.setFontInheritedFromLAF(false)
-        editorField.setPlaceholder(LgBundle.message("control.task.placeholder"))
-        editorField.setShowPlaceholderWhenFocused(true)
-        editorField.text = stateService.state.taskText ?: ""
-        editorField.preferredSize = java.awt.Dimension(400, 60)
-        editorField.border = DarculaEditorTextFieldBorder(editorField, editorField.editor as? EditorEx)
-        
-        return editorField
-    }
-    
-    /**
-     * Gets proper color scheme for editor based on current UI theme.
-     * Ensures editor colors match the current LaF (Light/Dark theme).
-     */
-    private fun getEditorColorScheme(editor: EditorEx): EditorColorsScheme {
-        val isLaFDark = ColorUtil.isDark(UIUtil.getPanelBackground())
-        val isEditorDark = EditorColorsManager.getInstance().isDarkEditor
-        
-        val colorsScheme = if (isLaFDark == isEditorDark) {
-            EditorColorsManager.getInstance().globalScheme
-        } else {
-            EditorColorsManager.getInstance().schemeForCurrentUITheme
-        }
-        
-        val wrappedScheme = editor.createBoundColorSchemeDelegate(colorsScheme)
-        wrappedScheme.editorFontSize = UISettingsUtils.getInstance().scaledEditorFontSize.toInt()
-        
-        return wrappedScheme
-    }
-    
+
     override fun dispose() {
         scope.cancel()
         LOG.debug("Control Panel disposed")

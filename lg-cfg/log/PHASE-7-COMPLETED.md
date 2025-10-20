@@ -274,7 +274,7 @@ addActionListener {
 ### Phase 9: Statistics Dialog
 - [ ] `LgStatsCollector` service
 - [ ] `lg report` command execution
-- [ ] Parse `RunResult` JSON
+- [ ] Parse `ReportSchema` JSON
 - [ ] `LgStatsDialog` с таблицей файлов
 - [ ] Grouped table (Phase 12)
 

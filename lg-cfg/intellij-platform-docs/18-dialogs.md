@@ -841,7 +841,7 @@ class SelectTemplateDialog(
 ```kotlin
 class StatsDialog(
     private val project: Project,
-    private val stats: RunResult
+    private val stats: ReportSchema
 ) : DialogWrapper(project) {
     
     init {

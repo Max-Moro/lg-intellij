@@ -2,11 +2,15 @@ package lg.intellij.services.state
 
 import com.intellij.openapi.components.*
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Project-level service for storing Control Panel UI state.
  * 
  * Phase 6: Full implementation with collections (modes/tags) and effective values.
+ * Phase 9: Added reactive taskText for Stats Dialog sync.
  * 
  * Empty string fields ("") mean "use application defaults".
  * Effective values methods provide fallback to LgSettingsService defaults.
@@ -21,6 +25,22 @@ import com.intellij.openapi.project.Project
     category = SettingsCategory.TOOLS
 )
 class LgPanelStateService(private val project: Project) : SimplePersistentStateComponent<LgPanelStateService.State>(State()) {
+    
+    private val _taskTextFlow = MutableStateFlow(state.taskText ?: "")
+    
+    /**
+     * Reactive flow for task text changes.
+     * UI components can subscribe to get notified when task text changes.
+     */
+    val taskTextFlow: StateFlow<String> = _taskTextFlow.asStateFlow()
+    
+    /**
+     * Updates task text and notifies subscribers.
+     */
+    fun updateTaskText(newText: String) {
+        state.taskText = newText
+        _taskTextFlow.value = newText
+    }
     
     /**
      * Persistent state class.

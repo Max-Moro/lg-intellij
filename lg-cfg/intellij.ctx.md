@@ -19,8 +19,6 @@ ${md@self:intellij-platform-docs/05-ui-components.md}
 
 ${md@self:intellij-platform-docs/07-kotlin-ui-dsl.md}
 
-${md@self:intellij-platform-docs/18-dialogs.md}
-
 ---
 
 ${md@self:architecture}

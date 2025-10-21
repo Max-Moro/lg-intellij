@@ -29,26 +29,23 @@ import lg.intellij.models.ReportSchema
 import lg.intellij.models.Scope
 import lg.intellij.services.generation.LgStatsService
 import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.ui.components.LgGroupedTable
 import lg.intellij.ui.components.LgTaskTextField
 import lg.intellij.ui.components.LgTaskTextField.addChangeListener
 import lg.intellij.utils.LgFormatUtils
+import lg.intellij.utils.LgStubNotifications
 import java.awt.Font
 import java.awt.datatransfer.StringSelection
 import java.awt.event.ActionEvent
 import javax.swing.Action
 import javax.swing.JComponent
-import javax.swing.RowSorter
-import javax.swing.SortOrder
-import javax.swing.event.DocumentEvent
-import javax.swing.event.DocumentListener
 import javax.swing.table.DefaultTableModel
-import javax.swing.table.TableRowSorter
 
 /**
  * Dialog for displaying detailed statistics for sections or contexts.
  * 
  * Phase 9: Basic version with native JBTable (no grouping).
- * Phase 12: Will be enhanced with LgGroupedTable component.
+ * Phase 12: Enhanced with LgGroupedTable component.
  */
 class LgStatsDialog(
     private val project: Project,
@@ -64,14 +61,9 @@ class LgStatsDialog(
     
     // UI components
     private lateinit var summaryPanel: javax.swing.JPanel
-    private lateinit var filesTable: JBTable
-    private lateinit var filterField: com.intellij.ui.components.JBTextField
+    private lateinit var filesTable: LgGroupedTable
     private lateinit var adapterMetricsPanel: javax.swing.JPanel
     private lateinit var rawJsonArea: JBTextArea
-    
-    // Table model
-    private var tableModel: DefaultTableModel? = null
-    private var allRows: List<Array<Any>> = emptyList()
     
     // Actions (must be declared before init block)
     private val refreshAction = object : DialogWrapperAction("Refresh") {
@@ -91,7 +83,7 @@ class LgStatsDialog(
         }
         
         override fun doAction(e: ActionEvent) {
-            lg.intellij.utils.LgStubNotifications.showNotImplemented(
+            LgStubNotifications.showNotImplemented(
                 project,
                 "Send stats to AI",
                 10
@@ -242,24 +234,115 @@ class LgStatsDialog(
     
     private fun Panel.createFilesTableSection() {
         row {
-            label("Filter:")
-            filterField = com.intellij.ui.components.JBTextField(20).apply {
-                document.addDocumentListener(object : DocumentListener {
-                    override fun insertUpdate(e: DocumentEvent) = applyFilter()
-                    override fun removeUpdate(e: DocumentEvent) = applyFilter()
-                    override fun changedUpdate(e: DocumentEvent) = applyFilter()
-                })
-            }
-            cell(filterField)
-        }
-        
-        row {
-            filesTable = JBTable().apply {
-                setShowGrid(true)
-                autoResizeMode = JBTable.AUTO_RESIZE_ALL_COLUMNS
+            // Build columns config from stats
+            val hideSaved = (currentStats.total.savedTokens) == 0L
+            
+            val columns = buildList {
+                add(
+                    LgGroupedTable.ColumnConfig(
+                        key = "path",
+                        label = "Path",
+                        format = LgGroupedTable.ColumnFormat.TEXT,
+                        align = LgGroupedTable.Align.LEFT,
+                        sortable = true
+                    )
+                )
+                add(
+                    LgGroupedTable.ColumnConfig(
+                        key = "sizeBytes",
+                        label = "Size",
+                        format = LgGroupedTable.ColumnFormat.SIZE,
+                        align = LgGroupedTable.Align.RIGHT,
+                        sortable = true,
+                        aggregate = LgGroupedTable.Aggregate.SUM
+                    )
+                )
+                add(
+                    LgGroupedTable.ColumnConfig(
+                        key = "tokensRaw",
+                        label = "Raw",
+                        format = LgGroupedTable.ColumnFormat.INT,
+                        align = LgGroupedTable.Align.RIGHT,
+                        sortable = true,
+                        aggregate = LgGroupedTable.Aggregate.SUM
+                    )
+                )
+                add(
+                    LgGroupedTable.ColumnConfig(
+                        key = "tokensProcessed",
+                        label = "Processed",
+                        format = LgGroupedTable.ColumnFormat.INT,
+                        align = LgGroupedTable.Align.RIGHT,
+                        sortable = true,
+                        aggregate = LgGroupedTable.Aggregate.SUM
+                    )
+                )
+                
+                if (!hideSaved) {
+                    add(
+                        LgGroupedTable.ColumnConfig(
+                            key = "savedTokens",
+                            label = "Saved",
+                            format = LgGroupedTable.ColumnFormat.INT,
+                            align = LgGroupedTable.Align.RIGHT,
+                            sortable = true,
+                            aggregate = LgGroupedTable.Aggregate.SUM
+                        )
+                    )
+                    add(
+                        LgGroupedTable.ColumnConfig(
+                            key = "savedPct",
+                            label = "Saved%",
+                            format = LgGroupedTable.ColumnFormat.PERCENT,
+                            align = LgGroupedTable.Align.RIGHT,
+                            sortable = true,
+                            aggregateFormula = { aggregated ->
+                                val saved = aggregated["savedTokens"] as? Number
+                                val raw = aggregated["tokensRaw"] as? Number
+                                
+                                if (saved != null && raw != null && raw.toDouble() > 0) {
+                                    (saved.toDouble() / raw.toDouble()) * 100.0
+                                } else {
+                                    0.0
+                                }
+                            }
+                        )
+                    )
+                }
+                
+                add(
+                    LgGroupedTable.ColumnConfig(
+                        key = "promptShare",
+                        label = "Prompt%",
+                        format = LgGroupedTable.ColumnFormat.PERCENT,
+                        align = LgGroupedTable.Align.RIGHT,
+                        sortable = true,
+                        aggregate = LgGroupedTable.Aggregate.SUM
+                    )
+                )
+                add(
+                    LgGroupedTable.ColumnConfig(
+                        key = "ctxShare",
+                        label = "Ctx%",
+                        format = LgGroupedTable.ColumnFormat.PERCENT,
+                        align = LgGroupedTable.Align.RIGHT,
+                        sortable = true,
+                        aggregate = LgGroupedTable.Aggregate.SUM
+                    )
+                )
             }
             
-            scrollCell(filesTable)
+            // Create grouped table
+            filesTable = LgGroupedTable(
+                columns = columns,
+                onRowClick = { path ->
+                    CopyPasteManager.getInstance().setContents(
+                        StringSelection(path)
+                    )
+                }
+            )
+            
+            cell(filesTable)
                 .align(Align.FILL)
         }.resizableRow()
     }
@@ -449,71 +532,25 @@ class LgStatsDialog(
     }
     
     private fun updateFilesTable(stats: ReportSchema) {
-        val hideSaved = (stats.total.savedTokens) == 0L
+        if (!::filesTable.isInitialized) return
         
-        val columns = buildList {
-            add("Path")
-            add("Size")
-            add("Raw")
-            add("Processed")
-            if (!hideSaved) {
-                add("Saved")
-                add("Saved%")
-            }
-            add("Prompt%")
-            add("Ctx%")
-        }.toTypedArray()
-        
-        allRows = stats.files.map { file ->
-            buildList<Any> {
-                add(file.path)
-                add(LgFormatUtils.formatSize(file.sizeBytes))
-                add(LgFormatUtils.formatInt(file.tokensRaw))
-                add(LgFormatUtils.formatInt(file.tokensProcessed))
-                if (!hideSaved) {
-                    add(LgFormatUtils.formatInt(file.savedTokens))
-                    add(LgFormatUtils.formatPercent(file.savedPct))
-                }
-                add(LgFormatUtils.formatPercent(file.promptShare))
-                add(LgFormatUtils.formatPercent(file.ctxShare))
-            }.toTypedArray()
+        // Convert stats files to RowData
+        val data = stats.files.map { file ->
+            LgGroupedTable.RowData(
+                values = mapOf(
+                    "path" to file.path,
+                    "sizeBytes" to file.sizeBytes,
+                    "tokensRaw" to file.tokensRaw,
+                    "tokensProcessed" to file.tokensProcessed,
+                    "savedTokens" to file.savedTokens,
+                    "savedPct" to file.savedPct,
+                    "promptShare" to file.promptShare,
+                    "ctxShare" to file.ctxShare
+                )
+            )
         }
         
-        tableModel = object : DefaultTableModel(allRows.toTypedArray(), columns) {
-            override fun isCellEditable(row: Int, column: Int) = false
-        }
-        
-        filesTable.model = tableModel
-        
-        // Setup sorting
-        val sorter = TableRowSorter(tableModel)
-        filesTable.rowSorter = sorter
-        
-        // Default sort by Ctx% descending
-        val ctxColumn = columns.indexOf("Ctx%")
-        if (ctxColumn >= 0) {
-            sorter.setSortKeys(listOf(RowSorter.SortKey(ctxColumn, SortOrder.DESCENDING)))
-        }
-        
-        applyFilter()
-    }
-    
-    private fun applyFilter() {
-        if (!::filterField.isInitialized || !::filesTable.isInitialized) return
-        
-        val filter = filterField.text.trim()
-        val sorter = filesTable.rowSorter as? TableRowSorter<*> ?: return
-        
-        if (filter.isBlank()) {
-            sorter.rowFilter = null
-        } else {
-            sorter.rowFilter = object : javax.swing.RowFilter<Any, Any>() {
-                override fun include(entry: Entry<out Any, out Any>): Boolean {
-                    val path = entry.getValue(0).toString()
-                    return path.contains(filter, ignoreCase = true)
-                }
-            }
-        }
+        filesTable.setData(data)
     }
     
     private fun updateAdapterMetrics(stats: ReportSchema) {

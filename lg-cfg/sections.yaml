@@ -83,6 +83,7 @@ src:
                             - "/models/ReportSchema.kt"
                             - "/services/state/LgPanelStateService.kt"
                             - "/ui/components/LgTaskTextField.kt"
+                            - "/ui/components/LgGroupedTable.kt"
                             - "/utils/LgFormatUtils.kt"
                         - condition: "TAGSET:intellij-plugin:included-files"
                           allow:

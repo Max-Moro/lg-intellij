@@ -8,7 +8,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lg.intellij.cli.CliExecutor
 import lg.intellij.models.CliResult
-import lg.intellij.services.CliArgsBuilder
 import lg.intellij.services.LgErrorReportingService
 import lg.intellij.services.state.LgPanelStateService
 

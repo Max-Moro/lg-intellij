@@ -5,33 +5,64 @@ src:
     allow:
       - "/build.gradle.kts"
       - "/settings.gradle.kts"
-      - "/src/main/"
+      - "/src/"
     children:
       src:
-        mode: block
+        mode: allow
+        allow:
+          - "/main/"
         children:
           main:
-            mode: block
+            mode: allow
+            allow:
+              - "/kotlin/"
+              - "/resources/"
             children:
               kotlin:
-                mode: block
+                mode: allow
+                allow:
+                  - "/icons/"
+                  - "/lg/"
                 children:
                   lg:
-                    mode: block
+                    mode: allow
+                    allow:
+                      - "/intellij/"
                     children:
                       intellij:
-                        mode: block
+                        mode: allow
                         when:
-                        - condition: "NOT TAGSET:intellij-plugin:control"
-                          block:
+                        - condition: "TAGSET:intellij-plugin:core"
+                          allow:
+                            - "/cli/CliExecutor.kt"
+                            - "/LgBundle.kt"
+                            - "/models/CliResult.kt"
+                            - "/services/LgErrorReportingService.kt"
+                            - "/services/state/LgSettingsService.kt"
+                            - "/settings/LgSettingsConfigurable.kt"
+                            - "/toolWindow/LgToolWindowFactory.kt"
+                            - "/utils/LgStubNotifications.kt"
+                            # Перенести позже
+                            - "/models/DiagReportSchema.kt"
+                            - "/models/ModeSetsListSchema.kt"
+                            - "/models/TagSetsListSchema.kt"
+                        - condition: "TAGSET:intellij-plugin:ui"
+                          allow: "/ui/components/"
+                        - condition: "TAGSET:intellij-plugin:control"
+                          allow:
                             - "/ui/toolwindow/LgControlPanel.kt"
+                            - "/services/state/LgPanelStateService.kt"
+                            - "/services/state/LgWorkspaceStateService.kt"
                             - "/ui/components/LgWrappingPanel.kt"
-                        - condition: "NOT TAGSET:intellij-plugin:vfs"
-                          block:
+                            - "/ui/components/LgTaskTextField.kt"
+                        - condition: "TAGSET:intellij-plugin:generate"
+                          allow:
+                            - "/services/generation/LgGenerationService.kt"
+                            - "/services/generation/CliArgsBuilder.kt"
                             - "/services/vfs/LgVirtualFileService.kt"
-                            - "/actions/LgGenerateAction.kt"
-                        - condition: "NOT TAGSET:intellij-plugin:catalog"
-                          block:
+                            - "/actions/LgGenerate**.kt"
+                        - condition: "TAGSET:intellij-plugin:catalog"
+                          allow:
                             - "/actions/LgRefreshCatalogsAction.kt"
                             - "/models/ContextsListSchema.kt"
                             - "/models/EncodersListSchema.kt"
@@ -40,7 +71,21 @@ src:
                             - "/listeners/LgConfigFileListener.kt"
                             - "/services/catalog/LgCatalogService.kt"
                             - "/services/catalog/TokenizerCatalogService.kt"
-                        - condition: "NOT TAGSET:intellij-plugin:cli"
-                          block:
+                        - condition: "TAGSET:intellij-plugin:cli"
+                          allow:
                             - "/cli/CliResolver.kt"
                             - "/cli/CliException.kt"
+                            - "/listeners/LgSettingsChangeListener.kt"
+                        - condition: "TAGSET:intellij-plugin:stats"
+                          allow:
+                            - "**Stats**"
+                            - "/generation/CliArgsBuilder.kt"
+                            - "/models/ReportSchema.kt"
+                            - "/services/state/LgPanelStateService.kt"
+                            - "/ui/components/LgTaskTextField.kt"
+                            - "/utils/LgFormatUtils.kt"
+                        - condition: "TAGSET:intellij-plugin:included-files"
+                          allow:
+                            - "/ui/toolwindow/LgIncludedFilesPanel.kt"
+                            - "/services/generation/LgStatsService.kt"
+                            - "/services/generation/CliArgsBuilder.kt"

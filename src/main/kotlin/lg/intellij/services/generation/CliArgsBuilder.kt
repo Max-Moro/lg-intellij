@@ -1,4 +1,4 @@
-package lg.intellij.services
+package lg.intellij.services.generation
 
 import lg.intellij.services.state.LgPanelStateService
 

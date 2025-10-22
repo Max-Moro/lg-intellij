@@ -41,11 +41,7 @@
 
 ## 📋 [✅] Фаза 12: Grouped Table Component
 
-## 📋 [] Фаза 13: Tags Configuration UI
-
-### Цель
-Реализовать UI для выбора тегов (аналог tags panel в VS Code) как **modal dialog** вместо overlay panel.
-
+## 📋 [✅] Фаза 13: Tags Configuration UI
 
 ## 📋 [] Фаза 14: Doctor Diagnostics
 

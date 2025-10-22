@@ -67,6 +67,7 @@ class LgControlPanel(
     private lateinit var encoderField: com.intellij.ui.components.JBTextField
     private lateinit var modeCombo: ComboBox<String>
     private lateinit var targetBranchRow: Row
+    private lateinit var tagsButton: JButton
     
     // Mode-sets data (для dynamic rendering)
     private var currentModeSets: List<ModeSet> = emptyList()
@@ -233,7 +234,9 @@ class LgControlPanel(
         
         currentTagSets = tagSets.tagSets
         
-        // TODO Phase 13: Tags configuration UI
+        // Update tags button text (Phase 13)
+        updateTagsButtonText()
+        
         LOG.debug("Updated tag-sets UI: ${tagSets.tagSets.size} sets")
     }
     
@@ -427,11 +430,25 @@ class LgControlPanel(
         
         // Configure Tags button (Phase 13)
         row {
-            cell(JButton(LgBundle.message("control.btn.configure.tags"), AllIcons.General.Filter).apply {
+            tagsButton = JButton(LgBundle.message("control.btn.configure.tags"), AllIcons.General.Filter).apply {
                 addActionListener {
-                    LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.configure.tags"), 13)
+                    val action = LgConfigureTagsAction()
+                    val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
+                    val event = AnActionEvent.createEvent(
+                        action,
+                        dataContext,
+                        null,
+                        ActionPlaces.TOOLWINDOW_CONTENT,
+                        ActionUiKind.NONE,
+                        null
+                    )
+                    action.actionPerformed(event)
+                    
+                    // Update button text after dialog closed
+                    updateTagsButtonText()
                 }
-            })
+            }
+            cell(tagsButton)
         }
     }
     
@@ -639,6 +656,20 @@ class LgControlPanel(
     
     private fun openSettings() {
         ShowSettingsUtilImpl.showSettingsDialog(project, "lg.intellij.settings", null)
+    }
+    
+    /**
+     * Updates tags button text to show selection count.
+     */
+    private fun updateTagsButtonText() {
+        if (!::tagsButton.isInitialized) return
+        
+        val selectedCount = stateService.state.tags.values.sumOf { it.size }
+        if (selectedCount > 0) {
+            tagsButton.text = LgBundle.message("control.btn.configure.tags.with.count", selectedCount)
+        } else {
+            tagsButton.text = LgBundle.message("control.btn.configure.tags")
+        }
     }
 
     override fun dispose() {

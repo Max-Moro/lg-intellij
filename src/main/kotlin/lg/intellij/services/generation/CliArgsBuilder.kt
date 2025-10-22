@@ -20,7 +20,7 @@ object CliArgsBuilder {
         val encoder: String,
         val ctxLimit: Int,
         val modes: Map<String, String>,
-        val tags: Set<String>,
+        val tags: Map<String, Set<String>>,
         val taskText: String?,
         val targetBranch: String?
     )
@@ -56,10 +56,11 @@ object CliArgsBuilder {
             }
         }
 
-        // Tags
-        if (params.tags.isNotEmpty()) {
+        // Tags (flatten all tags from all tag-sets)
+        val allTags = params.tags.values.flatten()
+        if (allTags.isNotEmpty()) {
             args.add("--tags")
-            args.add(params.tags.joinToString(","))
+            args.add(allTags.joinToString(","))
         }
 
         // Target branch (for review mode)
@@ -110,7 +111,7 @@ object CliArgsBuilder {
             encoder = state.getEffectiveEncoder(),
             ctxLimit = state.getEffectiveContextLimit(),
             modes = state.state.modes.toMap(),
-            tags = state.state.tags.toSet(),
+            tags = state.state.tags.mapValues { it.value.toSet() },
             taskText = state.state.taskText?.takeIf { it.isNotBlank() },
             targetBranch = state.state.targetBranch?.takeIf { it.isNotBlank() }
         )

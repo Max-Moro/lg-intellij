@@ -64,8 +64,8 @@ class LgPanelStateService(private val project: Project) : SimplePersistentStateC
         /** Selected modes: modeSetId -> modeId */
         var modes by map<String, String>()
         
-        /** Active tags */
-        var tags by stringSet()
+        /** Active tags: tagSetId -> Set<tagId> */
+        var tags by map<String, MutableSet<String>>()
         
         /** Task description text */
         var taskText by string("")

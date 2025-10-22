@@ -45,7 +45,6 @@ src:
                             # Перенести позже
                             - "/models/DiagReportSchema.kt"
                             - "/models/ModeSetsListSchema.kt"
-                            - "/models/TagSetsListSchema.kt"
                         - condition: "TAGSET:intellij-plugin:ui"
                           allow: "/ui/components/"
                         - condition: "TAGSET:intellij-plugin:control"
@@ -95,3 +94,8 @@ src:
                             - "/services/generation/CliArgsBuilder.kt"
                             - "/services/state/LgWorkspaceStateService.kt"
                             - "/models/ReportSchema.kt"
+                        - condition: "TAGSET:intellij-plugin:tags-dialog"
+                          allow:
+                            - "/ui/dialogs/LgTagsDialog.kt"
+                            - "/actions/LgConfigureTagsAction.kt"
+                            - "/models/TagSetsListSchema.kt"

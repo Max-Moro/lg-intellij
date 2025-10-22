@@ -88,5 +88,10 @@ src:
                         - condition: "TAGSET:intellij-plugin:included-files"
                           allow:
                             - "/ui/toolwindow/LgIncludedFilesPanel.kt"
+                            - "/ui/renderers/FileTreeCellRenderer.kt"
+                            - "/actions/LgShowIncludedFilesAction.kt"
+                            - "/actions/LgToggleTreeViewModeAction.kt"
                             - "/services/generation/LgStatsService.kt"
                             - "/services/generation/CliArgsBuilder.kt"
+                            - "/services/state/LgWorkspaceStateService.kt"
+                            - "/models/ReportSchema.kt"

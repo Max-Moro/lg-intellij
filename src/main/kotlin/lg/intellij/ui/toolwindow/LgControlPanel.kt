@@ -452,7 +452,17 @@ class LgControlPanel(
                 // Show Included button
                 add(JButton(LgBundle.message("control.btn.show.included"), AllIcons.Actions.ShowAsTree).apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.show.included"), 11)
+                        val action = LgShowIncludedFilesAction()
+                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
+                        val event = AnActionEvent.createEvent(
+                            action,
+                            dataContext,
+                            null,
+                            ActionPlaces.TOOLWINDOW_CONTENT,
+                            ActionUiKind.NONE,
+                            null
+                        )
+                        action.actionPerformed(event)
                     }
                 })
 
@@ -618,20 +628,8 @@ class LgControlPanel(
 
             addSeparator()
 
-            // View Mode Toggle (заглушка для Фазы 11)
-            add(object : AnAction(
-                LgBundle.message("control.btn.toggle.view"),
-                LgBundle.message("control.stub.toggle.view"),
-                AllIcons.Actions.ShowAsTree
-            ) {
-                override fun actionPerformed(e: AnActionEvent) {
-                    LgStubNotifications.showNotImplemented(
-                        project,
-                        LgBundle.message("control.stub.toggle.view"),
-                        11
-                    )
-                }
-            })
+            // View Mode Toggle
+            add(LgToggleTreeViewModeAction())
         }
         
         val toolbar = ActionManager.getInstance().createActionToolbar("LgControlPanel", actionGroup, true)

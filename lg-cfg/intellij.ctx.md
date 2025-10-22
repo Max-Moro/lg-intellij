@@ -15,9 +15,11 @@ ${src}
 
 > Показаны только главы, нужные для разработки на текущей фазе.
 
-${md@self:intellij-platform-docs/05-ui-components.md}
+${md@self:intellij-platform-docs/08-actions.md}
 
-${md@self:intellij-platform-docs/07-kotlin-ui-dsl.md}
+${md@self:intellij-platform-docs/09-vfs.md}
+
+${md@self:intellij-platform-docs/17-tree-views.md}
 
 ---
 

@@ -167,7 +167,17 @@ class CliExecutor(private val project: Project) {
             
             else -> {
                 LOG.debug("CLI succeeded, output length: ${output.stdout.length}")
-                CliResult.Success(output.stdout)
+                
+                // ВАЖНО: даже при успехе stderr может содержать полезную информацию
+                // (например, путь к bundle в `lg diag --bundle`)
+                if (output.stderr.isNotEmpty()) {
+                    LOG.debug("stderr on success:\n${output.stderr}")
+                }
+                
+                CliResult.Success(
+                    data = output.stdout,
+                    stderr = output.stderr
+                )
             }
         }
     }

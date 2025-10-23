@@ -537,25 +537,8 @@ class LgControlPanel(
             addSeparator()
             
             // Diagnostics
-            add(object : AnAction(
-                LgBundle.message("control.btn.doctor"),
-                LgBundle.message("control.stub.doctor"),
-                AllIcons.Actions.Checked
-            ) {
-                override fun actionPerformed(e: AnActionEvent) {
-                    LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.doctor"), 14)
-                }
-            })
-            
-            add(object : AnAction(
-                LgBundle.message("control.btn.reset.cache"),
-                LgBundle.message("control.stub.reset.cache"),
-                AllIcons.Actions.GC
-            ) {
-                override fun actionPerformed(e: AnActionEvent) {
-                    LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.reset.cache"), 14)
-                }
-            })
+            add(LgRunDoctorAction())
+            add(LgResetCacheAction())
             
             add(object : AnAction(
                 LgBundle.message("control.btn.settings"),

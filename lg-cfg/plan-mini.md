@@ -43,11 +43,7 @@
 
 ## 📋 [✅] Фаза 13: Tags and Modes Configuration UI
 
-## 📋 [] Фаза 14: Doctor Diagnostics
-
-### Цель
-Реализовать diagnostics функционал: `lg diag` вызов, отображение результатов, bundle generation, cache reset.
-
+## 📋 [✅] Фаза 14: Doctor Diagnostics
 
 ## 📋 [] Фаза 15: Starter Config Wizard
 

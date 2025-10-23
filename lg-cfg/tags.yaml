@@ -21,5 +21,7 @@ tag-sets:
       tags-dialog:
         title: "Диалог управления тегами"
       modes-panel:
-        title: "Диалог управления тегами"
+        title: "Панель режимов"
+      diag:
+        title: "Самодиагностика"
 

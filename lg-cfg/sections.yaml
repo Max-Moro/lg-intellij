@@ -106,3 +106,9 @@ src:
                             - "/models/ModeSetsListSchema.kt"
                             - "/services/catalog/LgCatalogService.kt"
                             - "/services/state/LgPanelStateService.kt"
+                        - condition: "TAGSET:intellij-plugin:diag"
+                          allow:
+                            - "/ui/dialogs/LgDoctorDialog.kt"
+                            - "/services/diagnostics/LgDiagnosticsService.kt"
+                            - "/actions/LgResetCacheAction.kt"
+                            - "/actions/LgRunDoctorAction.kt"

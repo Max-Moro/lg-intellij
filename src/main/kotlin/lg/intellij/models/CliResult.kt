@@ -13,8 +13,14 @@ import lg.intellij.cli.CliTimeoutException
 sealed class CliResult<out T> {
     /**
      * Successful execution with output data.
+     * 
+     * @property data Parsed stdout content
+     * @property stderr Optional stderr output (some CLI tools write auxiliary info to stderr even on success)
      */
-    data class Success<T>(val data: T) : CliResult<T>()
+    data class Success<T>(
+        val data: T,
+        val stderr: String = ""
+    ) : CliResult<T>()
     
     /**
      * CLI process exited with non-zero code.

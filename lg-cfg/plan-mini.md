@@ -41,7 +41,7 @@
 
 ## 📋 [✅] Фаза 12: Grouped Table Component
 
-## 📋 [✅] Фаза 13: Tags Configuration UI
+## 📋 [✅] Фаза 13: Tags and Modes Configuration UI
 
 ## 📋 [] Фаза 14: Doctor Diagnostics
 

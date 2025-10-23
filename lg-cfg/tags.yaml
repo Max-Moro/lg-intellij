@@ -20,4 +20,6 @@ tag-sets:
         title: "Диалог статистики"
       tags-dialog:
         title: "Диалог управления тегами"
+      modes-panel:
+        title: "Диалог управления тегами"
 

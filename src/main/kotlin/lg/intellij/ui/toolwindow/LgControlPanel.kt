@@ -11,29 +11,27 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.dsl.builder.*
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.Panel
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.JBUI
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import lg.intellij.LgBundle
 import lg.intellij.actions.*
-import lg.intellij.models.ModeSet
-import lg.intellij.models.ModeSetsListSchema
 import lg.intellij.models.TagSet
 import lg.intellij.models.TagSetsListSchema
 import lg.intellij.services.catalog.LgCatalogService
 import lg.intellij.services.catalog.TokenizerCatalogService
 import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.ui.components.LgLabeledComponent
 import lg.intellij.ui.components.LgTaskTextField
 import lg.intellij.ui.components.LgTaskTextField.addChangeListener
 import lg.intellij.ui.components.LgWrappingPanel
 import lg.intellij.utils.LgStubNotifications
-import java.awt.BorderLayout
 import javax.swing.JButton
 import javax.swing.JComponent
-import javax.swing.JPanel
 import javax.swing.ScrollPaneConstants
 
 /**
@@ -65,12 +63,12 @@ class LgControlPanel(
     private lateinit var sectionCombo: ComboBox<String>
     private lateinit var libraryCombo: ComboBox<String>
     private lateinit var encoderField: com.intellij.ui.components.JBTextField
-    private lateinit var modeCombo: ComboBox<String>
-    private lateinit var targetBranchRow: Row
     private lateinit var tagsButton: JButton
     
-    // Mode-sets data (для dynamic rendering)
-    private var currentModeSets: List<ModeSet> = emptyList()
+    // Modes panel (self-contained, manages own state and data)
+    private val modesPanel = LgModeSetsPanel(project, this)
+    
+    // Tag-sets data (для dynamic rendering)
     private var currentTagSets: List<TagSet> = emptyList()
     
     init {
@@ -129,16 +127,7 @@ class LgControlPanel(
                 }
             }
         }
-        
-        // Mode-sets
-        scope.launch {
-            catalogService.modeSets.collectLatest { modeSets ->
-                withContext(Dispatchers.EDT) {
-                    updateModeSetsUI(modeSets)
-                }
-            }
-        }
-        
+
         // Tag-sets
         scope.launch {
             catalogService.tagSets.collectLatest { tagSets ->
@@ -200,35 +189,7 @@ class LgControlPanel(
             templateCombo.selectedIndex = 0
         }
     }
-    
-    private fun updateModeSetsUI(modeSets: ModeSetsListSchema?) {
-        if (modeSets == null) return
-        
-        currentModeSets = modeSets.modeSets
-        
-        // TODO Phase 13: Dynamic mode-sets rendering
-        // Пока обновляем только один режим (dev-stage)
-        if (currentModeSets.isNotEmpty() && ::modeCombo.isInitialized) {
-            val firstModeSet = currentModeSets.first()
-            val modes = firstModeSet.modes.map { it.id }
-            
-            modeCombo.removeAllItems()
-            modes.forEach { modeCombo.addItem(it) }
-            
-            // Restore from saved state
-            val savedMode = stateService.state.modes[firstModeSet.id]
-            
-            if (savedMode != null && savedMode in modes) {
-                modeCombo.selectedItem = savedMode
-            } else if (modes.isNotEmpty()) {
-                modeCombo.selectedIndex = 0
-                stateService.state.modes[firstModeSet.id] = modes[0]
-            }
-        }
-        
-        LOG.debug("Updated mode-sets UI: ${modeSets.modeSets.size} sets")
-    }
-    
+
     private fun updateTagSetsUI(tagSets: TagSetsListSchema?) {
         if (tagSets == null) return
         
@@ -277,17 +238,6 @@ class LgControlPanel(
         return scrollPane
     }
     
-    /**
-     * Creates a non-breakable label+component pair.
-     * Label and component stay together when wrapping.
-     */
-    private fun createLabeledComponent(labelText: String, component: JComponent): JPanel {
-        return JPanel(BorderLayout(2, 0)).apply {
-            isOpaque = false
-            add(JBLabel(labelText), BorderLayout.WEST)
-            add(component, BorderLayout.CENTER)
-        }
-    }
     
     private fun createControlPanel(): JComponent {
         return panel {
@@ -395,40 +345,14 @@ class LgControlPanel(
     }
     
     private fun Panel.createAdaptiveSettingsSection() {
-        // Mode selector (single for now, динамический в Phase 13)
-        row(LgBundle.message("control.mode.label")) {
-            modeCombo = ComboBox<String>().apply {
-                // Will be populated by updateModeSetsUI when data loads
-                addActionListener {
-                    val selectedMode = selectedItem as? String
-                    if (selectedMode != null && currentModeSets.isNotEmpty()) {
-                        val firstModeSet = currentModeSets.first()
-                        stateService.state.modes[firstModeSet.id] = selectedMode
-                        
-                        // Update target branch visibility
-                        val isReview = selectedMode == "review"
-                        targetBranchRow.visible(isReview)
-                    }
-                }
-            }
-            cell(modeCombo)
+        // Single row with modes panel
+        row {
+            val modesUI = modesPanel.createUI()
+            cell(modesUI)
+                .align(AlignX.FILL)
         }
         
-        // Target Branch selector
-        targetBranchRow = row(LgBundle.message("control.target.branch.label")) {
-            comboBox(emptyList<String>())
-                .bindItem(
-                    getter = { stateService.state.targetBranch },
-                    setter = { stateService.state.targetBranch = it }
-                )
-        }
-        
-        // Initial visibility state based on saved mode
-        val firstModeSetId = currentModeSets.firstOrNull()?.id
-        val savedMode = if (firstModeSetId != null) stateService.state.modes[firstModeSetId] else null
-        targetBranchRow.visible(savedMode == "review")
-        
-        // Configure Tags button (Phase 13)
+        // Configure Tags button
         row {
             tagsButton = JButton(LgBundle.message("control.btn.configure.tags"), AllIcons.General.Filter).apply {
                 addActionListener {
@@ -464,7 +388,7 @@ class LgControlPanel(
                         }
                     }
                 }
-                add(createLabeledComponent(LgBundle.message("control.section.label"), sectionCombo))
+                add(LgLabeledComponent.create(LgBundle.message("control.section.label"), sectionCombo))
                 
                 // Show Included button
                 add(JButton(LgBundle.message("control.btn.show.included"), AllIcons.Actions.ShowAsTree).apply {
@@ -524,7 +448,7 @@ class LgControlPanel(
     
     private fun Panel.createTokenizationSection() {
         row {
-            val flowPanel = LgWrappingPanel().apply {
+            val flowPanel = LgWrappingPanel(hgap = 16).apply {
                 // Library ComboBox
                 libraryCombo = ComboBox<String>().apply {
                     addActionListener {
@@ -539,7 +463,7 @@ class LgControlPanel(
                         }
                     }
                 }
-                add(createLabeledComponent(LgBundle.message("control.library.label"), libraryCombo))
+                add(LgLabeledComponent.create(LgBundle.message("control.library.label"), libraryCombo))
                 
                 // Encoder TextField (custom values supported)
                 encoderField = com.intellij.ui.components.JBTextField(20).apply {
@@ -555,7 +479,7 @@ class LgControlPanel(
                         }
                     })
                 }
-                add(createLabeledComponent(LgBundle.message("control.encoder.label"), encoderField))
+                add(LgLabeledComponent.create(LgBundle.message("control.encoder.label"), encoderField))
                 
                 // Context Limit TextField
                 val ctxLimitField = com.intellij.ui.components.JBTextField(10).apply {
@@ -575,7 +499,7 @@ class LgControlPanel(
                         }
                     })
                 }
-                add(createLabeledComponent(LgBundle.message("control.ctx.limit.label"), ctxLimitField))
+                add(LgLabeledComponent.create(LgBundle.message("control.ctx.limit.label"), ctxLimitField))
             }
             
             cell(flowPanel).align(AlignX.FILL)

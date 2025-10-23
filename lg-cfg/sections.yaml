@@ -44,7 +44,6 @@ src:
                             - "/utils/LgStubNotifications.kt"
                             # Перенести позже
                             - "/models/DiagReportSchema.kt"
-                            - "/models/ModeSetsListSchema.kt"
                         - condition: "TAGSET:intellij-plugin:ui"
                           allow: "/ui/components/"
                         - condition: "TAGSET:intellij-plugin:control"
@@ -99,3 +98,11 @@ src:
                             - "/ui/dialogs/LgTagsDialog.kt"
                             - "/actions/LgConfigureTagsAction.kt"
                             - "/models/TagSetsListSchema.kt"
+                        - condition: "TAGSET:intellij-plugin:modes-panel"
+                          allow:
+                            - "/ui/toolwindow/LgModeSetsPanel.kt"
+                            - "/ui/components/LgLabeledComponent.kt"
+                            - "/ui/components/LgWrappingPanel.kt"
+                            - "/models/ModeSetsListSchema.kt"
+                            - "/services/catalog/LgCatalogService.kt"
+                            - "/services/state/LgPanelStateService.kt"

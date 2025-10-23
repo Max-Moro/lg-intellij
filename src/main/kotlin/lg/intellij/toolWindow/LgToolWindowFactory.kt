@@ -9,15 +9,11 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.content.ContentFactory
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import lg.intellij.LgBundle
 import lg.intellij.services.state.LgWorkspaceStateService
 import lg.intellij.ui.toolwindow.LgControlPanel
 import lg.intellij.ui.toolwindow.LgIncludedFilesPanel
 import java.beans.PropertyChangeListener
-import java.nio.file.Files
-import kotlin.io.path.Path
 
 /**
  * Factory for creating Listing Generator Tool Window.
@@ -26,7 +22,8 @@ import kotlin.io.path.Path
  * - Top: Control Panel (main configuration and generation controls)
  * - Bottom: Included Files (tree view of files, collapsible)
  * 
- * Tool Window is shown only for projects containing lg-cfg/ directory.
+ * Tool Window is always available (even without lg-cfg/).
+ * Users can create lg-cfg/ via "Create Starter Config" button in toolbar.
  */
 class LgToolWindowFactory : ToolWindowFactory, DumbAware {
     
@@ -34,19 +31,6 @@ class LgToolWindowFactory : ToolWindowFactory, DumbAware {
     
     init {
         LOG.info("LgToolWindowFactory initialized")
-    }
-    
-    /**
-     * Checks if Tool Window should be available for this project.
-     * 
-     * Tool Window is shown only if lg-cfg/ directory exists in project root.
-     */
-    override suspend fun isApplicableAsync(project: Project): Boolean {
-        return withContext(Dispatchers.IO) {
-            val basePath = project.basePath ?: return@withContext false
-            val lgCfgDir = Path(basePath, "lg-cfg")
-            Files.exists(lgCfgDir)
-        }
     }
     
     /**

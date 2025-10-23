@@ -45,11 +45,7 @@
 
 ## 📋 [✅] Фаза 14: Doctor Diagnostics
 
-## 📋 [] Фаза 15: Starter Config Wizard
-
-### Цель
-Реализовать wizard для создания `lg-cfg/` через `lg init` с preset selection и conflict resolution.
-
+## 📋 [✅] Фаза 15: Starter Config Wizard
 
 ## 📋 [] Фаза 16: Git Integration (Optional Dependency)
 

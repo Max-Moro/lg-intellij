@@ -112,3 +112,10 @@ src:
                             - "/services/diagnostics/LgDiagnosticsService.kt"
                             - "/actions/LgResetCacheAction.kt"
                             - "/actions/LgRunDoctorAction.kt"
+                        - condition: "TAGSET:intellij-plugin:starter"
+                          allow:
+                            - "/ui/dialogs/LgInitWizardDialog.kt"
+                            - "/services/LgInitService.kt"
+                            - "/actions/LgCreateStarterConfigAction.kt"
+                            - "/actions/LgOpenConfigAction.kt"
+                            - "/models/InitResult.kt"

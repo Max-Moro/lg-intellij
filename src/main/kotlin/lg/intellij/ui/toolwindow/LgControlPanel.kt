@@ -514,25 +514,8 @@ class LgControlPanel(
             addSeparator()
             
             // Config Management
-            add(object : AnAction(
-                LgBundle.message("control.btn.create.config"),
-                LgBundle.message("control.stub.create.config"),
-                AllIcons.Actions.AddDirectory
-            ) {
-                override fun actionPerformed(e: AnActionEvent) {
-                    LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.create.config"), 15)
-                }
-            })
-            
-            add(object : AnAction(
-                LgBundle.message("control.btn.open.config"),
-                LgBundle.message("control.stub.open.config"),
-                AllIcons.Ide.ConfigFile
-            ) {
-                override fun actionPerformed(e: AnActionEvent) {
-                    LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.open.config"), 15)
-                }
-            })
+            add(LgCreateStarterConfigAction())
+            add(LgOpenConfigAction())
             
             addSeparator()
             

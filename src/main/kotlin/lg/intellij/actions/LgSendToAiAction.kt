@@ -97,14 +97,12 @@ class LgSendToAiAction : AnAction(
                     try {
                         aiService.sendTo(providerId, generatedContent!!)
                     } catch (ex: AiProviderException) {
-                        LOG.error("Failed to send to AI provider", ex)
-
                         // Error notification с fallback на clipboard
                         val notification = NotificationGroupManager.getInstance()
                             .getNotificationGroup("LG Important")
                             .createNotification(
                                 "Send to AI Failed",
-                                "Failed to send to $providerName: ${ex.message}",
+                                ex.message ?: "",
                                 NotificationType.ERROR
                             )
 

@@ -13,7 +13,6 @@ import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
 import lg.intellij.services.generation.LgStatsService
-import lg.intellij.services.generation.StatsException
 import lg.intellij.services.state.LgPanelStateService
 import lg.intellij.ui.toolwindow.LgIncludedFilesPanel
 
@@ -50,22 +49,19 @@ class LgShowIncludedFilesAction : AnAction(
                 indicator.isIndeterminate = true
                 indicator.text = LgBundle.message("action.show.included.progress.text", selectedSection)
                 
-                try {
-                    val report = runBlocking {
-                        statsService.getStats(target)
-                    }
-                    
-                    // Extract file paths from report
-                    paths = report.files.map { it.path }.sorted()
-                    
-                    LOG.info("Loaded ${paths?.size ?: 0} included files for section '$selectedSection'")
-                    
-                } catch (e: StatsException) {
-                    LOG.warn("Failed to load included files", e)
-                    // Error already reported by LgStatsService
-                } catch (e: Exception) {
-                    LOG.error("Unexpected error loading included files", e)
+                val report = runBlocking {
+                    statsService.getStats(target)
                 }
+                
+                // If stats collection failed, don't continue
+                if (report == null) {
+                    return
+                }
+                
+                // Extract file paths from report
+                paths = report.files.map { it.path }.sorted()
+                
+                LOG.info("Loaded ${paths?.size ?: 0} included files for section '$selectedSection'")
             }
             
             override fun onSuccess() {

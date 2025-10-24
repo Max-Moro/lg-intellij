@@ -13,7 +13,6 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.ui.Messages
 import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
-import lg.intellij.services.diagnostics.DiagnosticsException
 import lg.intellij.services.diagnostics.LgDiagnosticsService
 
 /**
@@ -57,14 +56,11 @@ class LgResetCacheAction : AnAction(
                 indicator.isIndeterminate = true
                 indicator.text = LgBundle.message("action.reset.cache.progress.text")
                 
-                try {
-                    runBlocking {
-                        diagnosticsService.rebuildCache()
-                    }
-                    success = true
-                } catch (e: DiagnosticsException) {
-                    LOG.warn("Cache reset failed: ${e.message}", e)
+                val result = runBlocking {
+                    diagnosticsService.rebuildCache()
                 }
+                
+                success = (result != null)
             }
             
             override fun onSuccess() {

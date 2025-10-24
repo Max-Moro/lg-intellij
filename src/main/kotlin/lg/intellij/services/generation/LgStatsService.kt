@@ -41,10 +41,9 @@ class LgStatsService(private val project: Project) {
      * 
      * @param target Target specifier (e.g., "sec:all", "ctx:template-name")
      * @param taskText Optional task description for --task parameter
-     * @return Parsed statistics report
-     * @throws StatsException if stats collection fails
+     * @return Parsed statistics report or null if stats collection failed (user already notified)
      */
-    suspend fun getStats(target: String, taskText: String? = null): ReportSchema {
+    suspend fun getStats(target: String, taskText: String? = null): ReportSchema? {
         return withContext(Dispatchers.IO) {
             val params = CliArgsBuilder.fromPanelState(panelState).copy(
                 taskText = taskText // Override task text if provided
@@ -88,7 +87,7 @@ class LgStatsService(private val project: Project) {
                          report
                      } catch (e: Exception) {
                          LOG.error("Failed to parse stats JSON", e)
-                         throw StatsException("Failed to parse stats: ${e.message}", e)
+                         null
                      }
                  }
                 
@@ -96,21 +95,21 @@ class LgStatsService(private val project: Project) {
                     val operationName = "Stats Collection"
                     LOG.warn("$operationName failed: exit code ${result.exitCode}")
                     errorReporting.reportCliFailure(project, operationName, result)
-                    throw StatsException("Failed to collect stats: ${result.stderr}")
+                    null
                 }
                 
                 is CliResult.Timeout -> {
                     val operationName = "Stats Collection"
                     LOG.warn("$operationName timeout")
                     errorReporting.reportTimeout(project, operationName, result.timeoutMs)
-                    throw StatsException("Stats collection timed out")
+                    null
                 }
                 
                 is CliResult.NotFound -> {
                     val operationName = "Stats Collection"
                     LOG.warn("CLI not found")
                     errorReporting.reportCliNotFound(project, operationName)
-                    throw StatsException("CLI not found")
+                    null
                 }
             }
         }
@@ -120,9 +119,3 @@ class LgStatsService(private val project: Project) {
         private val LOG = logger<LgStatsService>()
     }
 }
-
-/**
- * Exception thrown when stats collection fails.
- */
-class StatsException(message: String, cause: Throwable? = null) : Exception(message, cause)
-

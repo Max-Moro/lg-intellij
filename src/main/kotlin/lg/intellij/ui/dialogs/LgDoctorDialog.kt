@@ -22,7 +22,6 @@ import kotlinx.serialization.json.Json
 import lg.intellij.LgBundle
 import lg.intellij.models.DiagReportSchema
 import lg.intellij.models.Severity
-import lg.intellij.services.diagnostics.DiagnosticsException
 import lg.intellij.services.diagnostics.LgDiagnosticsService
 import lg.intellij.utils.LgFormatUtils
 import java.awt.BorderLayout
@@ -227,12 +226,8 @@ class LgDoctorDialog(
             override fun run(indicator: ProgressIndicator) {
                 indicator.isIndeterminate = true
                 
-                try {
-                    report = runBlocking {
-                        diagnosticsService.runDiagnostics()
-                    }
-                } catch (e: DiagnosticsException) {
-                    LOG.warn("Diagnostics refresh failed: ${e.message}")
+                report = runBlocking {
+                    diagnosticsService.runDiagnostics()
                 }
             }
             
@@ -259,12 +254,8 @@ class LgDoctorDialog(
             override fun run(indicator: ProgressIndicator) {
                 indicator.isIndeterminate = true
                 
-                try {
-                    report = runBlocking {
-                        diagnosticsService.rebuildCache()
-                    }
-                } catch (e: DiagnosticsException) {
-                    LOG.warn("Cache reset failed: ${e.message}")
+                report = runBlocking {
+                    diagnosticsService.rebuildCache()
                 }
             }
             
@@ -291,12 +282,8 @@ class LgDoctorDialog(
             override fun run(indicator: ProgressIndicator) {
                 indicator.isIndeterminate = true
                 
-                try {
-                    result = runBlocking {
-                        diagnosticsService.buildBundle()
-                    }
-                } catch (e: DiagnosticsException) {
-                    LOG.warn("Bundle build failed: ${e.message}")
+                result = runBlocking {
+                    diagnosticsService.buildBundle()
                 }
             }
             

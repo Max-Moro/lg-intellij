@@ -39,10 +39,9 @@ class LgDiagnosticsService(private val project: Project) {
     /**
      * Runs diagnostics without cache rebuild.
      * 
-     * @return Diagnostic report
-     * @throws DiagnosticsException if diagnostics fail
+     * @return Diagnostic report or null if diagnostics failed (user already notified)
      */
-    suspend fun runDiagnostics(): DiagReportSchema {
+    suspend fun runDiagnostics(): DiagReportSchema? {
         return withContext(Dispatchers.IO) {
             LOG.debug("Running diagnostics")
             
@@ -57,23 +56,23 @@ class LgDiagnosticsService(private val project: Project) {
                         json.decodeFromString<DiagReportSchema>(result.data)
                     } catch (e: Exception) {
                         LOG.error("Failed to parse diagnostics JSON", e)
-                        throw DiagnosticsException("Failed to parse diagnostics: ${e.message}", e)
+                        null
                     }
                 }
                 
                 is CliResult.Failure -> {
                     errorReporting.reportCliFailure(project, "Diagnostics", result)
-                    throw DiagnosticsException("Diagnostics failed: ${result.stderr}")
+                    null
                 }
                 
                 is CliResult.Timeout -> {
                     errorReporting.reportTimeout(project, "Diagnostics", result.timeoutMs)
-                    throw DiagnosticsException("Diagnostics timeout")
+                    null
                 }
                 
                 is CliResult.NotFound -> {
                     errorReporting.reportCliNotFound(project, "Diagnostics")
-                    throw DiagnosticsException("CLI not found")
+                    null
                 }
             }
         }
@@ -82,10 +81,9 @@ class LgDiagnosticsService(private val project: Project) {
     /**
      * Rebuilds cache and runs diagnostics.
      * 
-     * @return Diagnostic report after rebuild
-     * @throws DiagnosticsException if rebuild fails
+     * @return Diagnostic report after rebuild or null if rebuild failed (user already notified)
      */
-    suspend fun rebuildCache(): DiagReportSchema {
+    suspend fun rebuildCache(): DiagReportSchema? {
         return withContext(Dispatchers.IO) {
             LOG.debug("Rebuilding cache")
             
@@ -100,23 +98,23 @@ class LgDiagnosticsService(private val project: Project) {
                         json.decodeFromString<DiagReportSchema>(result.data)
                     } catch (e: Exception) {
                         LOG.error("Failed to parse diagnostics JSON after rebuild", e)
-                        throw DiagnosticsException("Failed to parse diagnostics: ${e.message}", e)
+                        null
                     }
                 }
                 
                 is CliResult.Failure -> {
                     errorReporting.reportCliFailure(project, "Cache Rebuild", result)
-                    throw DiagnosticsException("Cache rebuild failed: ${result.stderr}")
+                    null
                 }
                 
                 is CliResult.Timeout -> {
                     errorReporting.reportTimeout(project, "Cache Rebuild", result.timeoutMs)
-                    throw DiagnosticsException("Cache rebuild timeout")
+                    null
                 }
                 
                 is CliResult.NotFound -> {
                     errorReporting.reportCliNotFound(project, "Cache Rebuild")
-                    throw DiagnosticsException("CLI not found")
+                    null
                 }
             }
         }
@@ -128,10 +126,9 @@ class LgDiagnosticsService(private val project: Project) {
      * Returns pair of (report, bundlePath).
      * Bundle path is extracted from stderr (even on success).
      * 
-     * @return Pair of diagnostic report and bundle path (if available)
-     * @throws DiagnosticsException if bundle build fails
+     * @return Pair of diagnostic report and bundle path (if available), or null if bundle build failed (user already notified)
      */
-    suspend fun buildBundle(): Pair<DiagReportSchema, String?> {
+    suspend fun buildBundle(): Pair<DiagReportSchema, String?>? {
         return withContext(Dispatchers.IO) {
             LOG.debug("Building diagnostic bundle")
             
@@ -146,7 +143,7 @@ class LgDiagnosticsService(private val project: Project) {
                         json.decodeFromString<DiagReportSchema>(result.data)
                     } catch (e: Exception) {
                         LOG.error("Failed to parse diagnostics JSON from bundle", e)
-                        throw DiagnosticsException("Failed to parse diagnostics: ${e.message}", e)
+                        return@withContext null
                     }
                     
                     // Извлекаем bundle path из stderr (даже при успехе CLI пишет туда путь)
@@ -157,17 +154,17 @@ class LgDiagnosticsService(private val project: Project) {
                 
                 is CliResult.Failure -> {
                     errorReporting.reportCliFailure(project, "Bundle Build", result)
-                    throw DiagnosticsException("Bundle build failed: ${result.stderr}")
+                    null
                 }
                 
                 is CliResult.Timeout -> {
                     errorReporting.reportTimeout(project, "Bundle Build", result.timeoutMs)
-                    throw DiagnosticsException("Bundle build timeout")
+                    null
                 }
                 
                 is CliResult.NotFound -> {
                     errorReporting.reportCliNotFound(project, "Bundle Build")
-                    throw DiagnosticsException("CLI not found")
+                    null
                 }
             }
         }
@@ -188,9 +185,3 @@ class LgDiagnosticsService(private val project: Project) {
         private val LOG = logger<LgDiagnosticsService>()
     }
 }
-
-/**
- * Exception thrown when diagnostics operation fails.
- */
-class DiagnosticsException(message: String, cause: Throwable? = null) : Exception(message, cause)
-

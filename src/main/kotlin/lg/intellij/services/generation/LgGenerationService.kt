@@ -44,10 +44,9 @@ class LgGenerationService(private val project: Project) {
      * 
      * @param targetType Type of target (section or context)
      * @param targetName Name of target (e.g., "all", "common", etc.)
-     * @return Generated content
-     * @throws GenerationException if generation fails
+     * @return Generated content or null if generation failed (user already notified)
      */
-    suspend fun generate(targetType: GenerationTarget, targetName: String): String {
+    suspend fun generate(targetType: GenerationTarget, targetName: String): String? {
         return withContext(Dispatchers.IO) {
             val params = CliArgsBuilder.fromPanelState(panelState)
             val target = "${targetType.prefix}:$targetName"
@@ -71,21 +70,21 @@ class LgGenerationService(private val project: Project) {
                     val operationName = "${targetType.displayName.replaceFirstChar { it.uppercase() }} Generation"
                     LOG.warn("$operationName failed: exit code ${result.exitCode}")
                     errorReporting.reportCliFailure(project, operationName, result)
-                    throw GenerationException("Failed to generate ${targetType.displayName}: ${result.stderr}")
+                    null
                 }
                 
                 is CliResult.Timeout -> {
                     val operationName = "${targetType.displayName.replaceFirstChar { it.uppercase() }} Generation"
                     LOG.warn("$operationName timeout")
                     errorReporting.reportTimeout(project, operationName, result.timeoutMs)
-                    throw GenerationException("${targetType.displayName.replaceFirstChar { it.uppercase() }} generation timed out")
+                    null
                 }
                 
                 is CliResult.NotFound -> {
                     val operationName = "${targetType.displayName.replaceFirstChar { it.uppercase() }} Generation"
                     LOG.warn("CLI not found")
                     errorReporting.reportCliNotFound(project, operationName)
-                    throw GenerationException("CLI not found")
+                    null
                 }
             }
         }
@@ -95,9 +94,3 @@ class LgGenerationService(private val project: Project) {
         private val LOG = logger<LgGenerationService>()
     }
 }
-
-/**
- * Exception thrown when generation fails.
- */
-class GenerationException(message: String) : Exception(message)
-

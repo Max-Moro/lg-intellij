@@ -50,11 +50,12 @@ class LgVirtualFileService(private val project: Project) {
      * 
      * @param content Generated listing content
      * @param sectionName Section name for filename
+     * @return true if opened successfully, false if failed (error logged)
      */
-    fun openListing(content: String, sectionName: String) {
+    fun openListing(content: String, sectionName: String): Boolean {
         val cacheKey = "listing:$sectionName"
         val filename = buildFilename("Listing", sectionName, "md")
-        openInEditor(content, filename, cacheKey)
+        return openInEditor(content, filename, cacheKey)
     }
     
     /**
@@ -64,11 +65,12 @@ class LgVirtualFileService(private val project: Project) {
      * 
      * @param content Generated context content
      * @param templateName Template name for filename
+     * @return true if opened successfully, false if failed (error logged)
      */
-    fun openContext(content: String, templateName: String) {
+    fun openContext(content: String, templateName: String): Boolean {
         val cacheKey = "context:$templateName"
         val filename = buildFilename("Context", templateName, "md")
-        openInEditor(content, filename, cacheKey)
+        return openInEditor(content, filename, cacheKey)
     }
     
     /**
@@ -81,9 +83,10 @@ class LgVirtualFileService(private val project: Project) {
      * 4. If not found or invalid → create new file and cache it
      * 
      * @param cacheKey Unique key for caching (e.g., "listing:all", "context:default")
+     * @return true if opened successfully, false if failed
      */
-    private fun openInEditor(content: String, filename: String, cacheKey: String) {
-        try {
+    private fun openInEditor(content: String, filename: String, cacheKey: String): Boolean {
+        return try {
             // Check if editable mode setting changed
             if (settings.state.openAsEditable != lastEditableMode) {
                 LOG.debug("Editable mode changed, clearing cache")
@@ -133,9 +136,10 @@ class LgVirtualFileService(private val project: Project) {
             editorManager.openFile(virtualFile, true)
             LOG.debug("Opened file in editor: $filename (editable=${settings.state.openAsEditable})")
             
+            true
         } catch (e: Exception) {
             LOG.error("Failed to open content in editor", e)
-            throw VirtualFileException("Failed to open content in editor: ${e.message}", e)
+            false
         }
     }
     
@@ -181,6 +185,8 @@ class LgVirtualFileService(private val project: Project) {
      * Creates temporary file on disk (editable).
      * 
      * Uses system temp directory with "lg-intellij" prefix.
+     * 
+     * @throws Exception if file creation fails
      */
     private fun createTempFile(content: String, filename: String): VirtualFile {
         // Create temp directory
@@ -192,7 +198,7 @@ class LgVirtualFileService(private val project: Project) {
         
         // Convert to VirtualFile
         val virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByNioFile(tempFilePath)
-            ?: throw VirtualFileException("Failed to find created temp file: $tempFilePath")
+            ?: throw IllegalStateException("Failed to find created temp file: $tempFilePath")
         
         LOG.debug("Created temp file: ${tempFilePath.toAbsolutePath()}")
         
@@ -241,9 +247,3 @@ class LgVirtualFileService(private val project: Project) {
         private val UNSAFE_FILENAME_CHARS = Regex("[/\\\\:\"*?<>|\\u0000-\\u001F]+")
     }
 }
-
-/**
- * Exception thrown when VirtualFile operations fail.
- */
-class VirtualFileException(message: String, cause: Throwable? = null) : Exception(message, cause)
-

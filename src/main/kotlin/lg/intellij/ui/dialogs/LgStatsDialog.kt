@@ -404,16 +404,12 @@ class LgStatsDialog(
             override fun run(indicator: ProgressIndicator) {
                 indicator.isIndeterminate = true
                 
-                try {
-                    val taskText = panelState.state.taskText
-                    newStats = runBlocking {
-                        statsService.getStats(
-                            target,
-                            taskText = taskText?.ifBlank { null }
-                        )
-                    }
-                } catch (e: Exception) {
-                    LOG.error("Failed to refresh stats", e)
+                val taskText = panelState.state.taskText
+                newStats = runBlocking {
+                    statsService.getStats(
+                        target,
+                        taskText = taskText?.ifBlank { null }
+                    )
                 }
             }
             

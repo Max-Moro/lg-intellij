@@ -10,7 +10,6 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
-import lg.intellij.services.generation.GenerationException
 import lg.intellij.services.generation.GenerationTarget
 import lg.intellij.services.generation.LgGenerationService
 import lg.intellij.services.state.LgPanelStateService
@@ -53,14 +52,8 @@ open class LgGenerateAction(
                 indicator.isIndeterminate = true
                 indicator.text = LgBundle.message("action.generate.${targetType.displayName}.progress.text", targetName)
                 
-                try {
-                    output = runBlocking {
-                        generationService.generate(targetType, targetName)
-                    }
-                } catch (e: GenerationException) {
-                    LOG.warn("${targetType.displayName.replaceFirstChar { it.uppercase() }} generation failed: ${e.message}")
-                } catch (e: Exception) {
-                    LOG.error("Unexpected error during ${targetType.displayName} generation", e)
+                output = runBlocking {
+                    generationService.generate(targetType, targetName)
                 }
             }
             
@@ -79,9 +72,13 @@ open class LgGenerateAction(
     private fun openInEditor(project: Project, content: String, targetName: String) {
         val virtualFileService = project.service<LgVirtualFileService>()
         
-        when (targetType) {
+        val success = when (targetType) {
             GenerationTarget.SECTION -> virtualFileService.openListing(content, targetName)
             GenerationTarget.CONTEXT -> virtualFileService.openContext(content, targetName)
+        }
+        
+        if (!success) {
+            LOG.warn("Failed to open ${targetType.displayName} in editor")
         }
     }
     

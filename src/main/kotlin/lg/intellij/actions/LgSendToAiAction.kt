@@ -84,6 +84,11 @@ class LgSendToAiAction : AnAction(
                 generatedContent = runBlocking {
                     generationService.generate(target, targetName)
                 }
+                
+                // Если генерация провалилась, не продолжаем
+                if (generatedContent == null) {
+                    return
+                }
 
                 // Отправка
                 indicator.text = "Sending to $providerName..."

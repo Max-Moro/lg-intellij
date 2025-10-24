@@ -11,7 +11,6 @@ import com.intellij.openapi.progress.Task
 import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
 import lg.intellij.models.DiagReportSchema
-import lg.intellij.services.diagnostics.DiagnosticsException
 import lg.intellij.services.diagnostics.LgDiagnosticsService
 import lg.intellij.ui.dialogs.LgDoctorDialog
 
@@ -41,12 +40,8 @@ class LgRunDoctorAction : AnAction(
                 indicator.isIndeterminate = true
                 indicator.text = LgBundle.message("action.doctor.progress.text")
                 
-                try {
-                    report = runBlocking {
-                        diagnosticsService.runDiagnostics()
-                    }
-                } catch (e: DiagnosticsException) {
-                    LOG.warn("Diagnostics failed: ${e.message}", e)
+                report = runBlocking {
+                    diagnosticsService.runDiagnostics()
                 }
             }
             

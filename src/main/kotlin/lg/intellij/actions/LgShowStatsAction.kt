@@ -12,7 +12,6 @@ import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
 import lg.intellij.models.ReportSchema
 import lg.intellij.services.generation.LgStatsService
-import lg.intellij.services.generation.StatsException
 import lg.intellij.services.state.LgPanelStateService
 import lg.intellij.ui.dialogs.LgStatsDialog
 
@@ -60,14 +59,8 @@ abstract class LgShowStatsAction(
                 indicator.isIndeterminate = true
                 indicator.text = LgBundle.message("action.show.stats.progress.text", targetName)
                 
-                try {
-                    stats = runBlocking {
-                        statsService.getStats(target)
-                    }
-                } catch (e: StatsException) {
-                    LOG.warn("Stats collection failed: ${e.message}")
-                } catch (e: Exception) {
-                    LOG.error("Unexpected error during stats collection", e)
+                stats = runBlocking {
+                    statsService.getStats(target)
                 }
             }
             

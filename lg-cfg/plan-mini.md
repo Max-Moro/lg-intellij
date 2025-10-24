@@ -47,11 +47,7 @@
 
 ## 📋 [✅] Фаза 15: Starter Config Wizard
 
-## 📋 [] Фаза 16: Git Integration (Optional Dependency)
-
-### Цель
-Добавить опциональную интеграцию с Git для загрузки списка веток (для target branch selector).
-
+## 📋 [✅] Фаза 16: Git Integration (Optional Dependency)
 
 ## 📋 [] Фаза 17: Advanced UI Components (Autocomplete, Task Input)
 

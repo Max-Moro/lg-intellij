@@ -48,6 +48,9 @@
     <!-- Platform dependency -->
     <depends>com.intellij.modules.platform</depends>
     
+    <!-- Optional Git integration -->
+    <depends optional="true" config-file="withGit.xml">Git4Idea</depends>
+    
     <!-- Resource bundle for localization -->
     <resource-bundle>messages.LgBundle</resource-bundle>
     

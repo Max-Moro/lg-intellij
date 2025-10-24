@@ -42,6 +42,9 @@ class LgModeSetsPanel(
 
     // Track current mode-sets data
     private var currentModeSets: List<ModeSet> = emptyList()
+    
+    // Track current branches data
+    private var currentBranches: List<String> = emptyList()
 
     // UI references
     private lateinit var wrappingPanel: LgWrappingPanel
@@ -59,6 +62,18 @@ class LgModeSetsPanel(
 
                 withContext(Dispatchers.EDT) {
                     rebuildUI()
+                }
+            }
+        }
+        
+        // Subscribe to branches updates
+        scope.launch {
+            catalogService.branches.collectLatest { branches ->
+                currentBranches = branches
+                LOG.debug("Branches updated: ${branches.size} branches")
+
+                withContext(Dispatchers.EDT) {
+                    updateTargetBranchCombo()
                 }
             }
         }
@@ -153,20 +168,11 @@ class LgModeSetsPanel(
         }
 
         val combo = ComboBox<String>().apply {
-            // Restore saved value
-            val savedBranch = stateService.state.targetBranch
-            if (!savedBranch.isNullOrBlank()) {
-                addItem(savedBranch)
-                selectedItem = savedBranch
-            }
-
-            // Listen to changes
-            addActionListener {
-                val selected = selectedItem as? String
-                stateService.state.targetBranch = selected
-            }
+            // На данном этапе просто плейсхолдер для верстки (ждем вызова updateTargetBranchCombo)
+            isEnabled = false
+            addItem(LgBundle.message("control.target.branch.no.git"))
         }
-
+        
         targetBranchCombo = combo
 
         val labeledCombo = LgLabeledComponent.create(
@@ -174,6 +180,95 @@ class LgModeSetsPanel(
             component = combo
         )
         wrappingPanel.add(labeledCombo)
+        
+        // Если ветки еще не загружены, триггерим их загрузку
+        if (currentBranches.isEmpty()) {
+            scope.launch {
+                catalogService.loadBranchesOnly()
+            }
+        } else {
+            updateTargetBranchCombo()
+        }
+    }
+    
+    /**
+     * Обновляет содержимое target branch ComboBox без полного rebuild UI.
+     */
+    private fun updateTargetBranchCombo() {
+        val combo = targetBranchCombo ?: return
+        
+        if (!hasReviewMode()) {
+            return
+        }
+        
+        // Удаляем все listeners
+        val listeners = combo.actionListeners
+        listeners.forEach { combo.removeActionListener(it) }
+
+        // Remember current selection
+        val currentSelection = combo.selectedItem as? String
+
+        // Update items
+        combo.removeAllItems()
+
+        if (currentBranches.isEmpty()) {
+            combo.isEnabled = false
+            combo.addItem(LgBundle.message("control.target.branch.no.git"))
+        } else {
+            combo.isEnabled = true
+            currentBranches.forEach { combo.addItem(it) }
+
+            // Приоритет: сохраненная из state > текущая выбранная > main/master > первая
+            val savedBranch = stateService.state.targetBranch
+
+            when {
+                // 1. Восстановить из state (приоритет)
+                !savedBranch.isNullOrBlank() && savedBranch in currentBranches -> {
+                    combo.selectedItem = savedBranch
+                }
+                // 2. Сохранить текущий выбор если он еще актуален
+                currentSelection != null && currentSelection in currentBranches -> {
+                    combo.selectedItem = currentSelection
+                }
+                // 3. Fallback: искать main/master или первая в списке
+                else -> {
+                    val defaultBranch = findDefaultBranch(currentBranches)
+                    if (defaultBranch != null) {
+                        combo.selectedItem = defaultBranch
+                        stateService.state.targetBranch = defaultBranch
+                    } else if (currentBranches.isNotEmpty()) {
+                        combo.selectedIndex = 0
+                        stateService.state.targetBranch = currentBranches[0]
+                    }
+                }
+            }
+        }
+
+        // Установить listener ПОСЛЕ того как заполнили и выбрали нужный item
+        combo.addActionListener {
+            val selected = combo.selectedItem as? String
+            if (selected != null && selected != LgBundle.message("control.target.branch.no.git")) {
+                stateService.state.targetBranch = selected
+            }
+        }
+    }
+    
+    /**
+     * Ищет дефолтную родительскую ветку (main или master).
+     * Возвращает первую найденную в порядке приоритета.
+     */
+    private fun findDefaultBranch(branches: List<String>): String? {
+        // Варианты дефолтных веток в порядке приоритета
+        val defaultBranchNames = listOf("main", "master", "origin/main", "origin/master")
+        
+        for (defaultName in defaultBranchNames) {
+            val found = branches.find { it == defaultName || it.endsWith("/$defaultName") }
+            if (found != null) {
+                return found
+            }
+        }
+        
+        return null
     }
 
     /**

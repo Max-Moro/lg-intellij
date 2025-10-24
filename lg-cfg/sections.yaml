@@ -106,6 +106,8 @@ src:
                             - "/models/ModeSetsListSchema.kt"
                             - "/services/catalog/LgCatalogService.kt"
                             - "/services/state/LgPanelStateService.kt"
+                            - "/services/generation/CliArgsBuilder.kt"
+                            - "/services/git/LgGitService.kt"
                         - condition: "TAGSET:intellij-plugin:diag"
                           allow:
                             - "/ui/dialogs/LgDoctorDialog.kt"

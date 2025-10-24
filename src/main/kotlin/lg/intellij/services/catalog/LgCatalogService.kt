@@ -58,6 +58,9 @@ class LgCatalogService(
     private val _tagSets = MutableStateFlow<TagSetsListSchema?>(null)
     val tagSets: StateFlow<TagSetsListSchema?> = _tagSets.asStateFlow()
     
+    private val _branches = MutableStateFlow<List<String>>(emptyList())
+    val branches: StateFlow<List<String>> = _branches.asStateFlow()
+    
     private val _isLoading = MutableStateFlow(false)
 
     /**
@@ -85,6 +88,7 @@ class LgCatalogService(
                 loadContexts()
                 loadModeSets()
                 loadTagSets()
+                loadBranches()
             }
             LOG.info("Catalog data loaded successfully")
         } catch (e: Exception) {
@@ -106,9 +110,19 @@ class LgCatalogService(
         _contexts.value = emptyList()
         _modeSets.value = null
         _tagSets.value = null
+        _branches.value = emptyList()
         
         // Load fresh data
         loadAll()
+    }
+    
+    /**
+     * Loads only Git branches (public API for on-demand loading).
+     */
+    suspend fun loadBranchesOnly() {
+        withContext(Dispatchers.IO) {
+            loadBranches()
+        }
     }
     
     /**
@@ -252,6 +266,33 @@ class LgCatalogService(
         } catch (e: Exception) {
             LOG.error("Unexpected error loading tag-sets", e)
             _tagSets.value = null
+        }
+    }
+    
+    /**
+     * Loads Git branches from Git service.
+     */
+    private suspend fun loadBranches() {
+        try {
+            val gitService = project.service<lg.intellij.services.git.LgGitService>()
+            
+            if (!gitService.isGitAvailable()) {
+                LOG.debug("Git not available, skipping branches load")
+                _branches.value = emptyList()
+                return
+            }
+            
+            val branches = gitService.getBranches()
+            _branches.value = branches
+            LOG.debug("Loaded ${branches.size} branches")
+            
+        } catch (e: NoClassDefFoundError) {
+            // Git4Idea plugin not available
+            LOG.debug("Git4Idea plugin not available")
+            _branches.value = emptyList()
+        } catch (e: Exception) {
+            LOG.error("Unexpected error loading branches", e)
+            _branches.value = emptyList()
         }
     }
     

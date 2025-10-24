@@ -7,8 +7,7 @@ import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lg.intellij.cli.CliExecutor
-import lg.intellij.models.CliResult
-import lg.intellij.services.LgErrorReportingService
+import lg.intellij.cli.handleWith
 import lg.intellij.services.state.LgPanelStateService
 
 /**
@@ -35,10 +34,7 @@ class LgGenerationService(private val project: Project) {
     
     private val panelState: LgPanelStateService
         get() = project.service()
-    
-    private val errorReporting: LgErrorReportingService
-        get() = LgErrorReportingService.getInstance()
-    
+
     /**
      * Generates content for the specified target.
      * 
@@ -60,32 +56,15 @@ class LgGenerationService(private val project: Project) {
                 timeoutMs = 120_000
             )
             
-            when (result) {
-                is CliResult.Success -> {
-                    LOG.info("${targetType.displayName.replaceFirstChar { it.uppercase() }} generated successfully for '$targetName'")
-                    result.data
-                }
-                
-                is CliResult.Failure -> {
-                    val operationName = "${targetType.displayName.replaceFirstChar { it.uppercase() }} Generation"
-                    LOG.warn("$operationName failed: exit code ${result.exitCode}")
-                    errorReporting.reportCliFailure(project, operationName, result)
-                    null
-                }
-                
-                is CliResult.Timeout -> {
-                    val operationName = "${targetType.displayName.replaceFirstChar { it.uppercase() }} Generation"
-                    LOG.warn("$operationName timeout")
-                    errorReporting.reportTimeout(project, operationName, result.timeoutMs)
-                    null
-                }
-                
-                is CliResult.NotFound -> {
-                    val operationName = "${targetType.displayName.replaceFirstChar { it.uppercase() }} Generation"
-                    LOG.warn("CLI not found")
-                    errorReporting.reportCliNotFound(project, operationName)
-                    null
-                }
+            val operationName = "${targetType.displayName.replaceFirstChar { it.uppercase() }} Generation"
+            
+            result.handleWith(
+                project = project,
+                operationName = operationName,
+                logger = LOG
+            ) { success ->
+                LOG.info("${targetType.displayName.replaceFirstChar { it.uppercase() }} generated successfully for '$targetName'")
+                success.data
             }
         }
     }

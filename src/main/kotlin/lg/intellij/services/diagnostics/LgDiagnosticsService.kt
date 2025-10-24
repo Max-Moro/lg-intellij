@@ -8,9 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import lg.intellij.cli.CliExecutor
-import lg.intellij.models.CliResult
+import lg.intellij.cli.handleWith
 import lg.intellij.models.DiagReportSchema
-import lg.intellij.services.LgErrorReportingService
 
 /**
  * Service for running diagnostics and cache management.
@@ -27,10 +26,7 @@ class LgDiagnosticsService(private val project: Project) {
     
     private val cliExecutor: CliExecutor
         get() = project.service()
-    
-    private val errorReporting: LgErrorReportingService
-        get() = LgErrorReportingService.getInstance()
-    
+
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -50,30 +46,12 @@ class LgDiagnosticsService(private val project: Project) {
                 timeoutMs = 60_000
             )
             
-            when (result) {
-                is CliResult.Success -> {
-                    try {
-                        json.decodeFromString<DiagReportSchema>(result.data)
-                    } catch (e: Exception) {
-                        LOG.error("Failed to parse diagnostics JSON", e)
-                        null
-                    }
-                }
-                
-                is CliResult.Failure -> {
-                    errorReporting.reportCliFailure(project, "Diagnostics", result)
-                    null
-                }
-                
-                is CliResult.Timeout -> {
-                    errorReporting.reportTimeout(project, "Diagnostics", result.timeoutMs)
-                    null
-                }
-                
-                is CliResult.NotFound -> {
-                    errorReporting.reportCliNotFound(project, "Diagnostics")
-                    null
-                }
+            result.handleWith(
+                project = project,
+                operationName = "Diagnostics",
+                logger = LOG
+            ) { success ->
+                json.decodeFromString<DiagReportSchema>(success.data)
             }
         }
     }
@@ -92,30 +70,12 @@ class LgDiagnosticsService(private val project: Project) {
                 timeoutMs = 60_000
             )
             
-            when (result) {
-                is CliResult.Success -> {
-                    try {
-                        json.decodeFromString<DiagReportSchema>(result.data)
-                    } catch (e: Exception) {
-                        LOG.error("Failed to parse diagnostics JSON after rebuild", e)
-                        null
-                    }
-                }
-                
-                is CliResult.Failure -> {
-                    errorReporting.reportCliFailure(project, "Cache Rebuild", result)
-                    null
-                }
-                
-                is CliResult.Timeout -> {
-                    errorReporting.reportTimeout(project, "Cache Rebuild", result.timeoutMs)
-                    null
-                }
-                
-                is CliResult.NotFound -> {
-                    errorReporting.reportCliNotFound(project, "Cache Rebuild")
-                    null
-                }
+            result.handleWith(
+                project = project,
+                operationName = "Cache Rebuild",
+                logger = LOG
+            ) { success ->
+                json.decodeFromString<DiagReportSchema>(success.data)
             }
         }
     }
@@ -137,35 +97,15 @@ class LgDiagnosticsService(private val project: Project) {
                 timeoutMs = 60_000
             )
             
-            when (result) {
-                is CliResult.Success -> {
-                    val report = try {
-                        json.decodeFromString<DiagReportSchema>(result.data)
-                    } catch (e: Exception) {
-                        LOG.error("Failed to parse diagnostics JSON from bundle", e)
-                        return@withContext null
-                    }
-                    
-                    // Извлекаем bundle path из stderr (даже при успехе CLI пишет туда путь)
-                    val bundlePath = extractBundlePath(result.stderr)
-                    
-                    Pair(report, bundlePath)
-                }
-                
-                is CliResult.Failure -> {
-                    errorReporting.reportCliFailure(project, "Bundle Build", result)
-                    null
-                }
-                
-                is CliResult.Timeout -> {
-                    errorReporting.reportTimeout(project, "Bundle Build", result.timeoutMs)
-                    null
-                }
-                
-                is CliResult.NotFound -> {
-                    errorReporting.reportCliNotFound(project, "Bundle Build")
-                    null
-                }
+            result.handleWith(
+                project = project,
+                operationName = "Bundle Build",
+                logger = LOG
+            ) { success ->
+                val report = json.decodeFromString<DiagReportSchema>(success.data)
+                // Извлекаем bundle path из stderr (даже при успехе CLI пишет туда путь)
+                val bundlePath = extractBundlePath(success.stderr)
+                Pair(report, bundlePath)
             }
         }
     }

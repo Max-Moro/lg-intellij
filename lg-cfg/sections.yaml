@@ -71,6 +71,7 @@ src:
                           allow:
                             - "/cli/CliResolver.kt"
                             - "/cli/CliException.kt"
+                            - "/cli/CliResultHandler.kt"
                             - "/listeners/LgSettingsChangeListener.kt"
                         - condition: "TAGSET:intellij-plugin:stats"
                           allow:

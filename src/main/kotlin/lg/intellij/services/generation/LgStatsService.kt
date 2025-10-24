@@ -8,9 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import lg.intellij.cli.CliExecutor
-import lg.intellij.models.CliResult
+import lg.intellij.cli.handleWith
 import lg.intellij.models.ReportSchema
-import lg.intellij.services.LgErrorReportingService
 import lg.intellij.services.state.LgPanelStateService
 
 /**
@@ -26,10 +25,7 @@ class LgStatsService(private val project: Project) {
     
     private val panelState: LgPanelStateService
         get() = project.service()
-    
-    private val errorReporting: LgErrorReportingService
-        get() = LgErrorReportingService.getInstance()
-    
+
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -59,58 +55,34 @@ class LgStatsService(private val project: Project) {
                 timeoutMs = 120_000
             )
             
-            when (result) {
-                 is CliResult.Success -> {
-                     try {
-                         // Parse JSON manually to replace problematic 'meta' field with empty map
-                         val jsonElement = json.parseToJsonElement(result.data)
-                         val jsonObject = jsonElement.jsonObject
-                         
-                         // Replace 'meta' field with empty object in all file objects
-                         val cleanedFiles = jsonObject["files"]?.jsonArray?.map { fileElement ->
-                             val fileObj = fileElement.jsonObject.toMutableMap()
-                             fileObj["meta"] = JsonObject(emptyMap()) // Replace with empty object
-                             JsonObject(fileObj)
-                         }?.let { JsonArray(it) }
-                         
-                         val cleanedJson = jsonObject.toMutableMap().apply {
-                             if (cleanedFiles != null) {
-                                 put("files", cleanedFiles)
-                             }
-                         }
-                         
-                         val report = json.decodeFromJsonElement<ReportSchema>(
-                             JsonObject(cleanedJson)
-                         )
-                         
-                         LOG.info("Stats fetched successfully for '$target'")
-                         report
-                     } catch (e: Exception) {
-                         LOG.error("Failed to parse stats JSON", e)
-                         null
-                     }
-                 }
+            result.handleWith(
+                project = project,
+                operationName = "Stats Collection",
+                logger = LOG
+            ) { success ->
+                // Parse JSON manually to replace problematic 'meta' field with empty map
+                val jsonElement = json.parseToJsonElement(success.data)
+                val jsonObject = jsonElement.jsonObject
                 
-                is CliResult.Failure -> {
-                    val operationName = "Stats Collection"
-                    LOG.warn("$operationName failed: exit code ${result.exitCode}")
-                    errorReporting.reportCliFailure(project, operationName, result)
-                    null
+                // Replace 'meta' field with empty object in all file objects
+                val cleanedFiles = jsonObject["files"]?.jsonArray?.map { fileElement ->
+                    val fileObj = fileElement.jsonObject.toMutableMap()
+                    fileObj["meta"] = JsonObject(emptyMap()) // Replace with empty object
+                    JsonObject(fileObj)
+                }?.let { JsonArray(it) }
+                
+                val cleanedJson = jsonObject.toMutableMap().apply {
+                    if (cleanedFiles != null) {
+                        put("files", cleanedFiles)
+                    }
                 }
                 
-                is CliResult.Timeout -> {
-                    val operationName = "Stats Collection"
-                    LOG.warn("$operationName timeout")
-                    errorReporting.reportTimeout(project, operationName, result.timeoutMs)
-                    null
-                }
+                val report = json.decodeFromJsonElement<ReportSchema>(
+                    JsonObject(cleanedJson)
+                )
                 
-                is CliResult.NotFound -> {
-                    val operationName = "Stats Collection"
-                    LOG.warn("CLI not found")
-                    errorReporting.reportCliNotFound(project, operationName)
-                    null
-                }
+                LOG.info("Stats fetched successfully for '$target'")
+                report
             }
         }
     }

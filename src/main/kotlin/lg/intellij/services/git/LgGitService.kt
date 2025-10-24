@@ -29,7 +29,7 @@ class LgGitService(private val project: Project) {
         return try {
             val repository = getRepository()
             repository != null
-        } catch (e: NoClassDefFoundError) {
+        } catch (_: NoClassDefFoundError) {
             // Git4Idea plugin not available
             LOG.debug("Git4Idea plugin not available")
             false

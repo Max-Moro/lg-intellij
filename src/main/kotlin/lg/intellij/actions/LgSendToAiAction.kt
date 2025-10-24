@@ -69,7 +69,7 @@ class LgSendToAiAction : AnAction(
             aiService.resolveProvider(settings.state.aiProvider)
         }
         val providerName = aiService.getProviderName(providerId)
-        
+
         // Генерация и отправка с progress indicator
         ProgressManager.getInstance().run(object : Task.Backgroundable(
             project,
@@ -77,14 +77,14 @@ class LgSendToAiAction : AnAction(
             true
         ) {
             private var generatedContent: String? = null
-            
+
             override fun run(indicator: ProgressIndicator) {
                 // Генерация (blocking call для suspend функции)
                 indicator.text = LgBundle.message("action.send.ai.progress.text", targetName)
                 generatedContent = runBlocking {
                     generationService.generate(target, targetName)
                 }
-                
+
                 // Если генерация провалилась, не продолжаем
                 if (generatedContent == null) {
                     return

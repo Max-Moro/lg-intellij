@@ -56,18 +56,13 @@ abstract class BaseCliProvider : AiProvider {
      * Создает временный файл с контентом и вызывает executeCommand.
      */
     override suspend fun send(content: String) {
+        val tempFile = createTempFile(content)
+
         try {
-            val tempFile = createTempFile(content)
-            
-            try {
-                executeCommand(tempFile.absolutePath)
-            } finally {
-                // Удалить временный файл
-                tempFile.delete()
-            }
-        } catch (e: Exception) {
-            LOG.error("Failed to send content via CLI", e)
-            throw AiProviderException("Failed to send to $name: ${e.message}", e)
+            executeCommand(tempFile.absolutePath)
+        } finally {
+            // Удалить временный файл
+            tempFile.delete()
         }
     }
     

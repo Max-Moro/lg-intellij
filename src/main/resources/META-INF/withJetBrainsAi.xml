@@ -1,0 +1,5 @@
+<!-- Configuration file for JetBrains AI Assistant integration support -->
+<idea-plugin>
+    <!-- Currently no JetBrains AI provider specific extensions needed -->
+</idea-plugin>
+

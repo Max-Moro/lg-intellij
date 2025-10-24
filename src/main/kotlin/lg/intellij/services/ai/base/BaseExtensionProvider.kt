@@ -52,12 +52,7 @@ abstract class BaseExtensionProvider : AiProvider {
             )
         }
         
-        try {
-            sendToExtension(content)
-        } catch (e: Exception) {
-            LOG.error("Failed to send content via extension", e)
-            throw AiProviderException("Failed to send to $name: ${e.message}", e)
-        }
+        sendToExtension(content)
     }
     
     /**

@@ -96,13 +96,8 @@ abstract class BaseNetworkProvider : AiProvider {
      */
     override suspend fun send(content: String) {
         val token = getApiToken()
-        
-        try {
-            sendToApi(content, token)
-        } catch (e: Exception) {
-            LOG.error("Failed to send content via API", e)
-            throw AiProviderException("Failed to send to $name: ${e.message}", e)
-        }
+
+        sendToApi(content, token)
     }
     
     /**

@@ -53,7 +53,7 @@ interface AiProvider {
 - **Always available**
 - Копирует контент в буфер обмена
 
-### Phase 2: JetBrains AI Assistant (планируется)
+### Phase 2: JetBrains AI Assistant (реализован)
 - **ID:** `jetbrains.ai`
 - **Priority:** 90 (highest)
 - **Plugin ID:** `com.intellij.ml.llm`

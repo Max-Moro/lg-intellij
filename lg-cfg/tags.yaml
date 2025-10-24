@@ -26,3 +26,5 @@ tag-sets:
         title: "Самодиагностика"
       starter:
         title: "Стартовая конфигурация"
+      send-to-ai:
+        title: "Отправка в AI"

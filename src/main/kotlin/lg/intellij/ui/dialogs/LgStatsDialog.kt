@@ -83,11 +83,18 @@ class LgStatsDialog(
         }
         
         override fun doAction(e: ActionEvent) {
-            LgStubNotifications.showNotImplemented(
-                project,
-                "Send stats to AI",
-                10
+            // Trigger Send to AI action (будет использовать текущий task text из panel state)
+            val action = lg.intellij.actions.LgSendToAiAction()
+            val dataContext = DataManager.getInstance().getDataContext(contentPanel)
+            val event = AnActionEvent.createEvent(
+                action,
+                dataContext,
+                null,
+                ActionPlaces.UNKNOWN,
+                ActionUiKind.NONE,
+                null
             )
+            action.actionPerformed(event)
         }
     }
     

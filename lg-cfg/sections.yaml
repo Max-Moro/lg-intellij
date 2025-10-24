@@ -120,3 +120,10 @@ src:
                             - "/actions/LgCreateStarterConfigAction.kt"
                             - "/actions/LgOpenConfigAction.kt"
                             - "/models/InitResult.kt"
+                        - condition: "TAGSET:intellij-plugin:send-to-ai"
+                          allow:
+                            - "/services/ai/"
+                            - "/actions/LgSendToAiAction.kt"
+                            - "/services/state/LgSettingsService.kt"
+                            - "/settings/LgSettingsConfigurable.kt"
+                            - "/ui/toolwindow/LgControlPanel.kt"

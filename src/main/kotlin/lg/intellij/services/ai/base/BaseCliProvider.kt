@@ -1,0 +1,95 @@
+package lg.intellij.services.ai.base
+
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.util.ExecUtil
+import com.intellij.openapi.diagnostic.logger
+import lg.intellij.services.ai.AiProvider
+import lg.intellij.services.ai.AiProviderException
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
+
+/**
+ * Базовый класс для CLI-based AI провайдеров.
+ * 
+ * Используется для провайдеров, которые работают через CLI утилиты
+ * (например, Claude CLI).
+ * 
+ * Основные возможности:
+ * - Проверка наличия CLI команды в PATH
+ * - Создание временных файлов с контентом
+ * - Выполнение команд с контентом
+ */
+abstract class BaseCliProvider : AiProvider {
+    
+    private val LOG = logger<BaseCliProvider>()
+    
+    /**
+     * Имя CLI команды (например, "claude", "aichat").
+     */
+    protected abstract val cliCommand: String
+    
+    /**
+     * Проверяет доступность CLI команды через which/where.
+     */
+    override suspend fun isAvailable(): Boolean {
+        return try {
+            val checkCommand = if (System.getProperty("os.name").startsWith("Windows")) {
+                "where"
+            } else {
+                "which"
+            }
+            
+            val commandLine = GeneralCommandLine(checkCommand, cliCommand)
+            val output = ExecUtil.execAndGetOutput(commandLine, 5000)
+            
+            output.exitCode == 0
+        } catch (e: Exception) {
+            LOG.debug("CLI command '$cliCommand' not found", e)
+            false
+        }
+    }
+    
+    /**
+     * Отправляет контент через CLI.
+     * 
+     * Создает временный файл с контентом и вызывает executeCommand.
+     */
+    override suspend fun send(content: String) {
+        try {
+            val tempFile = createTempFile(content)
+            
+            try {
+                executeCommand(tempFile.absolutePath)
+            } finally {
+                // Удалить временный файл
+                tempFile.delete()
+            }
+        } catch (e: Exception) {
+            LOG.error("Failed to send content via CLI", e)
+            throw AiProviderException("Failed to send to $name: ${e.message}", e)
+        }
+    }
+    
+    /**
+     * Создает временный файл с контентом.
+     * 
+     * @param content Контент для записи
+     * @return Созданный временный файл
+     */
+    protected fun createTempFile(content: String): File {
+        val tempFile = Files.createTempFile("lg-ai-", ".md").toFile()
+        tempFile.writeText(content)
+        return tempFile
+    }
+    
+    /**
+     * Выполняет CLI команду с путем к файлу контента.
+     * 
+     * Реализуется наследниками для специфичной логики запуска.
+     * 
+     * @param contentFilePath Абсолютный путь к временному файлу с контентом
+     */
+    protected abstract fun executeCommand(contentFilePath: String)
+}
+

@@ -300,7 +300,17 @@ class LgControlPanel(
                 // Send to AI button
                 add(JButton(LgBundle.message("control.btn.send.ai"), AllIcons.Actions.Execute).apply {
                     addActionListener {
-                        LgStubNotifications.showNotImplemented(project, LgBundle.message("control.stub.send.ai"), 10)
+                        val action = LgSendToAiAction()
+                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
+                        val event = AnActionEvent.createEvent(
+                            action,
+                            dataContext,
+                            null,
+                            ActionPlaces.TOOLWINDOW_CONTENT,
+                            ActionUiKind.NONE,
+                            null
+                        )
+                        action.actionPerformed(event)
                     }
                 })
                 

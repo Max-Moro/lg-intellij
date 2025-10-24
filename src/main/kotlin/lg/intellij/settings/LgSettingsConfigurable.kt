@@ -1,13 +1,18 @@
 package lg.intellij.settings
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.BoundConfigurable
+import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.dsl.builder.*
+import kotlinx.coroutines.*
 import lg.intellij.LgBundle
 import lg.intellij.listeners.LgSettingsChangeListener
+import lg.intellij.services.ai.AiIntegrationService
 import lg.intellij.services.state.LgSettingsService
 
 /**
@@ -24,12 +29,74 @@ import lg.intellij.services.state.LgSettingsService
 class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.display.name")) {
     
     private val settings = service<LgSettingsService>()
+    private val aiService = AiIntegrationService.getInstance()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    
+    // UI reference for manual state management
+    private var providerCombo: ComboBox<String>? = null
+    private var initialProvider: String = ""
+    
+    // Start detection after UI is created
+    private fun startProviderDetection() {
+        scope.launch {
+            val availableIds = aiService.detectAvailableProviders()
+            
+            // Use invokeLater for modal dialog (Settings is modal)
+            ApplicationManager.getApplication().invokeLater(
+                { updateProviderCombo(availableIds) },
+                ModalityState.any()
+            )
+        }
+    }
+    
+    override fun reset() {
+        super.reset()
+        
+        // Restore initial provider selection
+        providerCombo?.selectedItem = initialProvider
+    }
+    
+    override fun isModified(): Boolean {
+        if (super.isModified()) return true
+        
+        // Check if provider changed
+        val currentProvider = providerCombo?.selectedItem as? String
+        return currentProvider != initialProvider
+    }
     
     override fun apply() {
         super.apply()
         
+        // Save provider selection
+        val selectedProvider = providerCombo?.selectedItem as? String
+        if (selectedProvider != null) {
+            settings.state.aiProvider = selectedProvider
+            initialProvider = selectedProvider
+        }
+        
         // Notify listeners about Settings changes (invalidates CLI resolver cache, etc.)
         LgSettingsChangeListener.notifySettingsChanged()
+    }
+    
+    override fun disposeUIResources() {
+        super.disposeUIResources()
+        scope.cancel()
+    }
+    
+    private fun updateProviderCombo(availableIds: List<String>) {
+        val combo = providerCombo ?: return
+        
+        // Clear and repopulate
+        combo.removeAllItems()
+        availableIds.forEach { combo.addItem(it) }
+        
+        // Restore initial selection if still valid
+        if (initialProvider in availableIds) {
+            combo.selectedItem = initialProvider
+        } else if (availableIds.isNotEmpty()) {
+            combo.selectedItem = availableIds.first()
+            initialProvider = availableIds.first()
+        }
     }
     
     override fun createPanel(): DialogPanel = panel {
@@ -68,13 +135,23 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
         
         group(LgBundle.message("settings.group.ai")) {
             row(LgBundle.message("settings.ai.provider.label")) {
-                comboBox(
-                    LgSettingsService.AiProvider.entries,
-                    SimpleListCellRenderer.create { label, value, _ ->
-                        label.text = LgBundle.message("settings.ai.provider.${value.name}")
+                // Initialize with saved value or auto-detect
+                initialProvider = runBlocking {
+                    aiService.resolveProvider(settings.state.aiProvider)
+                }
+                
+                providerCombo = ComboBox(arrayOf(initialProvider)).apply {
+                    renderer = SimpleListCellRenderer.create { label, value, _ ->
+                        label.text = aiService.getProviderName(value)
                     }
-                ).bindItem(settings.state::aiProvider.toNullableProperty())
+                    selectedItem = initialProvider
+                }
+                
+                cell(providerCombo!!)
             }.comment(LgBundle.message("settings.ai.provider.comment"))
+            
+            // Start async detection after UI is created
+            startProviderDetection()
             
             row(LgBundle.message("settings.openai.key.label")) {
                 cell(com.intellij.ui.components.JBPasswordField())
@@ -82,7 +159,7 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
                     .comment(LgBundle.message("settings.openai.key.comment"))
                 
                 button(LgBundle.message("settings.openai.key.configure")) {
-                    // TODO: Phase 19 - Implement PasswordSafe integration
+                    // TODO: Phase 5 - Implement PasswordSafe integration for OpenAI
                     com.intellij.openapi.ui.Messages.showInfoMessage(
                         LgBundle.message("settings.openai.key.configure.not.implemented"),
                         LgBundle.message("settings.openai.key.configure.title")

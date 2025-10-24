@@ -37,23 +37,6 @@ class LgSettingsService : SimplePersistentStateComponent<LgSettingsService.State
     }
     
     /**
-     * AI provider options.
-     */
-    enum class AiProvider {
-        /** Copy to clipboard */
-        CLIPBOARD,
-        
-        /** JetBrains AI Assistant (requires plugin) */
-        JETBRAINS_AI,
-        
-        /** Junie AI (requires plugin) */
-        JUNIE,
-        
-        /** OpenAI API (network integration) */
-        OPENAI_API
-    }
-    
-    /**
      * Persistent state class.
      */
     class State : BaseState() {
@@ -66,8 +49,8 @@ class LgSettingsService : SimplePersistentStateComponent<LgSettingsService.State
         /** CLI installation strategy */
         var installStrategy by enum(InstallStrategy.MANAGED_VENV)
         
-        /** AI provider for "Send to AI" action */
-        var aiProvider by enum(AiProvider.CLIPBOARD)
+        /** AI provider ID for "Send to AI" action (empty = auto-detect best) */
+        var aiProvider by string("")
         
         /** Open generated files as editable (instead of read-only) */
         var openAsEditable by property(false)

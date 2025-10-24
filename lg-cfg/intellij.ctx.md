@@ -9,7 +9,7 @@
 
 ${src}
 
-{# ---
+---
 
 # IntelliJ Platform — Документация для разработки плагинов
 
@@ -17,15 +17,11 @@ ${src}
 
 ${md@self:intellij-platform-docs/02-architecture.md}
 
-${md@self:intellij-platform-docs/19-git-integration.md} #}
+${md@self:intellij-platform-docs/13-notifications.md}
 
 ---
 
-${md@self:architecture}
-
----
-
-${md@self:plan-mini}
+${md@self:ai-integration}
 {% if task AND scope:local %}
 ---
 

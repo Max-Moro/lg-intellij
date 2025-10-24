@@ -25,6 +25,7 @@ import lg.intellij.models.TagSetsListSchema
 import lg.intellij.services.catalog.LgCatalogService
 import lg.intellij.services.catalog.TokenizerCatalogService
 import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.ui.components.LgEncoderCompletionField
 import lg.intellij.ui.components.LgLabeledComponent
 import lg.intellij.ui.components.LgTaskTextField
 import lg.intellij.ui.components.LgTaskTextField.addChangeListener
@@ -62,7 +63,7 @@ class LgControlPanel(
     private lateinit var templateCombo: ComboBox<String>
     private lateinit var sectionCombo: ComboBox<String>
     private lateinit var libraryCombo: ComboBox<String>
-    private lateinit var encoderField: com.intellij.ui.components.JBTextField
+    private lateinit var encoderField: LgEncoderCompletionField
     private lateinit var tagsButton: JButton
     
     // Modes panel (self-contained, manages own state and data)
@@ -456,28 +457,28 @@ class LgControlPanel(
                         if (newLib != null) {
                             stateService.state.tokenizerLib = newLib
                             
-                            // Reload encoders для новой библиотеки
-                            scope.launch {
-                                tokenizerService.getEncoders(newLib, project)
+                            // Update encoder field library (triggers reload of suggestions)
+                            if (::encoderField.isInitialized) {
+                                encoderField.setLibrary(newLib)
                             }
                         }
                     }
                 }
                 add(LgLabeledComponent.create(LgBundle.message("control.library.label"), libraryCombo))
                 
-                // Encoder TextField (custom values supported)
-                encoderField = com.intellij.ui.components.JBTextField(20).apply {
-                    // Use effective encoder (with fallback to application defaults)
+                // Encoder Completion Field (with auto-suggestions and custom values)
+                encoderField = LgEncoderCompletionField(project, this@LgControlPanel).apply {
+                    // Set initial library
+                    val initialLib = stateService.getEffectiveTokenizerLib()
+                    setLibrary(initialLib)
+                    
+                    // Set initial value (from state)
                     text = stateService.getEffectiveEncoder()
                     
-                    document.addDocumentListener(object : javax.swing.event.DocumentListener {
-                        override fun insertUpdate(e: javax.swing.event.DocumentEvent?) = update()
-                        override fun removeUpdate(e: javax.swing.event.DocumentEvent?) = update()
-                        override fun changedUpdate(e: javax.swing.event.DocumentEvent?) = update()
-                        private fun update() {
-                            stateService.state.encoder = text
-                        }
-                    })
+                    // Update state when text changes (supports custom values)
+                    whenTextChangedFromUi(this@LgControlPanel) { newText ->
+                        stateService.state.encoder = newText
+                    }
                 }
                 add(LgLabeledComponent.create(LgBundle.message("control.encoder.label"), encoderField))
                 

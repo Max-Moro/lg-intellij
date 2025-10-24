@@ -49,11 +49,7 @@
 
 ## 📋 [✅] Фаза 16: Git Integration (Optional Dependency)
 
-## 📋 [] Фаза 17: Advanced UI Components (Autocomplete, Task Input)
-
-### Цель
-Улучшить UX через specialized компоненты: autocomplete для encoder field, auto-expanding task input.
-
+## 📋 [✅] Фаза 17: TextCompletionField
 
 ## 📋 [] Фаза 18: Actions Shortcuts & Menu Integration
 

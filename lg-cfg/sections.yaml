@@ -42,8 +42,6 @@ src:
                             - "/settings/LgSettingsConfigurable.kt"
                             - "/toolWindow/LgToolWindowFactory.kt"
                             - "/utils/LgStubNotifications.kt"
-                            # Перенести позже
-                            - "/models/DiagReportSchema.kt"
                         - condition: "TAGSET:intellij-plugin:ui"
                           allow: "/ui/components/"
                         - condition: "TAGSET:intellij-plugin:control"
@@ -114,6 +112,7 @@ src:
                             - "/services/diagnostics/LgDiagnosticsService.kt"
                             - "/actions/LgResetCacheAction.kt"
                             - "/actions/LgRunDoctorAction.kt"
+                            - "/models/DiagReportSchema.kt"
                         - condition: "TAGSET:intellij-plugin:starter"
                           allow:
                             - "/ui/dialogs/LgInitWizardDialog.kt"

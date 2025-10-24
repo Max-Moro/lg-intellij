@@ -1111,52 +1111,39 @@
 
 ---
 
-## 📋 Фаза 17: Advanced UI Components (Autocomplete, Task Input)
+## 📋 Фаза 17: TextCompletionField
 
 ### Цель
-Улучшить UX через specialized компоненты: autocomplete для encoder field, auto-expanding task input.
+Замена поля `encoderField` на более продвинутый `TextCompletionField`. Аналог кастомного компонента Autocomplete в VS Code Extension.
 
 ### Задачи
 
-1. **`ui/components/LgAutoCompleteTextField`:**
-   - Wrapper над `JBTextField` с popup списком suggestions
-   - Фильтрация при typing
-   - Keyboard navigation (Arrow Up/Down, Enter)
-   - Badge для cached items (✓)
-   - Поддержка custom values (пользователь может ввести что угодно)
-   
-2. **Интеграция в Control Panel:**
-   - Encoder field: заменить простой `JBTextField` на `LgAutoCompleteTextField`
-   - Suggestions из `TokenizerCatalogService.getEncoders(currentLib)`
-   - Auto-reload suggestions при смене library
+В **IntelliJ Platform** нет необходимости создавать свой кастомный компонент автосаджеста. Платформа сразу поставляться с нужным макрокомпонентом, расположенным в `com.intellij.openapi.externalSystem.service.ui.completion.*`.
 
-3. **`ui/components/LgTaskInputField` (опционально):**
-   - Auto-expanding `JTextArea` или custom component
-   - Аналог `lg-chat-input` из VS Code
-   - Min height: 1 line, max height: 5 lines
-   - Auto-resize при вводе текста
-   
-   Альтернатива: оставить обычный `JTextArea` — в IntelliJ это менее критично чем в Web UI
+У нас сейчас, к сожалению, нет выгруженной компактной документации по `TextCompletionField`.
 
-4. **Polish для Control Panel:**
-   - Финальные tweaks spacing, alignment
-   - Tooltips для всех элементов
-   - Tab order настройка
+Поэтому перед основной работой:
+
+- Необходимо изучить документацию и примеры по использованию `TextCompletionField` (при помощи инструмента Context7 или WEB поиска).
+- Подробнее изучить сам исходный код данного макрокомпонента в `cloned/intellij-community/platform/external-system-impl/src/com/intellij/openapi/externalSystem/service/ui/completion/`.
+- Найти и изучить примеры использования `TextCompletionField` в выкачанных исходниках платформы и других плагинов `cloned/*`.
+
+После полного понимая работы этого макрокомпонента, произвести итоговую интеграцию "Control Panel":
+
+- Encoder field: заменить на использование макрокомпонента `TextCompletionField`.
+- Suggestions из `TokenizerCatalogService.getEncoders(currentLib)`.
+- Auto-reload suggestions при смене library.
+- Отправка выбранного энкодера (в том числе и возможного произвольного варианта) в `LgPanelStateService` для дальнейшего использования в плагине.
 
 ### Критерии готовности
 ✅ Encoder field показывает autocomplete popup при typing  
-✅ Cached encoders отмечены badge  
-✅ Custom encoder values можно вводить  
-✅ Task input field удобен для многострочного ввода (если реализован)  
-✅ UI полирован и соответствует IntelliJ Platform guidelines  
+✅ Custom encoder values можно вводить
+✅ Данные выбранного энкодера передаются в CLI
 
 ### Референсы из VS Code Extension
 - `media/ui/components/autosuggest/` (вся директория) → спецификация autocomplete
-- `media/ui/components/chat-input/` → референс auto-expand behaviour (опционально)
-
-### Документация IntelliJ Platform
-- `05-ui-components.md` (секции: custom components, JBTextField, ComboBox)
-- Возможно потребуется изучение Swing popup API (не в документации)
+- `media/control.js` → как происходит работа с полем `encoderAutosuggest`
+- `src/views/ControlPanelView.ts` → как происходит работа с загруженными encoders (перезагрузка от смены библиотек)
 
 ---
 

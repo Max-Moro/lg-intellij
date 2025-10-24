@@ -9,7 +9,7 @@
 
 ${src}
 
----
+{# ---
 
 # IntelliJ Platform — Документация для разработки плагинов
 
@@ -17,7 +17,7 @@ ${src}
 
 ${md@self:intellij-platform-docs/02-architecture.md}
 
-${md@self:intellij-platform-docs/19-git-integration.md}
+${md@self:intellij-platform-docs/19-git-integration.md} #}
 
 ---
 

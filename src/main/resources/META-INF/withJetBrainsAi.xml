@@ -1,5 +1,7 @@
 <!-- Configuration file for JetBrains AI Assistant integration support -->
 <idea-plugin>
-    <!-- Currently no JetBrains AI provider specific extensions needed -->
+    <!-- This file is loaded when com.intellij.ml.llm plugin is available -->
+    <!-- Currently no JetBrains AI Assistant specific extensions needed -->
+    <!-- Service is registered via @Service annotation -->
 </idea-plugin>
 

@@ -1,0 +1,7 @@
+<!-- Configuration file for Junie integration support -->
+<idea-plugin>
+    <!-- This file is loaded when org.jetbrains.junie plugin is available -->
+    <!-- Currently no Junie-specific extensions needed -->
+    <!-- Service is registered via @Service annotation -->
+</idea-plugin>
+

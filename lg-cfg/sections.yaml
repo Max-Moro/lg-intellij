@@ -18,6 +18,21 @@ src:
               - "/kotlin/"
               - "/resources/"
             children:
+              resources:
+                mode: allow
+                allow:
+                  - "/messages/"
+                  - "/META-INF/"
+                children:
+                  META-INF:
+                    mode: allow
+                    allow:
+                      - "/plugin.xml"
+                      - "/withGit.xml"
+                    when:
+                    - condition: "TAGSET:intellij-plugin:send-to-ai"
+                      allow:
+                        - "/with**.xml"
               kotlin:
                 mode: allow
                 allow:

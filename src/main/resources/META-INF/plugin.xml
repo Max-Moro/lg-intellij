@@ -57,6 +57,9 @@
     <!-- Optional GitHub Copilot integration -->
     <depends optional="true" config-file="withGitHubCopilot.xml">com.github.copilot</depends>
     
+    <!-- Optional Junie integration -->
+    <depends optional="true" config-file="withJunie.xml">org.jetbrains.junie</depends>
+    
     <!-- Resource bundle for localization -->
     <resource-bundle>messages.LgBundle</resource-bundle>
     

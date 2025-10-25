@@ -63,16 +63,23 @@ interface AiProvider {
 ### Phase 3: GitHub Copilot (реализован)
 - **ID:** `github.copilot`
 - **Priority:** 80
-- **Plugin ID:** `github.copilot`
+- **Plugin ID:** `com.github.copilot`
 - **API**: Использует рефлексию для вызова `CopilotChatService.query()` с `QueryOptionBuilder`
-- **Особенности**: Создаёт новую сессию в режиме "Ask", скрывает приветственное сообщение
+- **Особенности**: Создаёт новую сессию в режиме "Agent", скрывает приветственное сообщение
 
-### Phase 4: Claude CLI (планируется)
+### Phase 4: Junie, the AI coding agent by JetBrains (реализован)
+- **ID:** `jetbrains.junie`
+- **Priority:** 70
+- **Plugin ID:** `org.jetbrains.junie`
+- **API**: Использует рефлексию для вызова `TaskService.start()` с `ExplicitTaskContext`
+- **Особенности**: Создаёт новую task chain с типом IssueType.ISSUE, без явно выбранных файлов контекста
+
+### Phase 5: Claude CLI (планируется)
 - **ID:** `claude.cli`
 - **Priority:** 50
 - **CLI Command:** `claude`
 
-### Phase 5: OpenAI API (планируется)
+### Phase 6: OpenAI API (планируется)
 - **ID:** `openai.api`
 - **Priority:** 40
 - **Endpoint:** `https://api.openai.com/v1/chat/completions`
@@ -152,7 +159,7 @@ try {
     )
 }
 ```
-
+<!-- lg:comment:start -->
 ## Testing
 
 Для тестирования провайдеров:
@@ -169,4 +176,4 @@ try {
 - [ ] Batch отправка нескольких секций
 - [ ] Custom provider registration через Extension Point
 - [ ] AI response preview в IDE
-
+<!-- lg:comment:end -->

@@ -1,6 +1,6 @@
 <!-- Configuration file for GitHub Copilot integration support -->
 <idea-plugin>
-    <!-- This file is loaded when github.copilot plugin is available -->
+    <!-- This file is loaded when com.github.copilot plugin is available -->
     <!-- Currently no GitHub Copilot specific extensions needed -->
     <!-- Service is registered via @Service annotation -->
 </idea-plugin>

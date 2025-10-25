@@ -58,6 +58,8 @@ dependencies {
 
 // Configure IntelliJ Platform Gradle Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html
 intellijPlatform {
+    sandboxContainer = layout.buildDirectory.dir("idea-sandbox")
+    
     pluginConfiguration {
         name = providers.gradleProperty("pluginName")
         version = providers.gradleProperty("pluginVersion")
@@ -159,6 +161,13 @@ intellijPlatformTesting {
                 robotServerPlugin()
             }
         }
+    }
+}
+
+// Configure default runIde task to preserve sandbox
+tasks.named("runIde") {
+    doFirst {
+        logger.lifecycle("Using sandbox directory: ${intellijPlatform.sandboxContainer.get().asFile.absolutePath}")
     }
 }
 

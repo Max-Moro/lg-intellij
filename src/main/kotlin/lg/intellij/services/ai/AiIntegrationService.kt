@@ -6,6 +6,7 @@ import com.intellij.openapi.diagnostic.logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lg.intellij.services.ai.providers.ClipboardProvider
+import lg.intellij.services.ai.providers.GitHubCopilotProvider
 import lg.intellij.services.ai.providers.JetBrainsAiProvider
 
 /**
@@ -33,6 +34,7 @@ class AiIntegrationService {
         // Регистрация встроенных провайдеров
         registerProvider(ClipboardProvider())
         registerProvider(JetBrainsAiProvider())
+        registerProvider(GitHubCopilotProvider())
 
         LOG.info("AI Integration Service initialized with ${providers.size} providers")
     }

@@ -13,6 +13,10 @@ ${src}
 
 # ${md@self:ai-integration/common}
 
+# ${md:decompiled/DECOMPILATION-REPORT}
+
+# ${md:decompiled/INTEGRATION-TARGETS}
+
 {% if task AND scope:local %}
 ---
 

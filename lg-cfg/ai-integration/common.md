@@ -57,11 +57,15 @@ interface AiProvider {
 - **ID:** `jetbrains.ai`
 - **Priority:** 90 (highest)
 - **Plugin ID:** `com.intellij.ml.llm`
+- **API**: Использует рефлексию для вызова `ChatSessionHost.createChatSession()` и `ChatSession.send()`
+- **Особенности**: Создаёт новую чат-сессию без автоприкрепления файлов
 
-### Phase 3: GitHub Copilot (планируется)
+### Phase 3: GitHub Copilot (реализован)
 - **ID:** `github.copilot`
 - **Priority:** 80
-- **Plugin ID:** TBD
+- **Plugin ID:** `github.copilot`
+- **API**: Использует рефлексию для вызова `CopilotChatService.query()` с `QueryOptionBuilder`
+- **Особенности**: Создаёт новую сессию в режиме "Ask", скрывает приветственное сообщение
 
 ### Phase 4: Claude CLI (планируется)
 - **ID:** `claude.cli`

@@ -54,6 +54,9 @@
     <!-- Optional JetBrains AI Assistant integration -->
     <depends optional="true" config-file="withJetBrainsAi.xml">com.intellij.ml.llm</depends>
     
+    <!-- Optional GitHub Copilot integration -->
+    <depends optional="true" config-file="withGitHubCopilot.xml">com.github.copilot</depends>
+    
     <!-- Resource bundle for localization -->
     <resource-bundle>messages.LgBundle</resource-bundle>
     

@@ -2,6 +2,7 @@ package lg.intellij.services.ai.base
 
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.Project
@@ -9,8 +10,10 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import lg.intellij.models.AiInteractionMode
 import lg.intellij.services.ai.AiProvider
 import lg.intellij.services.ai.AiProviderException
+import lg.intellij.services.state.LgPanelStateService
 
 /**
  * Базовый класс для Extension-based AI провайдеров.
@@ -56,7 +59,8 @@ abstract class BaseExtensionProvider : AiProvider {
     /**
      * Отправляет контент через плагин.
      * 
-     * Проверяет доступность плагина, активирует tool window и делегирует sendToExtension.
+     * Проверяет доступность плагина, активирует tool window, определяет режим
+     * взаимодействия и делегирует sendToExtension.
      */
     override suspend fun send(content: String) {
         if (!isAvailable()) {
@@ -70,8 +74,12 @@ abstract class BaseExtensionProvider : AiProvider {
         // Активировать tool window
         openToolWindow(project)
         
-        // Отправить контент
-        sendToExtension(project, content)
+        // Получить режим AI-взаимодействия из panel state
+        val panelState = project.service<LgPanelStateService>()
+        val mode = panelState.getAiInteractionMode()
+        
+        // Отправить контент с режимом
+        sendToExtension(project, content, mode)
     }
     
     /**
@@ -104,7 +112,12 @@ abstract class BaseExtensionProvider : AiProvider {
      * 
      * @param project Текущий проект
      * @param content Контент для отправки
+     * @param mode Режим AI-взаимодействия (Ask или Agent)
      */
-    protected abstract suspend fun sendToExtension(project: Project, content: String)
+    protected abstract suspend fun sendToExtension(
+        project: Project,
+        content: String,
+        mode: AiInteractionMode
+    )
 }
 

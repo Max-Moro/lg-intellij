@@ -5,6 +5,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import lg.intellij.models.AiInteractionMode
 import lg.intellij.services.ai.base.BaseExtensionProvider
 
 /**
@@ -31,8 +32,12 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
     override val pluginId = "com.intellij.ml.llm"
     override val toolWindowId = "AIAssistant"
 
-    override suspend fun sendToExtension(project: Project, content: String) {
-        LOG.info("Sending content to JetBrains AI Assistant")
+    override suspend fun sendToExtension(
+        project: Project,
+        content: String,
+        mode: AiInteractionMode
+    ) {
+        LOG.info("Sending content to JetBrains AI Assistant in ${mode.name} mode")
 
         // 1. Получаем или создаём чат-сессию
         val chatSession = getOrCreateChatSession(project)
@@ -42,8 +47,8 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             focusChatSession(project, chatSession)
         }
 
-        // 3. Отправляем сообщение
-        sendMessage(project, chatSession, content)
+        // 3. Отправляем сообщение с режимом
+        sendMessage(project, chatSession, content, mode)
 
         LOG.info("Successfully sent to JetBrains AI")
     }
@@ -194,8 +199,17 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
     
     /**
      * Отправляет сообщение в чат через рефлексию.
+     * 
+     * Соответствие режимов:
+     * - ASK → SimpleChat (простой вопрос-ответ)
+     * - AGENT → SmartChat (режим с инструментами)
      */
-    private suspend fun sendMessage(project: Project, chatSession: Any, content: String) {
+    private suspend fun sendMessage(
+        project: Project,
+        chatSession: Any,
+        content: String,
+        mode: AiInteractionMode
+    ) {
         val classLoader = this::class.java.classLoader
         
         // Create PSString via ConstantsKt.getPrivacyConst()
@@ -217,15 +231,17 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         val formattedConstructor = formattedStringClass.getConstructor(psStringClass)
         val formattedText = formattedConstructor.newInstance(psString)
         
-        // Get SimpleChat.INSTANCE (implements ChatKind)
-        val simpleChatClass = Class.forName(
-            "com.intellij.ml.llm.core.chat.session.SimpleChat",
-            true,
-            classLoader
-        )
-        val instanceField = simpleChatClass.getDeclaredField("INSTANCE")
+        // Get ChatKind instance based on mode
+        val (chatKindClassName, modeName) = when (mode) {
+            AiInteractionMode.ASK -> "com.intellij.ml.llm.core.chat.session.SimpleChat" to "SimpleChat"
+            AiInteractionMode.AGENT -> "com.intellij.ml.llm.core.chat.session.SmartChat" to "SmartChat"
+        }
+        
+        val chatKindClass = Class.forName(chatKindClassName, true, classLoader)
+        val instanceField = chatKindClass.getDeclaredField("INSTANCE")
         val chatKind = instanceField.get(null)
         
+        LOG.debug("Using ChatKind: $modeName")
 
         // Call send method (suspend) via suspendCancellableCoroutine
         kotlinx.coroutines.suspendCancellableCoroutine<Any> { continuation ->
@@ -249,7 +265,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
                 // Log after invoke
                 val getUidMethod = chatSessionInterface.getMethod("getUid")
                 val uid = getUidMethod.invoke(chatSession)
-                LOG.debug("Message sent to chat session: $uid")
+                LOG.debug("Message sent to chat session: $uid with $modeName")
             } catch (e: Exception) {
                 continuation.resumeWith(Result.failure(e))
             }

@@ -19,6 +19,21 @@ interface AiProvider {
 }
 ```
 
+#### `AiInteractionMode` (enum)
+Типизированный режим AI-взаимодействия:
+```kotlin
+enum class AiInteractionMode {
+    ASK,    // Базовый режим вопрос-ответ
+    AGENT   // Режим с инструментами
+}
+```
+
+Соответствует набору режимов `ai-interaction` из `lg-cfg/modes.yaml`:
+- `ask` → `AiInteractionMode.ASK`
+- `agent` → `AiInteractionMode.AGENT`
+
+По умолчанию (если `ai-interaction` не задан): `AGENT`
+
 #### `AiIntegrationService` (Application-level)
 Центральный сервис для управления провайдерами:
 - Registry паттерн для провайдеров
@@ -35,9 +50,11 @@ interface AiProvider {
 - Выполнение команд
 
 #### `BaseExtensionProvider`
-Базовый класс для Extension-based провайдеров (JetBrains AI, GitHub Copilot):
+Базовый класс для Extension-based провайдеров (JetBrains AI, GitHub Copilot, Junie):
 - Проверка наличия и активности плагина
 - Интеграция через API плагинов
+- Автоматическое определение режима AI-взаимодействия из `LgPanelStateService`
+- Проброс режима в `sendToExtension(project, content, mode)`
 
 #### `BaseNetworkProvider`
 Базовый класс для Network-based провайдеров (OpenAI API):
@@ -59,20 +76,29 @@ interface AiProvider {
 - **Plugin ID:** `com.intellij.ml.llm`
 - **API**: Использует рефлексию для вызова `ChatSessionHost.createChatSession()` и `ChatSession.send()`
 - **Особенности**: Создаёт новую чат-сессию без автоприкрепления файлов
+- **Режимы**:
+  - `ASK` → `SimpleChat` (простой вопрос-ответ)
+  - `AGENT` → `SmartChat` (режим с инструментами)
 
 ### Phase 3: GitHub Copilot (реализован)
 - **ID:** `github.copilot`
 - **Priority:** 80
 - **Plugin ID:** `com.github.copilot`
 - **API**: Использует рефлексию для вызова `CopilotChatService.query()` с `QueryOptionBuilder`
-- **Особенности**: Создаёт новую сессию в режиме "Agent", скрывает приветственное сообщение
+- **Особенности**: Создаёт новую сессию, скрывает приветственное сообщение
+- **Режимы**:
+  - `ASK` → `withAskMode()`
+  - `AGENT` → `withAgentMode()`
 
 ### Phase 4: Junie, the AI coding agent by JetBrains (реализован)
 - **ID:** `jetbrains.junie`
 - **Priority:** 70
 - **Plugin ID:** `org.jetbrains.junie`
 - **API**: Использует рефлексию для вызова `TaskService.start()` с `ExplicitTaskContext`
-- **Особенности**: Создаёт новую task chain с типом IssueType.ISSUE, без явно выбранных файлов контекста
+- **Особенности**: Создаёт новую task chain без явно выбранных файлов контекста
+- **Режимы**:
+  - `ASK` → `IssueType.CHAT` (свободный диалог)
+  - `AGENT` → `IssueType.ISSUE` (формальная задача с инструментами)
 
 ### Phase 5: Claude CLI (планируется)
 - **ID:** `claude.cli`

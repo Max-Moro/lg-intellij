@@ -5,6 +5,7 @@ import com.intellij.openapi.project.Project
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import lg.intellij.models.AiInteractionMode
 
 /**
  * Project-level service for storing Control Panel UI state.
@@ -108,6 +109,24 @@ class LgPanelStateService(private val project: Project) : SimplePersistentStateC
         }
 
         return 128000
+    }
+    
+    /**
+     * Returns AI interaction mode based on current modes selection.
+     * 
+     * Logic:
+     * - If "ai-interaction" mode set is present → return its value
+     * - Otherwise → default to AGENT
+     * 
+     * @return Typed AI interaction mode
+     */
+    fun getAiInteractionMode(): AiInteractionMode {
+        val aiInteractionMode = state.modes["ai-interaction"]
+        return when (aiInteractionMode) {
+            "ask" -> AiInteractionMode.ASK
+            "agent" -> AiInteractionMode.AGENT
+            else -> AiInteractionMode.AGENT // Default to AGENT
+        }
     }
     
     companion object {

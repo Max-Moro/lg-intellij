@@ -4,6 +4,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import lg.intellij.models.AiInteractionMode
 import lg.intellij.services.ai.base.BaseExtensionProvider
 
 /**
@@ -29,8 +30,12 @@ class JunieProvider : BaseExtensionProvider() {
     override val pluginId = "org.jetbrains.junie"
     override val toolWindowId = "ElectroJunToolWindow"
 
-    override suspend fun sendToExtension(project: Project, content: String) {
-        LOG.info("Sending content to Junie")
+    override suspend fun sendToExtension(
+        project: Project,
+        content: String,
+        mode: AiInteractionMode
+    ) {
+        LOG.info("Sending content to Junie in ${mode.name} mode")
 
         withContext(Dispatchers.Default) {
             // Get TaskService interface via implementation class (avoids content module restriction)
@@ -47,8 +52,8 @@ class JunieProvider : BaseExtensionProvider() {
             // Create TaskChainId
             val taskChainId = createTaskChainId(classLoader)
             
-            // Create ExplicitTaskContext (with configurable IssueType)
-            val taskContext = createTaskContext(content, classLoader, useIssueMode  = true)
+            // Create ExplicitTaskContext with mode
+            val taskContext = createTaskContext(content, classLoader, mode)
             
             // Call start method (suspend function)
             kotlinx.coroutines.suspendCancellableCoroutine<Any> { continuation ->
@@ -96,12 +101,14 @@ class JunieProvider : BaseExtensionProvider() {
     /**
      * Создаёт ExplicitTaskContext через рефлексию.
      * 
-     * @param useIssueMode If true → IssueType.ISSUE (formal task), if false → IssueType.CHAT (free dialog)
+     * Соответствие режимов:
+     * - ASK → IssueType.CHAT (свободный диалог)
+     * - AGENT → IssueType.ISSUE (формальная задача с инструментами)
      */
     private fun createTaskContext(
         description: String,
         classLoader: ClassLoader,
-        useIssueMode: Boolean
+        mode: AiInteractionMode
     ): Any {
         val explicitTaskContextClass = Class.forName(
             "com.intellij.ml.llm.matterhorn.ej.api.ExplicitTaskContext",
@@ -109,13 +116,16 @@ class JunieProvider : BaseExtensionProvider() {
             classLoader
         )
         
-        // Get IssueType (ISSUE or CHAT)
+        // Get IssueType based on mode
         val issueTypeClass = Class.forName(
             "com.intellij.ml.llm.matterhorn.ej.api.IssueType",
             true,
             classLoader
         )
-        val issueTypeFieldName = if (useIssueMode) "ISSUE" else "CHAT"
+        val issueTypeFieldName = when (mode) {
+            AiInteractionMode.ASK -> "CHAT"
+            AiInteractionMode.AGENT -> "ISSUE"
+        }
         val issueTypeField = issueTypeClass.getDeclaredField(issueTypeFieldName)
         val issueType = issueTypeField.get(null)
         

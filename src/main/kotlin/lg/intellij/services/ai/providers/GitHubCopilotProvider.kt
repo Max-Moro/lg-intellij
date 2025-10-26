@@ -3,6 +3,7 @@ package lg.intellij.services.ai.providers
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import lg.intellij.models.AiInteractionMode
 import lg.intellij.services.ai.base.BaseExtensionProvider
 import kotlin.jvm.functions.Function1
 
@@ -29,8 +30,12 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
     override val pluginId = "com.github.copilot"
     override val toolWindowId = "GitHub Copilot Chat"
 
-    override suspend fun sendToExtension(project: Project, content: String) {
-        LOG.info("Sending content to GitHub Copilot")
+    override suspend fun sendToExtension(
+        project: Project,
+        content: String,
+        mode: AiInteractionMode
+    ) {
+        LOG.info("Sending content to GitHub Copilot in ${mode.name} mode")
 
         val classLoader = this::class.java.classLoader
 
@@ -47,8 +52,8 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
         // Create DataContext (empty, можно расширить при необходимости)
         val dataContext = SimpleDataContext.builder().build()
         
-        // Create QueryOptionBuilder lambda (default: Agent mode)
-        val builderLambda = createQueryOptionBuilderLambda(content, classLoader, useAgentMode = true)
+        // Create QueryOptionBuilder lambda with mode
+        val builderLambda = createQueryOptionBuilderLambda(content, classLoader, mode)
         
         // Call query method
         val queryMethod = chatServiceClass.getMethod(
@@ -68,7 +73,7 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
     private fun createQueryOptionBuilderLambda(
         content: String,
         classLoader: ClassLoader,
-        useAgentMode: Boolean
+        mode: AiInteractionMode
     ): Any {
         val builderClass = Class.forName(
             "com.github.copilot.api.QueryOptionBuilder",
@@ -78,7 +83,7 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
         
         return object : Function1<Any, Unit> {
             override fun invoke(p1: Any) {
-                configureBuilder(p1, content, builderClass, useAgentMode)
+                configureBuilder(p1, content, builderClass, mode)
                 return
             }
         }
@@ -86,12 +91,16 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
     
     /**
      * Настраивает QueryOptionBuilder через рефлексию.
+     * 
+     * Соответствие режимов:
+     * - ASK → withAskMode()
+     * - AGENT → withAgentMode()
      */
     private fun configureBuilder(
         builder: Any,
         content: String,
         builderClass: Class<*>,
-        useAgentMode: Boolean
+        mode: AiInteractionMode
     ) {
         // withInput(content)
         val withInputMethod = builderClass.getMethod("withInput", String::class.java)
@@ -106,15 +115,13 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
         hideWelcomeMethod.invoke(builder)
         
         // withAgentMode() or withAskMode()
-        val modeMethod = if (useAgentMode) {
-            builderClass.getMethod("withAgentMode")
-        } else {
-            builderClass.getMethod("withAskMode")
+        val (modeMethod, modeName) = when (mode) {
+            AiInteractionMode.ASK -> builderClass.getMethod("withAskMode") to "askMode"
+            AiInteractionMode.AGENT -> builderClass.getMethod("withAgentMode") to "agentMode"
         }
         modeMethod.invoke(builder)
         
-        val mode = if (useAgentMode) "agentMode" else "askMode"
-        LOG.debug("Configured QueryOptionBuilder: newSession, hideWelcome, $mode")
+        LOG.debug("Configured QueryOptionBuilder: newSession, hideWelcome, $modeName")
     }
 }
 

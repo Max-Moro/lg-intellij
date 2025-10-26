@@ -48,7 +48,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         }
 
         // 3. Отправляем сообщение с режимом
-        sendMessage(project, chatSession, content, mode)
+        sendMessage(chatSession, content, mode)
 
         LOG.info("Successfully sent to JetBrains AI")
     }
@@ -230,16 +230,81 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
      * Отправляет сообщение в чат через рефлексию.
      * 
      * Соответствие режимов:
-     * - ASK → SimpleChat (простой вопрос-ответ)
-     * - AGENT → SmartChat (режим с инструментами)
+     * - ASK → Chat
+     * - AGENT → Quick Edit
      */
     private suspend fun sendMessage(
-        project: Project,
         chatSession: Any,
         content: String,
         mode: AiInteractionMode
     ) {
         val classLoader = this::class.java.classLoader
+        
+        val chatSessionInterface = Class.forName(
+            "com.intellij.ml.llm.core.chat.session.ChatSession",
+            true,
+            classLoader
+        )
+        
+        if (mode == AiInteractionMode.AGENT) {
+            // Set CODE_GENERATION mode (Quick Edit) via getChatMode().setChatMode()
+            try {
+                // Get CurrentChatSessionMode via getChatMode() from ChatSessionVm
+                val chatSessionVmClass = Class.forName(
+                    "com.intellij.ml.llm.core.chat.session.ChatSessionVm",
+                    true,
+                    classLoader
+                )
+                
+                val getChatModeMethod = chatSessionVmClass.declaredMethods.first {
+                    it.name == "getChatMode" && it.parameterCount == 0
+                }
+                
+                val currentChatMode = getChatModeMethod.invoke(chatSession)
+                
+                // Get NewChatMode.CodeGeneration.INSTANCE
+                val newChatModeClass = Class.forName(
+                    "com.intellij.ml.llm.core.chat.ui.chat.input.chatModeSelector.NewChatMode",
+                    true,
+                    classLoader
+                )
+                val codeGenerationClass = newChatModeClass.declaredClasses.first {
+                    it.simpleName == "CodeGeneration"
+                }
+                val instanceField = codeGenerationClass.getField("INSTANCE")
+                val codeGenerationMode = instanceField.get(null)
+                
+                // Call setChatMode (suspend function) with proper coroutine context
+                // This ensures the chat session is in CODE_GENERATION mode before sending
+                withContext(Dispatchers.Default) {
+                    kotlinx.coroutines.suspendCancellableCoroutine<Any> { continuation ->
+                        try {
+                            val setChatModeMethod = currentChatMode::class.java.declaredMethods.first {
+                                it.name == "setChatMode" && it.parameterCount == 2
+                            }
+                            
+                            // Call suspend function via reflection
+                            val result = setChatModeMethod.invoke(currentChatMode, codeGenerationMode, continuation)
+                            
+                            // Check if function completed immediately (not suspended)
+                            // If it returns COROUTINE_SUSPENDED, continuation will be called automatically
+                            if (result !== kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED) {
+                                continuation.resumeWith(Result.success(result))
+                            }
+                        } catch (e: Exception) {
+                            LOG.error("Failed to set Quick Edit mode", e)
+                            continuation.resumeWith(Result.failure(e))
+                        }
+                    }
+                }
+                
+                LOG.debug("Switched to Quick Edit mode")
+                
+            } catch (e: Exception) {
+                LOG.error("Failed to configure Quick Edit mode", e)
+                // Continue with default mode
+            }
+        }
         
         // Create PSString via ConstantsKt.getPrivacyConst()
         val constantsKtClass = Class.forName(
@@ -250,44 +315,18 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         val getPrivacyConstMethod = constantsKtClass.getMethod("getPrivacyConst", String::class.java)
         val psString = getPrivacyConstMethod.invoke(null, content)
         
-        // Get ChatKind instance based on mode
-        val (chatKindClassName, modeName) = when (mode) {
-            AiInteractionMode.ASK -> "com.intellij.ml.llm.core.chat.session.SimpleChat" to "SimpleChat"
-            AiInteractionMode.AGENT -> "com.intellij.ml.llm.core.chat.session.SmartChat" to "SmartChat"
+        // Use sendRequest(PSString) which automatically determines ChatKind based on session mode
+        val sendRequestMethod = chatSessionInterface.declaredMethods.first {
+            it.name == "sendRequest" && 
+            it.parameterCount == 1 &&
+            it.parameterTypes[0].name.contains("PSString")
         }
         
-        val chatKindClass = Class.forName(chatKindClassName, true, classLoader)
-        val instanceField = chatKindClass.getDeclaredField("INSTANCE")
-        val chatKind = instanceField.get(null)
+        sendRequestMethod.invoke(chatSession, psString)
         
-        LOG.debug("Using ChatKind: $modeName")
-
-        // Call send method (suspend) via suspendCancellableCoroutine
-        kotlinx.coroutines.suspendCancellableCoroutine<Any> { continuation ->
-            try {
-                // Get ChatSession interface (methods are there, not in impl)
-                val chatSessionInterface = Class.forName(
-                    "com.intellij.ml.llm.core.chat.session.ChatSession",
-                    true,
-                    classLoader
-                )
-
-                // Find send method with PSString parameter (4 params: project, text, kind, continuation)
-                val sendMethod = chatSessionInterface.declaredMethods.first {
-                    it.name == "send" && 
-                    it.parameterCount == 4 && 
-                    it.parameterTypes[1].name.contains("PSString")
-                }
-
-                sendMethod.invoke(chatSession, project, psString, chatKind, continuation)
-                
-                // Log after invoke
-                val getUidMethod = chatSessionInterface.getMethod("getUid")
-                val uid = getUidMethod.invoke(chatSession)
-                LOG.debug("Message sent to chat session: $uid with $modeName")
-            } catch (e: Exception) {
-                continuation.resumeWith(Result.failure(e))
-            }
-        }
+        // Log
+        val getUidMethod = chatSessionInterface.getMethod("getUid")
+        val uid = getUidMethod.invoke(chatSession)
+        LOG.info("Message sent to chat session: $uid in ${mode.name} mode")
     }
 }

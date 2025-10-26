@@ -143,3 +143,4 @@ src:
                             - "/services/state/LgSettingsService.kt"
                             - "/settings/LgSettingsConfigurable.kt"
                             - "/ui/toolwindow/LgControlPanel.kt"
+                            - "/models/AiInteractionMode.kt"

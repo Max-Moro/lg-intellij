@@ -150,9 +150,9 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
 
         aiAssistantToolClass.superclass // ChatOrigin
 
-        // SourceAction is enum
+        // ChatSourceAction is enum
         val sourceActionClass = Class.forName(
-            "com.intellij.ml.llm.core.chat.session.ChatSessionStorage\$SourceAction",
+            "com.intellij.ml.llm.core.chat.session.ChatSourceAction",
             true,
             classLoader
         )
@@ -163,7 +163,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         
         // Get PrivacySafeTaskContext.Companion.getEmpty()
         val taskContextClass = Class.forName(
-            "com.intellij.ml.llm.grazieAPIAdapters.tasksFacade.PrivacySafeTaskContext",
+            "com.intellij.ml.llm.grazie.adapters.tasksFacade.PrivacySafeTaskContext",
             true,
             classLoader
         )
@@ -180,16 +180,45 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             emptyTaskContext   // PrivacySafeTaskContext (not nullable!)
         )
         
+        // Create ChatRetrievalSession
+        val chatRetrievalSessionClass = Class.forName(
+            "com.intellij.ml.llm.core.chat.context.ChatRetrievalSession",
+            true,
+            classLoader
+        )
+        
+        // Get ContextStorageImpl
+        val contextStorageImplClass = Class.forName(
+            "com.intellij.ml.llm.core.chat.session.impl.ContextStorageImpl",
+            true,
+            classLoader
+        )
+        val contextStorage = contextStorageImplClass.getDeclaredConstructor().newInstance()
+        
+        // Create CoroutineScope for retrieval session
+        val supervisorScope = kotlinx.coroutines.CoroutineScope(
+            kotlinx.coroutines.SupervisorJob() + Dispatchers.Default
+        )
+        
+        // Create ChatRetrievalSession(project, coroutineScope, contextStorage, chat = null)
+        val retrievalSessionConstructor = chatRetrievalSessionClass.constructors.first { it.parameterCount == 4 }
+        val retrievalSession = retrievalSessionConstructor.newInstance(
+            project,
+            supervisorScope,
+            contextStorage,
+            null  // chat (nullable)
+        )
+        
         // Call createChatSession (suspend function) - use kotlinx.coroutines
         return withContext(Dispatchers.Default) {
             // createChatSession is suspend function - call via suspendCoroutine
             kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
                 try {
-                    // Find method with Continuation parameter
+                    // Find method with 3 params: (ChatCreationContext, InteractiveRetrievalSession, Continuation)
                     val createMethod = chatHostClass.declaredMethods.first { 
-                        it.name == "createChatSession" && it.parameterCount == 2
+                        it.name == "createChatSession" && it.parameterCount == 3
                     }
-                    createMethod.invoke(chatHost, context, continuation)
+                    createMethod.invoke(chatHost, context, retrievalSession, continuation)
                 } catch (e: Exception) {
                     continuation.resumeWith(Result.failure(e))
                 }
@@ -221,16 +250,6 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         val getPrivacyConstMethod = constantsKtClass.getMethod("getPrivacyConst", String::class.java)
         val psString = getPrivacyConstMethod.invoke(null, content)
         
-        // Create FormattedString
-        val formattedStringClass = Class.forName(
-            "com.intellij.ml.llm.core.models.openai.FormattedString",
-            true,
-            classLoader
-        )
-        val psStringClass = psString::class.java
-        val formattedConstructor = formattedStringClass.getConstructor(psStringClass)
-        val formattedText = formattedConstructor.newInstance(psString)
-        
         // Get ChatKind instance based on mode
         val (chatKindClassName, modeName) = when (mode) {
             AiInteractionMode.ASK -> "com.intellij.ml.llm.core.chat.session.SimpleChat" to "SimpleChat"
@@ -252,15 +271,15 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
                     true,
                     classLoader
                 )
-                
-                // Find send method with FormattedString parameter (2nd param)
+
+                // Find send method with PSString parameter (4 params: project, text, kind, continuation)
                 val sendMethod = chatSessionInterface.declaredMethods.first {
                     it.name == "send" && 
                     it.parameterCount == 4 && 
-                    it.parameterTypes[1].name.contains("FormattedString")
+                    it.parameterTypes[1].name.contains("PSString")
                 }
-                
-                sendMethod.invoke(chatSession, project, formattedText, chatKind, continuation)
+
+                sendMethod.invoke(chatSession, project, psString, chatKind, continuation)
                 
                 // Log after invoke
                 val getUidMethod = chatSessionInterface.getMethod("getUid")

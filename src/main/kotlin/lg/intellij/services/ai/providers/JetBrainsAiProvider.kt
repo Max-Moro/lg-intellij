@@ -3,8 +3,6 @@ package lg.intellij.services.ai.providers
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lg.intellij.services.ai.base.BaseExtensionProvider
@@ -31,31 +29,21 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
     override val name = "JetBrains AI Assistant"
     override val priority = 90
     override val pluginId = "com.intellij.ml.llm"
+    override val toolWindowId = "AIAssistant"
 
-    /**
-     * Получает текущий активный проект.
-     */
-    private fun getCurrentProject(): Project {
-        val openProjects = ProjectManager.getInstance().openProjects
-        return openProjects.first()
-    }
-
-    override suspend fun sendToExtension(content: String) {
+    override suspend fun sendToExtension(project: Project, content: String) {
         LOG.info("Sending content to JetBrains AI Assistant")
 
-        // 1. Открываем панель AI Assistant
-        openToolWindow()
+        // 1. Получаем или создаём чат-сессию
+        val chatSession = getOrCreateChatSession(project)
 
-        // 2. Получаем или создаём чат-сессию
-        val chatSession = getOrCreateChatSession()
-
-        // 3. Переключаем фокус на новую сессию (на EDT)
+        // 2. Переключаем фокус на новую сессию (на EDT)
         withContext(Dispatchers.EDT) {
-            focusChatSession(chatSession)
+            focusChatSession(project, chatSession)
         }
 
-        // 4. Отправляем сообщение
-        sendMessage(chatSession, content)
+        // 3. Отправляем сообщение
+        sendMessage(project, chatSession, content)
 
         LOG.info("Successfully sent to JetBrains AI")
     }
@@ -63,7 +51,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
     /**
      * Переключает фокус на указанную чат-сессию.
      */
-    private fun focusChatSession(chatSession: Any) {
+    private fun focusChatSession(project: Project, chatSession: Any) {
         val classLoader = this::class.java.classLoader
         
         // Get FocusedChatSessionHost
@@ -73,7 +61,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             classLoader
         )
         @Suppress("IncorrectServiceRetrieving")
-        val focusedHost = getCurrentProject().getService(focusedHostClass)
+        val focusedHost = project.getService(focusedHostClass)
         
         // Call focusChatSession(chatSession)
         val focusMethod = focusedHostClass.getMethod("focusChatSession", chatSession::class.java.interfaces[0])
@@ -83,31 +71,17 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
     }
     
     /**
-     * Открывает панель AI Assistant через ToolWindowManager
-     */
-    private suspend fun openToolWindow() = withContext(Dispatchers.EDT) {
-        val toolWindow = ToolWindowManager.getInstance(getCurrentProject())
-            .getToolWindow(TOOL_WINDOW_ID)
-        
-        if (toolWindow != null) {
-            LOG.debug("Opening AI Assistant via ToolWindowManager")
-            toolWindow.activate(null)
-            return@withContext
-        }
-    }
-    
-    /**
      * Получает текущий активный чат или создаёт новый через рефлексию.
      * 
      * @param createNew Если true — всегда создаёт новую сессию (по умолчанию)
      */
-    private suspend fun getOrCreateChatSession(createNew: Boolean = true): Any {
+    private suspend fun getOrCreateChatSession(project: Project, createNew: Boolean = true): Any {
         val classLoader = this::class.java.classLoader
         
         // Если нужна новая сессия — сразу создаём
         if (createNew) {
             LOG.debug("Creating new chat session (createNew=true)")
-            return createNewChatSession(classLoader)
+            return createNewChatSession(project, classLoader)
         }
         
         // Load classes via reflection
@@ -119,7 +93,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         
         // Try to get focused chat
         @Suppress("IncorrectServiceRetrieving")
-        val focusedHost = getCurrentProject().getService(focusedHostClass)
+        val focusedHost = project.getService(focusedHostClass)
         val getFocusedMethod = focusedHostClass.getMethod("getFocusedChatSession")
         val focusedSession = getFocusedMethod.invoke(focusedHost)
         
@@ -137,13 +111,13 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         
         // Create new chat session
         LOG.debug("Creating new chat session (no focused session found)")
-        return createNewChatSession(classLoader)
+        return createNewChatSession(project, classLoader)
     }
     
     /**
      * Создаёт новую чат-сессию через рефлексию.
      */
-    private suspend fun createNewChatSession(classLoader: ClassLoader): Any {
+    private suspend fun createNewChatSession(project: Project, classLoader: ClassLoader): Any {
         val chatHostClass = Class.forName(
             "com.intellij.ml.llm.core.chat.session.ChatSessionHost",
             true,
@@ -151,7 +125,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         )
         
         @Suppress( "IncorrectServiceRetrieving")
-        val chatHost = getCurrentProject().getService(chatHostClass)
+        val chatHost = project.getService(chatHostClass)
         
         // Create ChatCreationContext
         val contextClass = Class.forName(
@@ -221,7 +195,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
     /**
      * Отправляет сообщение в чат через рефлексию.
      */
-    private suspend fun sendMessage(chatSession: Any, content: String) {
+    private suspend fun sendMessage(project: Project, chatSession: Any, content: String) {
         val classLoader = this::class.java.classLoader
         
         // Create PSString via ConstantsKt.getPrivacyConst()
@@ -270,7 +244,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
                     it.parameterTypes[1].name.contains("FormattedString")
                 }
                 
-                sendMethod.invoke(chatSession, getCurrentProject(), formattedText, chatKind, continuation)
+                sendMethod.invoke(chatSession, project, formattedText, chatKind, continuation)
                 
                 // Log after invoke
                 val getUidMethod = chatSessionInterface.getMethod("getUid")
@@ -280,9 +254,5 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
                 continuation.resumeWith(Result.failure(e))
             }
         }
-    }
-    
-    companion object {
-        private const val TOOL_WINDOW_ID = "AIAssistant"
     }
 }

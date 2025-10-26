@@ -1,8 +1,14 @@
 package lg.intellij.services.ai.base
 
 import com.intellij.ide.plugins.PluginManager
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.PluginId
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.wm.ToolWindowManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import lg.intellij.services.ai.AiProvider
 import lg.intellij.services.ai.AiProviderException
 
@@ -14,7 +20,8 @@ import lg.intellij.services.ai.AiProviderException
  * 
  * Основные возможности:
  * - Проверка наличия и активности плагина
- * - Автоматическая активация плагина при необходимости
+ * - Автоматическая активация tool window
+ * - Получение текущего проекта
  * - Обработка ошибок отсутствия плагина
  */
 abstract class BaseExtensionProvider : AiProvider {
@@ -26,6 +33,12 @@ abstract class BaseExtensionProvider : AiProvider {
      * Например, "com.intellij.ml.llm" для JetBrains AI.
      */
     protected abstract val pluginId: String
+    
+    /**
+     * ID tool window для автоматической активации.
+     * Например, "AIAssistant" для JetBrains AI.
+     */
+    protected abstract val toolWindowId: String
     
     /**
      * Проверяет наличие и активность плагина.
@@ -43,7 +56,7 @@ abstract class BaseExtensionProvider : AiProvider {
     /**
      * Отправляет контент через плагин.
      * 
-     * Проверяет доступность плагина и делегирует sendToExtension.
+     * Проверяет доступность плагина, активирует tool window и делегирует sendToExtension.
      */
     override suspend fun send(content: String) {
         if (!isAvailable()) {
@@ -52,7 +65,36 @@ abstract class BaseExtensionProvider : AiProvider {
             )
         }
         
-        sendToExtension(content)
+        val project = getCurrentProject()
+        
+        // Активировать tool window
+        openToolWindow(project)
+        
+        // Отправить контент
+        sendToExtension(project, content)
+    }
+    
+    /**
+     * Получает текущий активный проект.
+     */
+    protected fun getCurrentProject(): Project {
+        val openProjects = ProjectManager.getInstance().openProjects
+        return openProjects.first()
+    }
+    
+    /**
+     * Открывает tool window провайдера.
+     */
+    private suspend fun openToolWindow(project: Project) = withContext(Dispatchers.EDT) {
+        val toolWindow = ToolWindowManager.getInstance(project)
+            .getToolWindow(toolWindowId)
+        
+        if (toolWindow != null) {
+            LOG.debug("Opening tool window: $toolWindowId")
+            toolWindow.activate(null)
+        } else {
+            LOG.warn("Tool window not found: $toolWindowId")
+        }
     }
     
     /**
@@ -60,8 +102,9 @@ abstract class BaseExtensionProvider : AiProvider {
      * 
      * Реализуется наследниками для специфичной логики взаимодействия с плагином.
      * 
+     * @param project Текущий проект
      * @param content Контент для отправки
      */
-    protected abstract suspend fun sendToExtension(content: String)
+    protected abstract suspend fun sendToExtension(project: Project, content: String)
 }
 

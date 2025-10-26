@@ -1,9 +1,7 @@
 package lg.intellij.services.ai.providers
 
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lg.intellij.services.ai.base.BaseExtensionProvider
@@ -29,30 +27,10 @@ class JunieProvider : BaseExtensionProvider() {
     override val name = "Junie (JetBrains AI Agent)"
     override val priority = 70
     override val pluginId = "org.jetbrains.junie"
+    override val toolWindowId = "ElectroJunToolWindow"
 
-    /**
-     * Получает текущий активный проект.
-     */
-    private fun getCurrentProject(): Project {
-        val openProjects = ProjectManager.getInstance().openProjects
-        return openProjects.first()
-    }
-
-    override suspend fun sendToExtension(content: String) {
+    override suspend fun sendToExtension(project: Project, content: String) {
         LOG.info("Sending content to Junie")
-        
-        val project = getCurrentProject()
-        
-        // Open Junie tool window
-        withContext(Dispatchers.EDT) {
-            val toolWindow = com.intellij.openapi.wm.ToolWindowManager.getInstance(project)
-                .getToolWindow("ElectroJunToolWindow")
-            
-            if (toolWindow != null) {
-                LOG.debug("Opening Junie tool window")
-                toolWindow.activate(null)
-            }
-        }
 
         withContext(Dispatchers.Default) {
             // Get TaskService interface via implementation class (avoids content module restriction)
@@ -64,7 +42,7 @@ class JunieProvider : BaseExtensionProvider() {
             val companion = companionField.get(null)
             val getInstanceMethod = companion::class.java.getMethod("getInstance", Project::class.java)
             
-            val taskService = getInstanceMethod.invoke(companion, getCurrentProject())
+            val taskService = getInstanceMethod.invoke(companion, project)
             
             // Create TaskChainId
             val taskChainId = createTaskChainId(classLoader)

@@ -3,7 +3,6 @@ package lg.intellij.services.ai.providers
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import lg.intellij.services.ai.base.BaseExtensionProvider
 import kotlin.jvm.functions.Function1
 
@@ -28,22 +27,12 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
     override val name = "GitHub Copilot"
     override val priority = 80
     override val pluginId = "com.github.copilot"
+    override val toolWindowId = "GitHub Copilot Chat"
 
-    /**
-     * Получает текущий активный проект.
-     */
-    private fun getCurrentProject(): Project {
-        val openProjects = ProjectManager.getInstance().openProjects
-        return openProjects.first()
-    }
-
-    override suspend fun sendToExtension(content: String) {
+    override suspend fun sendToExtension(project: Project, content: String) {
         LOG.info("Sending content to GitHub Copilot")
 
         val classLoader = this::class.java.classLoader
-
-        // Программно специально открывать "GitHub Copilot Chat" toolWindow не требуется
-        // — это сделает сам CopilotChatService.
 
         // Get CopilotChatService
         val chatServiceClass = Class.forName(
@@ -53,7 +42,7 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
         )
         
         @Suppress("IncorrectServiceRetrieving")
-        val chatService = getCurrentProject().getService(chatServiceClass)
+        val chatService = project.getService(chatServiceClass)
         
         // Create DataContext (empty, можно расширить при необходимости)
         val dataContext = SimpleDataContext.builder().build()

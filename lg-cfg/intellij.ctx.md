@@ -11,8 +11,7 @@ ${src}
 
 ---
 
-# ${md@self:ai-integration/common}
-
+${md@self:ai-integration/common, if:TAGSET:intellij-plugin:send-to-ai}
 {% if task AND scope:local %}
 ---
 

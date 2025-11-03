@@ -95,9 +95,19 @@ class Dialog(unused: Data) {
 ```
 
 ### DialogTitleCapitalization
-Follow IntelliJ's capitalization rules:
-- Title Case: "Configure Application Settings"
-- Sentence case: "File not found"
+Follow IntelliJ's capitalization rules based on context:
+
+**Dialog titles** (showDialog, DialogWrapper): Title Case
+- "Initialization Failed", "Configure Tags"
+
+**Notification titles** (createNotification): Sentence case
+- "Initialization failed", "File not found"
+
+**Solution**: If same text used in different contexts, create separate bundle keys:
+```properties
+dialog.init.error.title=Initialization Failed
+dialog.init.error.notification.title=Initialization failed
+```
 
 ### PrivatePropertyName
 Private properties should use camelCase, not UPPER_CASE:
@@ -112,11 +122,23 @@ private val log = Logger.getInstance(...)
 ### RemoveRedundantQualifierName
 ```kotlin
 // Before
-import com.intellij.ui.dsl.builder.panel
-panel { Action.dsl {...} }
+putValue(Action.SMALL_ICON, icon)
 
 // Fix
-panel { dsl {...} }
+putValue(SMALL_ICON, icon)
+```
+
+### UsePropertyAccessSyntax
+Replace setter methods with property syntax when possible:
+```kotlin
+// Before
+editor.setBackgroundColor(color)
+
+// Fix
+editor.backgroundColor = color
+
+// Exception: null arguments may not support property syntax
+editor.setBackgroundColor(null)  // Keep as-is, add @Suppress("UsePropertyAccessSyntax")
 ```
 
 ### ⚠️ CRITICAL: Windows Path Format for Edit Tool
@@ -133,12 +155,46 @@ panel { dsl {...} }
 
 This is a known Claude Code issue on Windows that produces misleading error messages.
 
+### When to Use @Suppress
+
+Some "problems" are intentional and should be suppressed with documentation:
+
+**@Suppress("unused")** - Code kept for architecture/API:
+```kotlin
+// Base class for future providers
+@Suppress("unused") // Base class for future CLI-based AI providers
+abstract class BaseCliProvider : AiProvider { ... }
+
+// Sealed classes for kotlinx.serialization
+@Suppress("unused") // Used by kotlinx.serialization polymorphically
+class StringValue(val value: String) : Meta()
+```
+
+**@Suppress("UnstableApiUsage")** - Intentional use of experimental APIs:
+```kotlin
+@Suppress("UnstableApiUsage")
+textFieldWithBrowseButton(descriptor)
+```
+
+**@Suppress("UsePropertyAccessSyntax")** - API limitation:
+```kotlin
+@Suppress("UsePropertyAccessSyntax") // setBackgroundColor(null) cannot use property syntax
+editor.setBackgroundColor(null)
+```
+
+**@Suppress("ASSIGNED_VALUE_IS_NEVER_READ")** - Pattern-specific:
+```kotlin
+@Suppress("ASSIGNED_VALUE_IS_NEVER_READ") // Job reference needed for cancellation
+debounceJob = scope.launch { ... }
+```
+
 **Decision process for each problem:**
 
 1. **Understand context**: Read surrounding code
-2. **Verify safety**: Use Grep to check if "unused" symbol is referenced elsewhere
-3. **Apply fix**: Use Edit tool with precise old_string/new_string
-4. **Preserve functionality**: Never remove code that might be used by reflection, interfaces, or external systems
+2. **Check if intentional**: Base classes, kotlinx.serialization, experimental APIs
+3. **Verify safety**: Use Grep to check if "unused" symbol is referenced elsewhere
+4. **Apply fix or suppress**: Either remove/fix OR add @Suppress with explanation
+5. **Preserve functionality**: Never remove code that might be used by reflection, interfaces, or external systems
 
 ## Step 4: Verify Fixes
 
@@ -208,15 +264,18 @@ Recommendation: Review if these classes are part of planned architecture or shou
 **DO:**
 - Fix unused code, imports, naming conventions
 - Remove genuinely dead code
-- Improve string capitalization
+- Improve string capitalization (considering context: dialog vs notification)
 - Clean up redundant qualifiers
+- Add @Suppress with clear comments for intentional "violations"
 - Work efficiently (max 3 inspection iterations)
 
 **DO NOT:**
 - Remove code that might be used via reflection
 - Remove interface implementations even if "unused"
+- Remove base classes meant for extensibility (suppress instead)
+- Remove kotlinx.serialization sealed class members (suppress instead)
 - Change architecture or refactor significantly
-- Fix UnstableApiUsage warnings (may be intentional use of new APIs)
+- Remove experimental API usage (suppress instead)
 - Remove public API members without verification
 - Spend time on complex refactoring (escalate instead)
 
@@ -239,15 +298,30 @@ grep -B5 "class ClassName" src/ --include="*.kt"
 
 # Special Cases
 
-**Sealed classes and data classes:**
-- Members may be used by JSON serialization
+**Sealed classes and kotlinx.serialization:**
+- Members may be used polymorphically by JSON serialization
 - Check if class has `@Serializable` annotation
-- If part of schema → Keep even if "unused"
+- If part of schema → Keep with `@Suppress("unused")` and comment
+```kotlin
+@Serializable
+sealed class Meta {
+    @Suppress("unused") // Used by kotlinx.serialization polymorphically
+    class StringValue(val value: String) : Meta()
+}
+```
 
-**Base classes:**
-- May be part of architecture even if no current implementations
-- Check file comments for intent
-- If unclear → Escalate
+**Base classes for extensibility:**
+- Kept for future implementations even without current usage
+- Add `@Suppress("unused")` with clear comment explaining purpose
+```kotlin
+@Suppress("unused") // Base class for future network-based AI providers
+abstract class BaseNetworkProvider : AiProvider { ... }
+```
+
+**CanBeParameter vs keeping as property:**
+- If parameter is only used in constructor/init → Change to parameter (remove val/var)
+- If it's a service dependency injection → Keep as val even if seems unused
+- IntelliJ services often need constructor parameters as properties
 
 **LOG properties:**
 - Often marked as unused (PrivatePropertyName)
@@ -257,7 +331,7 @@ grep -B5 "class ClassName" src/ --include="*.kt"
 **UnstableApiUsage:**
 - IntelliJ Platform experimental APIs
 - Usually intentional use of new features
-- Don't remove - report in final summary
+- Add `@Suppress("UnstableApiUsage")` instead of removing
 
 # Final Report Guidelines
 

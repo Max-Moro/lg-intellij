@@ -25,8 +25,8 @@ import lg.intellij.models.InitResult
  * Thread safety: All public methods are suspend functions executing on appropriate dispatchers.
  */
 @Service(Service.Level.PROJECT)
-class LgInitService(private val project: Project) {
-    
+class LgInitService(project: Project) {
+
     private val executor = project.service<CliExecutor>()
     
     /**

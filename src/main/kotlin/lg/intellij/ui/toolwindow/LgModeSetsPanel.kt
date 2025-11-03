@@ -30,7 +30,7 @@ import javax.swing.JComponent
  * - Target branch selector (показывается при review режиме)
  */
 class LgModeSetsPanel(
-    private val project: Project,
+    project: Project,
     parentDisposable: Disposable
 ) : Disposable {
 

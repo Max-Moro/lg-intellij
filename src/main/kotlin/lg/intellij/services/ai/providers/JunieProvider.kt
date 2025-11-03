@@ -22,7 +22,7 @@ import lg.intellij.services.ai.base.BaseExtensionProvider
  */
 class JunieProvider : BaseExtensionProvider() {
     
-    private val LOG = logger<JunieProvider>()
+    private val log = logger<JunieProvider>()
     
     override val id = "jetbrains.junie"
     override val name = "Junie (JetBrains AI Agent)"
@@ -35,7 +35,7 @@ class JunieProvider : BaseExtensionProvider() {
         content: String,
         mode: AiInteractionMode
     ) {
-        LOG.info("Sending content to Junie in ${mode.name} mode")
+        log.info("Sending content to Junie in ${mode.name} mode")
 
         withContext(Dispatchers.Default) {
             // Get TaskService interface via implementation class (avoids content module restriction)
@@ -72,7 +72,7 @@ class JunieProvider : BaseExtensionProvider() {
                         continuation
                     )
                     
-                    LOG.info("Successfully started Junie task")
+                    log.info("Successfully started Junie task")
                 } catch (e: Exception) {
                     continuation.resumeWith(Result.failure(e))
                 }
@@ -129,7 +129,7 @@ class JunieProvider : BaseExtensionProvider() {
         val issueTypeField = issueTypeClass.getDeclaredField(issueTypeFieldName)
         val issueType = issueTypeField.get(null)
         
-        LOG.debug("Creating TaskContext with IssueType.$issueTypeFieldName")
+        log.debug("Creating TaskContext with IssueType.$issueTypeFieldName")
         
         // Create ExplicitTaskContext(type = IssueType, description = content, explicitlySelectedContextFiles = emptyList())
         val constructor = explicitTaskContextClass.getConstructor(

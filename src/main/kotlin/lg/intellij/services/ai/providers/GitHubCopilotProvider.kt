@@ -22,7 +22,7 @@ import kotlin.jvm.functions.Function1
  */
 class GitHubCopilotProvider : BaseExtensionProvider() {
     
-    private val LOG = logger<GitHubCopilotProvider>()
+    private val log = logger<GitHubCopilotProvider>()
     
     override val id = "github.copilot"
     override val name = "GitHub Copilot"
@@ -35,7 +35,7 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
         content: String,
         mode: AiInteractionMode
     ) {
-        LOG.info("Sending content to GitHub Copilot in ${mode.name} mode")
+        log.info("Sending content to GitHub Copilot in ${mode.name} mode")
 
         val classLoader = this::class.java.classLoader
 
@@ -64,7 +64,7 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
         
         queryMethod.invoke(chatService, dataContext, builderLambda)
         
-        LOG.info("Successfully sent to GitHub Copilot")
+        log.info("Successfully sent to GitHub Copilot")
     }
     
     /**
@@ -121,7 +121,7 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
         }
         modeMethod.invoke(builder)
         
-        LOG.debug("Configured QueryOptionBuilder: newSession, hideWelcome, $modeName")
+        log.debug("Configured QueryOptionBuilder: newSession, hideWelcome, $modeName")
     }
 }
 

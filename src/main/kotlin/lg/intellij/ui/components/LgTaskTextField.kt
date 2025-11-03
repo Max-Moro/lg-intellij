@@ -52,9 +52,10 @@ object LgTaskTextField {
         
         private fun updateBorder() {
             if (!this::editorField.isInitialized) return
-            
+
             val editor = editorField.editor ?: return
             if (editor is EditorEx) {
+                @Suppress("UsePropertyAccessSyntax") // setBackgroundColor(null) cannot use property syntax
                 editor.setBackgroundColor(null)
                 editor.colorsScheme = getEditorColorScheme(editor)
                 editorField.border = DarculaEditorTextFieldBorder(editorField, editor)
@@ -127,6 +128,7 @@ object LgTaskTextField {
             SoftWrapsEditorCustomization.ENABLED,
             AdditionalPageAtBottomEditorCustomization.DISABLED,
             EditorCustomization { editor ->
+                @Suppress("UsePropertyAccessSyntax") // setBackgroundColor(null) cannot use property syntax
                 editor.setBackgroundColor(null)
                 editor.colorsScheme = getEditorColorScheme(editor)
                 editor.settings.additionalLinesCount = 0

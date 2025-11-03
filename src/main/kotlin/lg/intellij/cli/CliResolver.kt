@@ -23,7 +23,7 @@ import java.io.File
 @Service(Service.Level.APP)
 class CliResolver {
     
-    private val LOG = logger<CliResolver>()
+    private val log = logger<CliResolver>()
     
     @Volatile
     private var cachedPath: String? = null
@@ -37,14 +37,14 @@ class CliResolver {
     fun resolve(): String {
         // Check cache first
         cachedPath?.let { 
-            LOG.debug("Using cached CLI path: $it")
+            log.debug("Using cached CLI path: $it")
             return it 
         }
         
         val resolved = resolveInternal()
         cachedPath = resolved
         
-        LOG.info("Resolved CLI path: $resolved")
+        log.info("Resolved CLI path: $resolved")
         return resolved
     }
     
@@ -53,7 +53,7 @@ class CliResolver {
      * Should be called when Settings change.
      */
     fun invalidateCache() {
-        LOG.debug("Invalidating CLI path cache")
+        log.debug("Invalidating CLI path cache")
         cachedPath = null
     }
     
@@ -69,10 +69,10 @@ class CliResolver {
         val explicitPath = settings.state.cliPath?.trim() ?: ""
         if (explicitPath.isNotEmpty()) {
             if (isExecutable(explicitPath)) {
-                LOG.info("Using explicit CLI path from Settings: $explicitPath")
+                log.info("Using explicit CLI path from Settings: $explicitPath")
                 return explicitPath
             } else {
-                LOG.warn("Configured CLI path not executable or not found: $explicitPath")
+                log.warn("Configured CLI path not executable or not found: $explicitPath")
             }
         }
         
@@ -80,7 +80,7 @@ class CliResolver {
         if (settings.state.installStrategy == LgSettingsService.InstallStrategy.SYSTEM) {
             val interpreter = settings.state.pythonInterpreter?.trim() ?: ""
             if (interpreter.isNotEmpty() && isExecutable(interpreter)) {
-                LOG.info("Using system Python interpreter: $interpreter")
+                log.info("Using system Python interpreter: $interpreter")
                 return interpreter
             }
         }
@@ -88,21 +88,21 @@ class CliResolver {
         // Strategy 3: Search in PATH for "listing-generator"
         val inPath = findInPath("listing-generator")
         if (inPath != null) {
-            LOG.info("Found listing-generator in PATH: $inPath")
+            log.info("Found listing-generator in PATH: $inPath")
             return inPath
         }
         
         // Strategy 4: Try Python module with configured interpreter
         val configuredPython = settings.state.pythonInterpreter?.trim() ?: ""
         if (configuredPython.isNotEmpty() && isExecutable(configuredPython)) {
-            LOG.info("Falling back to Python module with configured interpreter: $configuredPython")
+            log.info("Falling back to Python module with configured interpreter: $configuredPython")
             return configuredPython
         }
         
         // Strategy 5: Auto-detect Python and use module
         val detectedPython = findPython()
         if (detectedPython != null) {
-            LOG.info("Falling back to Python module with auto-detected Python: $detectedPython")
+            log.info("Falling back to Python module with auto-detected Python: $detectedPython")
             return detectedPython
         }
         
@@ -181,7 +181,7 @@ class CliResolver {
             
             result.exitCode == 0
         } catch (e: Exception) {
-            LOG.debug("Failed to validate Python at $pythonPath: ${e.message}")
+            log.debug("Failed to validate Python at $pythonPath: ${e.message}")
             false
         }
     }

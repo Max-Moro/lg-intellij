@@ -29,7 +29,7 @@ import lg.intellij.services.state.LgPanelStateService
  */
 abstract class BaseExtensionProvider : AiProvider {
     
-    private val LOG = logger<BaseExtensionProvider>()
+    private val log = logger<BaseExtensionProvider>()
     
     /**
      * ID плагина, с которым интегрируется данный провайдер.
@@ -51,7 +51,7 @@ abstract class BaseExtensionProvider : AiProvider {
             val plugin = PluginManager.getInstance().findEnabledPlugin(PluginId.getId(pluginId))
             plugin != null
         } catch (e: Exception) {
-            LOG.debug("Plugin '$pluginId' not found or not enabled", e)
+            log.debug("Plugin '$pluginId' not found or not enabled", e)
             false
         }
     }
@@ -98,10 +98,10 @@ abstract class BaseExtensionProvider : AiProvider {
             .getToolWindow(toolWindowId)
         
         if (toolWindow != null) {
-            LOG.debug("Opening tool window: $toolWindowId")
+            log.debug("Opening tool window: $toolWindowId")
             toolWindow.activate(null)
         } else {
-            LOG.warn("Tool window not found: $toolWindowId")
+            log.warn("Tool window not found: $toolWindowId")
         }
     }
     

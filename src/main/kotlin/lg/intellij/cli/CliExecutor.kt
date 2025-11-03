@@ -28,7 +28,7 @@ import java.nio.charset.StandardCharsets
 @Service(Service.Level.PROJECT)
 class CliExecutor(private val project: Project) {
     
-    private val LOG = logger<CliExecutor>()
+    private val log = logger<CliExecutor>()
     private val resolver = service<CliResolver>()
 
     /**
@@ -62,14 +62,14 @@ class CliExecutor(private val project: Project) {
                 workingDirectory ?: project.basePath
             )
             
-            LOG.debug("Executing CLI: ${commandLine.commandLineString}")
+            log.debug("Executing CLI: ${commandLine.commandLineString}")
             
             // Create process handler
             val handler = CapturingProcessHandler(commandLine)
             
             // Write stdin if provided
             if (stdinData != null) {
-                LOG.debug("Writing ${stdinData.length} bytes to stdin")
+                log.debug("Writing ${stdinData.length} bytes to stdin")
                 handler.processInput?.use { stdin ->
                     stdin.write(stdinData.toByteArray(StandardCharsets.UTF_8))
                 }
@@ -84,7 +84,7 @@ class CliExecutor(private val project: Project) {
         } catch (e: CliNotFoundException) {
             CliResult.NotFound(e.message ?: "CLI not found")
         } catch (e: Exception) {
-            LOG.error("CLI execution failed", e)
+            log.error("CLI execution failed", e)
             CliResult.Failure(
                 exitCode = -1,
                 stderr = e.message ?: "Unknown error",
@@ -146,16 +146,16 @@ class CliExecutor(private val project: Project) {
     ): CliResult<String> {
         return when {
             output.isTimeout -> {
-                LOG.warn("CLI execution timeout: $commandString")
+                log.warn("CLI execution timeout: $commandString")
                 CliResult.Timeout(defaultTimeoutMs)
             }
             
             output.exitCode != 0 -> {
-                LOG.warn("CLI failed with exit code ${output.exitCode}: $commandString")
+                log.warn("CLI failed with exit code ${output.exitCode}: $commandString")
                 
                 // ВАЖНО: stderr содержит Python traceback - всегда включаем в результат
                 if (output.stderr.isNotEmpty()) {
-                    LOG.debug("Full stderr output:\n${output.stderr}")
+                    log.debug("Full stderr output:\n${output.stderr}")
                 }
                 
                 CliResult.Failure(
@@ -166,12 +166,12 @@ class CliExecutor(private val project: Project) {
             }
             
             else -> {
-                LOG.debug("CLI succeeded, output length: ${output.stdout.length}")
+                log.debug("CLI succeeded, output length: ${output.stdout.length}")
                 
                 // ВАЖНО: даже при успехе stderr может содержать полезную информацию
                 // (например, путь к bundle в `lg diag --bundle`)
                 if (output.stderr.isNotEmpty()) {
-                    LOG.debug("stderr on success:\n${output.stderr}")
+                    log.debug("stderr on success:\n${output.stderr}")
                 }
                 
                 CliResult.Success(

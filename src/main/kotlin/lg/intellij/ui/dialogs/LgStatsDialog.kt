@@ -33,7 +33,6 @@ import lg.intellij.ui.components.LgGroupedTable
 import lg.intellij.ui.components.LgTaskTextField
 import lg.intellij.ui.components.LgTaskTextField.addChangeListener
 import lg.intellij.utils.LgFormatUtils
-import lg.intellij.utils.LgStubNotifications
 import java.awt.Font
 import java.awt.datatransfer.StringSelection
 import java.awt.event.ActionEvent
@@ -49,7 +48,7 @@ import javax.swing.table.DefaultTableModel
  */
 class LgStatsDialog(
     private val project: Project,
-    private val initialStats: ReportSchema,
+    initialStats: ReportSchema,
     private val target: String
 ) : DialogWrapper(project) {
     
@@ -68,7 +67,7 @@ class LgStatsDialog(
     // Actions (must be declared before init block)
     private val refreshAction = object : DialogWrapperAction("Refresh") {
         init {
-            putValue(Action.SMALL_ICON, AllIcons.Actions.Refresh)
+            putValue(SMALL_ICON, AllIcons.Actions.Refresh)
         }
         
         override fun doAction(e: ActionEvent) {
@@ -78,7 +77,7 @@ class LgStatsDialog(
     
     private val sendToAiAction = object : DialogWrapperAction("Send to AI") {
         init {
-            putValue(Action.SMALL_ICON, AllIcons.Actions.Execute)
+            putValue(SMALL_ICON, AllIcons.Actions.Execute)
             putValue(DEFAULT_ACTION, true)
         }
         
@@ -100,7 +99,7 @@ class LgStatsDialog(
     
     private val generateAction = object : DialogWrapperAction("Generate") {
         init {
-            putValue(Action.SMALL_ICON, AllIcons.Actions.ShowCode)
+            putValue(SMALL_ICON, AllIcons.Actions.ShowCode)
         }
         
         override fun doAction(e: ActionEvent) {
@@ -131,7 +130,7 @@ class LgStatsDialog(
     
     private val copyJsonAction = object : DialogWrapperAction("Copy JSON") {
         init {
-            putValue(Action.SMALL_ICON, AllIcons.Actions.Copy)
+            putValue(SMALL_ICON, AllIcons.Actions.Copy)
         }
         
         override fun doAction(e: ActionEvent) {
@@ -208,9 +207,10 @@ class LgStatsDialog(
                     wrapper.editorField.addChangeListener { newText ->
                         // Update shared state (with reactive notification)
                         panelState.updateTaskText(newText)
-                        
+
                         // Debounced stats refresh
                         debounceJob?.cancel()
+                        @Suppress("ASSIGNED_VALUE_IS_NEVER_READ") // Job reference needed for cancellation
                         debounceJob = scope.launch {
                             delay(500)
                             withContext(Dispatchers.Main) {
@@ -396,7 +396,7 @@ class LgStatsDialog(
         
         object : Task.Backgroundable(
             project,
-            "Refreshing Statistics...",
+            "Refreshing statistics...",
             true
         ) {
             private var newStats: ReportSchema? = null

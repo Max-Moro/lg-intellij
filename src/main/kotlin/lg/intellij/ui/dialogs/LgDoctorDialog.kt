@@ -47,7 +47,7 @@ import javax.swing.table.DefaultTableModel
  */
 class LgDoctorDialog(
     private val project: Project,
-    private val initialReport: DiagReportSchema
+    initialReport: DiagReportSchema
 ) : DialogWrapper(project) {
     
     private val diagnosticsService = project.service<LgDiagnosticsService>()

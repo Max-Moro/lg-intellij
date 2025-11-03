@@ -27,10 +27,10 @@ import java.beans.PropertyChangeListener
  */
 class LgToolWindowFactory : ToolWindowFactory, DumbAware {
     
-    private val LOG = thisLogger()
+    private val log = thisLogger()
     
     init {
-        LOG.info("LgToolWindowFactory initialized")
+        log.info("LgToolWindowFactory initialized")
     }
     
     /**
@@ -57,7 +57,7 @@ class LgToolWindowFactory : ToolWindowFactory, DumbAware {
             
             // Allow collapsing the bottom panel
             setResizeEnabled(true)
-            setShowDividerControls(true)
+            isShowDividerControls = true
             
             // Save proportion changes to workspace state
             addPropertyChangeListener(
@@ -65,12 +65,12 @@ class LgToolWindowFactory : ToolWindowFactory, DumbAware {
                 PropertyChangeListener { evt ->
                     val newProportion = evt.newValue as? Float ?: return@PropertyChangeListener
                     workspaceState.state.splitterProportion = newProportion
-                    LOG.debug("Splitter proportion saved: $newProportion")
+                    log.debug("Splitter proportion saved: $newProportion")
                 }
             )
         }
         
-        LOG.debug("Splitter initialized with proportion: $initialProportion")
+        log.debug("Splitter initialized with proportion: $initialProportion")
         
         // Create single content with splitter
         val content = contentFactory.createContent(
@@ -85,7 +85,7 @@ class LgToolWindowFactory : ToolWindowFactory, DumbAware {
         
         contentManager.addContent(content)
         
-        LOG.info("Tool Window content created for project: ${project.name}")
+        log.info("Tool Window content created for project: ${project.name}")
     }
     
     /**
@@ -95,6 +95,6 @@ class LgToolWindowFactory : ToolWindowFactory, DumbAware {
         // Set stripe title (short name for tool window button)
         toolWindow.stripeTitle = LgBundle.message("toolwindow.stripe.title")
         
-        LOG.debug("Tool Window initialized: ${toolWindow.id}")
+        log.debug("Tool Window initialized: ${toolWindow.id}")
     }
 }

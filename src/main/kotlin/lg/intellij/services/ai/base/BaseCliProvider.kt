@@ -4,25 +4,24 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.diagnostic.logger
 import lg.intellij.services.ai.AiProvider
-import lg.intellij.services.ai.AiProviderException
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.StandardOpenOption
 
 /**
  * Базовый класс для CLI-based AI провайдеров.
- * 
+ *
  * Используется для провайдеров, которые работают через CLI утилиты
  * (например, Claude CLI).
- * 
+ *
  * Основные возможности:
  * - Проверка наличия CLI команды в PATH
  * - Создание временных файлов с контентом
  * - Выполнение команд с контентом
  */
+@Suppress("unused") // Base class for future CLI-based AI providers
 abstract class BaseCliProvider : AiProvider {
     
-    private val LOG = logger<BaseCliProvider>()
+    private val log = logger<BaseCliProvider>()
     
     /**
      * Имя CLI команды (например, "claude", "aichat").
@@ -45,7 +44,7 @@ abstract class BaseCliProvider : AiProvider {
             
             output.exitCode == 0
         } catch (e: Exception) {
-            LOG.debug("CLI command '$cliCommand' not found", e)
+            log.debug("CLI command '$cliCommand' not found", e)
             false
         }
     }

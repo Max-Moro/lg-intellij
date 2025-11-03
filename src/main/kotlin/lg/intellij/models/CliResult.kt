@@ -52,11 +52,13 @@ sealed class CliResult<out T> {
     /**
      * Returns true if this result represents a successful execution.
      */
+    @Suppress("unused") // Convenience method for result checking
     fun isSuccess(): Boolean = this is Success
-    
+
     /**
      * Returns the data if successful, or null otherwise.
      */
+    @Suppress("unused") // Convenience method for safe data extraction
     fun getOrNull(): T? = when (this) {
         is Success -> data
         else -> null

@@ -82,15 +82,7 @@ class LgConfigFileListener(private val project: Project) : BulkFileListener {
         val lgCfgPath = "$normalizedBase/lg-cfg/"
         return normalizedFile.startsWith(lgCfgPath)
     }
-    
-    /**
-     * Cleanup при dispose проекта.
-     */
-    fun dispose() {
-        scope.cancel()
-        LOG.debug("Config file listener disposed for project: ${project.name}")
-    }
-    
+
     companion object {
         private val LOG = logger<LgConfigFileListener>()
         private const val DEBOUNCE_DELAY_MS = 500L

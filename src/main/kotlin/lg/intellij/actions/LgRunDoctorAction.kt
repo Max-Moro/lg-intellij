@@ -5,7 +5,6 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import kotlinx.coroutines.runBlocking
@@ -60,9 +59,5 @@ class LgRunDoctorAction : AnAction(
     }
     
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
-    
-    companion object {
-        private val LOG = logger<LgRunDoctorAction>()
-    }
 }
 

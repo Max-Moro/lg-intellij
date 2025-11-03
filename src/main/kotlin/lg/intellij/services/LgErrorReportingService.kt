@@ -74,7 +74,7 @@ class LgErrorReportingService {
                 "Listing Generator CLI not found. Please configure CLI path in Settings.",
                 NotificationType.ERROR
             )
-            .addAction(object : NotificationAction("Open Settings") {
+            .addAction(object : NotificationAction("Open settings") {
                 override fun actionPerformed(e: AnActionEvent, notification: Notification) {
                     com.intellij.ide.actions.ShowSettingsUtilImpl.showSettingsDialog(
                         e.project,
@@ -113,7 +113,7 @@ class LgErrorReportingService {
                 content,
                 NotificationType.ERROR
             )
-            .addAction(object : NotificationAction("Copy Full Error") {
+            .addAction(object : NotificationAction("Copy full error") {
                 override fun actionPerformed(e: AnActionEvent, notification: Notification) {
                     CopyPasteManager.getInstance().setContents(StringSelection(stderr))
                 }

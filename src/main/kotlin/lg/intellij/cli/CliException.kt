@@ -33,11 +33,3 @@ class CliTimeoutException(
 class CliNotFoundException(
     message: String
 ) : CliException(message)
-
-/**
- * Failed to parse CLI output (malformed JSON, unexpected format).
- */
-class CliParseException(
-    message: String,
-    cause: Throwable? = null
-) : CliException(message, cause)

@@ -40,7 +40,7 @@ class LgSendToAiAction : AnAction(
     AllIcons.Actions.Execute
 ) {
     
-    private val LOG = logger<LgSendToAiAction>()
+    private val log = logger<LgSendToAiAction>()
     private val scope = CoroutineScope(Dispatchers.Default)
     
     override fun actionPerformed(e: AnActionEvent) {
@@ -113,14 +113,14 @@ class LgSendToAiAction : AnAction(
                                         aiService.sendTo("clipboard", generatedContent!!)
                                         notification.expire()
                                     } catch (fallbackEx: Exception) {
-                                        LOG.error("Clipboard fallback failed", fallbackEx)
+                                        log.error("Clipboard fallback failed", fallbackEx)
                                     }
                                 }
                             }
                         )
 
                         notification.addAction(
-                            NotificationAction.createSimple("Open Settings") {
+                            NotificationAction.createSimple("Open settings") {
                                 com.intellij.ide.actions.ShowSettingsUtilImpl.showSettingsDialog(
                                     project,
                                     "lg.intellij.settings",

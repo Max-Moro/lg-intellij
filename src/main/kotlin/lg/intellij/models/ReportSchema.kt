@@ -48,15 +48,20 @@ data class File (
 
 @Serializable
 sealed class Meta {
+    @Suppress("unused") // Used by kotlinx.serialization polymorphically
     class BoolValue(val value: Boolean)  : Meta()
+    @Suppress("unused") // Used by kotlinx.serialization polymorphically
     class DoubleValue(val value: Double) : Meta()
+    @Suppress("unused") // Used by kotlinx.serialization polymorphically
     class IntegerValue(val value: Long)  : Meta()
+    @Suppress("unused") // Used by kotlinx.serialization polymorphically
     class StringValue(val value: String) : Meta()
 }
 
 @Serializable
 enum class Scope(val value: String) {
     @SerialName("context") Context("context"),
+    @Suppress("unused") // Used by kotlinx.serialization
     @SerialName("section") Section("section");
 }
 

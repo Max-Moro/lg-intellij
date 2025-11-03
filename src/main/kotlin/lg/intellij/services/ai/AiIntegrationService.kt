@@ -24,7 +24,7 @@ import lg.intellij.services.ai.providers.JunieProvider
 @Service
 class AiIntegrationService {
 
-    private val LOG = logger<AiIntegrationService>()
+    private val log = logger<AiIntegrationService>()
 
     /**
      * Зарегистрированные провайдеры: id -> provider.
@@ -38,7 +38,7 @@ class AiIntegrationService {
         registerProvider(GitHubCopilotProvider())
         registerProvider(JunieProvider())
 
-        LOG.info("AI Integration Service initialized with ${providers.size} providers")
+        log.info("AI Integration Service initialized with ${providers.size} providers")
     }
 
     /**
@@ -48,7 +48,7 @@ class AiIntegrationService {
      */
     fun registerProvider(provider: AiProvider) {
         providers[provider.id] = provider
-        LOG.debug("Registered AI provider: ${provider.id} (priority: ${provider.priority})")
+        log.debug("Registered AI provider: ${provider.id} (priority: ${provider.priority})")
     }
 
     /**
@@ -75,12 +75,12 @@ class AiIntegrationService {
             try {
                 if (provider.isAvailable()) {
                     available.add(id to provider.priority)
-                    LOG.debug("Provider '$id' is available (priority: ${provider.priority})")
+                    log.debug("Provider '$id' is available (priority: ${provider.priority})")
                 } else {
-                    LOG.debug("Provider '$id' is not available")
+                    log.debug("Provider '$id' is not available")
                 }
             } catch (e: Exception) {
-                LOG.warn("Failed to check availability of provider '$id'", e)
+                log.warn("Failed to check availability of provider '$id'", e)
             }
         }
 
@@ -88,7 +88,7 @@ class AiIntegrationService {
         available.sortByDescending { it.second }
 
         val result = available.map { it.first }
-        LOG.info("Detected ${result.size} available providers: $result")
+        log.info("Detected ${result.size} available providers: $result")
 
         result
     }
@@ -104,7 +104,7 @@ class AiIntegrationService {
         return if (available.isNotEmpty()) {
             available.first() // Уже отсортировано по приоритету
         } else {
-            LOG.warn("No available providers detected, falling back to clipboard")
+            log.warn("No available providers detected, falling back to clipboard")
             "clipboard"
         }
     }
@@ -137,10 +137,10 @@ class AiIntegrationService {
         val provider = providers[providerId]
             ?: throw AiProviderException("Provider not found: $providerId")
 
-        LOG.info("Sending content to provider: $providerId")
+        log.info("Sending content to provider: $providerId")
 
         provider.send(content)
-        LOG.info("Successfully sent content to $providerId")
+        log.info("Successfully sent content to $providerId")
     }
 
     companion object {

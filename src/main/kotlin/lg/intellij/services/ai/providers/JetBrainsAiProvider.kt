@@ -24,7 +24,7 @@ import lg.intellij.services.ai.base.BaseExtensionProvider
  */
 class JetBrainsAiProvider : BaseExtensionProvider() {
     
-    private val LOG = logger<JetBrainsAiProvider>()
+    private val log = logger<JetBrainsAiProvider>()
     
     override val id = "jetbrains.ai"
     override val name = "JetBrains AI Assistant"
@@ -37,7 +37,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         content: String,
         mode: AiInteractionMode
     ) {
-        LOG.info("Sending content to JetBrains AI Assistant in ${mode.name} mode")
+        log.info("Sending content to JetBrains AI Assistant in ${mode.name} mode")
 
         // 1. Получаем или создаём чат-сессию
         val chatSession = getOrCreateChatSession(project)
@@ -50,7 +50,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         // 3. Отправляем сообщение с режимом
         sendMessage(chatSession, content, mode)
 
-        LOG.info("Successfully sent to JetBrains AI")
+        log.info("Successfully sent to JetBrains AI")
     }
     
     /**
@@ -72,7 +72,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         val focusMethod = focusedHostClass.getMethod("focusChatSession", chatSession::class.java.interfaces[0])
         focusMethod.invoke(focusedHost, chatSession)
         
-        LOG.debug("Focused chat session")
+        log.debug("Focused chat session")
     }
     
     /**
@@ -85,7 +85,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         
         // Если нужна новая сессия — сразу создаём
         if (createNew) {
-            LOG.debug("Creating new chat session (createNew=true)")
+            log.debug("Creating new chat session (createNew=true)")
             return createNewChatSession(project, classLoader)
         }
         
@@ -110,12 +110,12 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             )
             val getUidMethod = sessionClass.getMethod("getUid")
             val uid = getUidMethod.invoke(focusedSession)
-            LOG.debug("Using existing chat session: $uid")
+            log.debug("Using existing chat session: $uid")
             return focusedSession
         }
         
         // Create new chat session
-        LOG.debug("Creating new chat session (no focused session found)")
+        log.debug("Creating new chat session (no focused session found)")
         return createNewChatSession(project, classLoader)
     }
     
@@ -292,16 +292,16 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
                                 continuation.resumeWith(Result.success(result))
                             }
                         } catch (e: Exception) {
-                            LOG.error("Failed to set Quick Edit mode", e)
+                            log.error("Failed to set Quick Edit mode", e)
                             continuation.resumeWith(Result.failure(e))
                         }
                     }
                 }
                 
-                LOG.debug("Switched to Quick Edit mode")
+                log.debug("Switched to Quick Edit mode")
                 
             } catch (e: Exception) {
-                LOG.error("Failed to configure Quick Edit mode", e)
+                log.error("Failed to configure Quick Edit mode", e)
                 // Continue with default mode
             }
         }
@@ -327,6 +327,6 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         // Log
         val getUidMethod = chatSessionInterface.getMethod("getUid")
         val uid = getUidMethod.invoke(chatSession)
-        LOG.info("Message sent to chat session: $uid in ${mode.name} mode")
+        log.info("Message sent to chat session: $uid in ${mode.name} mode")
     }
 }

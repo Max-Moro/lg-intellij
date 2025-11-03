@@ -25,7 +25,7 @@ import lg.intellij.models.AiInteractionMode
     storages = [Storage(StoragePathMacros.WORKSPACE_FILE)],
     category = SettingsCategory.TOOLS
 )
-class LgPanelStateService(private val project: Project) : SimplePersistentStateComponent<LgPanelStateService.State>(State()) {
+class LgPanelStateService(project: Project) : SimplePersistentStateComponent<LgPanelStateService.State>(State()) {
     
     private val _taskTextFlow = MutableStateFlow(state.taskText ?: "")
     

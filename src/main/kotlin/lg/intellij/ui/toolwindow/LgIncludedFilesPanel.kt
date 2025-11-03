@@ -37,7 +37,7 @@ import javax.swing.tree.TreeSelectionModel
  */
 class LgIncludedFilesPanel(
     private val project: Project,
-    private val toolWindow: ToolWindow
+    toolWindow: ToolWindow
 ) : SimpleToolWindowPanel(
     true,   // vertical = true (toolbar at top)
     true    // borderless = true

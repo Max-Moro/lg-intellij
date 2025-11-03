@@ -4,7 +4,6 @@ import com.intellij.ide.passwordSafe.PasswordSafe
 import com.intellij.openapi.diagnostic.logger
 import lg.intellij.services.ai.AiProvider
 import lg.intellij.services.ai.AiProviderException
-import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
@@ -12,22 +11,24 @@ import java.time.Duration
 
 /**
  * Базовый класс для Network-based AI провайдеров.
- * 
+ *
  * Используется для провайдеров, которые работают через HTTP API
  * (например, OpenAI API, Anthropic API).
- * 
+ *
  * Основные возможности:
  * - Безопасное хранение API токенов через PasswordSafe
  * - HTTP запросы с таймаутом
  * - Централизованная обработка ошибок сети
  */
+@Suppress("unused") // Base class for future network-based AI providers
 abstract class BaseNetworkProvider : AiProvider {
     
-    private val LOG = logger<BaseNetworkProvider>()
+    private val log = logger<BaseNetworkProvider>()
     
     /**
      * URL endpoint API (например, "https://api.openai.com/v1/chat/completions").
      */
+    @Suppress("unused") // Part of base class API for derived implementations
     protected abstract val apiEndpoint: String
     
     /**
@@ -52,7 +53,7 @@ abstract class BaseNetworkProvider : AiProvider {
             val token = getApiToken()
             token.isNotBlank()
         } catch (e: Exception) {
-            LOG.debug("API token not found for provider '$id'", e)
+            log.debug("API token not found for provider '$id'", e)
             false
         }
     }
@@ -79,9 +80,10 @@ abstract class BaseNetworkProvider : AiProvider {
     
     /**
      * Сохраняет API токен в PasswordSafe.
-     * 
+     *
      * @param token API токен для сохранения
      */
+    @Suppress("unused") // Part of base class API for configuration
     fun setApiToken(token: String) {
         PasswordSafe.instance.setPassword(
             com.intellij.credentialStore.CredentialAttributes(credentialKey),
@@ -102,11 +104,12 @@ abstract class BaseNetworkProvider : AiProvider {
     
     /**
      * Выполняет HTTP запрос с таймаутом.
-     * 
+     *
      * @param request HTTP запрос
      * @param timeoutSeconds Таймаут в секундах
      * @return HTTP ответ
      */
+    @Suppress("unused") // Part of base class API for HTTP operations
     protected fun executeRequest(
         request: HttpRequest,
         timeoutSeconds: Long = 30

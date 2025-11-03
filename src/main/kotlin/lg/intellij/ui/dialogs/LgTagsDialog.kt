@@ -28,7 +28,7 @@ import javax.swing.ScrollPaneConstants
 class LgTagsDialog(
     project: Project?,
     private val tagSetsData: TagSetsListSchema?,
-    private val initialSelectedTags: Map<String, Set<String>>
+    initialSelectedTags: Map<String, Set<String>>
 ) : DialogWrapper(project) {
     
     // Mutable state для tracking выбранных тегов: tagSetId -> Set<tagId>

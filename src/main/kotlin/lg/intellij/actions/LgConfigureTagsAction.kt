@@ -19,7 +19,7 @@ import lg.intellij.ui.dialogs.LgTagsDialog
  */
 class LgConfigureTagsAction : AnAction() {
     
-    private val LOG = logger<LgConfigureTagsAction>()
+    private val log = logger<LgConfigureTagsAction>()
     
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
@@ -48,7 +48,7 @@ class LgConfigureTagsAction : AnAction() {
             }
             
             val totalTags = newSelectedTags.values.sumOf { it.size }
-            LOG.info("Tags updated: $totalTags tags selected across ${newSelectedTags.size} tag-sets")
+            log.info("Tags updated: $totalTags tags selected across ${newSelectedTags.size} tag-sets")
         }
     }
     

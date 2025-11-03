@@ -98,7 +98,7 @@ class LgInitWizardDialog(
                     NotificationGroupManager.getInstance()
                         .getNotificationGroup("LG Important")
                         .createNotification(
-                            LgBundle.message("dialog.init.error.title"),
+                            LgBundle.message("dialog.init.error.notification.title"),
                             LgBundle.message("dialog.init.error.load.presets"),
                             NotificationType.ERROR
                         )

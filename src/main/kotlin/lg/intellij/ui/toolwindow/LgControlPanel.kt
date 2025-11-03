@@ -30,7 +30,6 @@ import lg.intellij.ui.components.LgLabeledComponent
 import lg.intellij.ui.components.LgTaskTextField
 import lg.intellij.ui.components.LgTaskTextField.addChangeListener
 import lg.intellij.ui.components.LgWrappingPanel
-import lg.intellij.utils.LgStubNotifications
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.ScrollPaneConstants

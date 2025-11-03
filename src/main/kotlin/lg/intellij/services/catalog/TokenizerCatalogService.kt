@@ -4,7 +4,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,9 +24,7 @@ import kotlin.time.TimeSource
  * Encoders are cached per library with 1-hour TTL.
  */
 @Service(Service.Level.APP)
-class TokenizerCatalogService(
-    private val scope: CoroutineScope
-) {
+class TokenizerCatalogService {
     
     // JSON parser
     private val json = Json {
@@ -123,14 +120,6 @@ class TokenizerCatalogService(
             LOG.warn("Failed to load encoders for $lib: ${e.message}", e)
             emptyList()
         }
-    }
-    
-    /**
-     * Invalidates cache for the specified library.
-     */
-    fun invalidateEncoders(lib: String) {
-        encodersCache.remove(lib)
-        LOG.debug("Invalidated encoders cache for $lib")
     }
     
     /**

@@ -37,7 +37,7 @@ Please run code inspection and fix any issues found.
 Execute the qodana-inspect skill:
 
 ```bash
-bash .claude/skills/qodana-inspect/scripts/run-qodana.sh
+bash .claude/skills/qodana-inspect/scripts/run-qodana.sh --linter qodana-jvm-community
 ```
 
 **Output format**: Problems grouped by file with severity, location, message, and code snippets.

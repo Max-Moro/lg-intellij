@@ -2,17 +2,81 @@
 
 # Qodana Inspector Script
 # Runs Qodana analysis and parses results into a readable format
+# Supports all JetBrains Qodana linters for various programming languages
 
 set -euo pipefail
 
-# Configuration
-LINTER="qodana-jvm-community"
-RESULTS_DIR="$HOME/AppData/Local/JetBrains/Qodana"
+# Default Configuration
+LINTER=""
+RESULTS_DIR=""
+
+# Auto-detect results directory based on OS
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+    # Windows (Git Bash, MSYS2, Cygwin)
+    RESULTS_DIR="$HOME/AppData/Local/JetBrains/Qodana"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    RESULTS_DIR="$HOME/Library/Caches/JetBrains/Qodana"
+else
+    # Linux and other Unix-like systems
+    RESULTS_DIR="$HOME/.cache/JetBrains/Qodana"
+fi
 
 # Colors for output (optional, can be disabled)
 RED='\033[0;31m'
 YELLOW='\033[0;33m'
+GREEN='\033[0;32m'
 NC='\033[0m' # No Color
+
+# Function to display usage
+show_usage() {
+    cat << EOF
+Usage: $0 [OPTIONS]
+
+Runs Qodana static analysis and returns parsed results.
+
+OPTIONS:
+    --linter LINTER          Specify Qodana linter to use (required)
+    --diff-start COMMIT      Analyze only changes since specified commit
+    --results-dir DIR        Custom results directory (auto-detected by default)
+    -h, --help               Show this help message
+
+AVAILABLE LINTERS:
+    JVM Ecosystem:
+        qodana-jvm-community         Java, Kotlin, Groovy (Community)
+        qodana-jvm                   Java, Kotlin, Groovy (Ultimate)
+        qodana-jvm-android           Android (Community)
+        qodana-android               Android (Ultimate)
+
+    Web Development:
+        qodana-js                    JavaScript, TypeScript (Ultimate)
+        qodana-php                   PHP, JavaScript, TypeScript (Ultimate)
+
+    .NET & C/C++:
+        qodana-cdnet                 C#, VB.NET (Community)
+        qodana-dotnet                C#, VB.NET, C, C++ (Ultimate)
+        qodana-clang                 C, C++ (Community)
+        qodana-cpp                   C, C++ (Ultimate)
+
+    Other Languages:
+        qodana-python-community      Python (Community)
+        qodana-python                Python (Ultimate)
+        qodana-go                    Go (Ultimate)
+        qodana-ruby                  Ruby (Ultimate)
+
+EXAMPLES:
+    # Kotlin/Java project
+    $0 --linter qodana-jvm-community
+
+    # TypeScript project
+    $0 --linter qodana-js
+
+    # Python project with incremental analysis
+    $0 --linter qodana-python-community --diff-start HEAD~1
+
+EOF
+    exit 0
+}
 
 # Parse arguments
 DIFF_MODE=false
@@ -20,39 +84,105 @@ DIFF_START=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --linter)
+            LINTER="$2"
+            shift 2
+            ;;
         --diff-start)
             DIFF_MODE=true
             DIFF_START="$2"
             shift 2
             ;;
+        --results-dir)
+            RESULTS_DIR="$2"
+            shift 2
+            ;;
+        -h|--help)
+            show_usage
+            ;;
         *)
             echo "Unknown option: $1"
+            echo "Use --help for usage information"
             exit 1
             ;;
     esac
 done
 
+# Validate required arguments
+if [ -z "$LINTER" ]; then
+    echo -e "${RED}Error: --linter is required${NC}" >&2
+    echo "Use --help to see available linters" >&2
+    exit 1
+fi
+
+# Determine platform and apply fixes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLATFORM_FIXES_DIR="$SCRIPT_DIR/platform-fixes"
+
+apply_platform_fixes() {
+    local linter="$1"
+    local platform=""
+
+    # Map linter to platform
+    case "$linter" in
+        qodana-python*|qodana-python-community)
+            platform="pycharm"
+            ;;
+        qodana-jvm*|qodana-android)
+            platform="intellij"
+            ;;
+        qodana-js|qodana-php)
+            platform="webstorm"
+            ;;
+        qodana-dotnet*|qodana-cdnet)
+            platform="rider"
+            ;;
+        *)
+            # Unknown platform, skip fixes
+            return 0
+            ;;
+    esac
+
+    local fix_script="$PLATFORM_FIXES_DIR/$platform/fix-jdk-table.sh"
+
+    if [ -f "$fix_script" ]; then
+        echo -e "${YELLOW}Applying $platform platform fixes...${NC}" >&2
+        bash "$fix_script" "$(pwd)" || {
+            echo -e "${YELLOW}Warning: Platform fix failed, continuing anyway...${NC}" >&2
+        }
+    fi
+}
+
+# Apply platform-specific fixes before analysis
+apply_platform_fixes "$LINTER"
+
+# Use project-local results directory to avoid conflicts between projects
+PROJECT_RESULTS_DIR=".qodana/results"
+mkdir -p "$PROJECT_RESULTS_DIR"
+
 # Run Qodana
-echo "Running Qodana inspection..." >&2
+echo -e "${GREEN}Running Qodana inspection with linter: ${LINTER}${NC}" >&2
+echo "" >&2
+
+# Check if qodana.yaml exists in the project root
+QODANA_CONFIG=""
+if [ -f "qodana.yaml" ]; then
+    echo "Found qodana.yaml configuration file" >&2
+    QODANA_CONFIG="--config=qodana.yaml"
+fi
 
 if [ "$DIFF_MODE" = true ] && [ -n "$DIFF_START" ]; then
-    qodana scan --linter "$LINTER" --within-docker=false --diff-start="$DIFF_START" --save-report=false 2>&1 | grep -E "(Analysis results:|problems detected|problems count|new problems)" >&2 || true
+    echo "Analyzing changes since: $DIFF_START" >&2
+    qodana scan --linter "$LINTER" --within-docker=false --results-dir="$PROJECT_RESULTS_DIR" --diff-start="$DIFF_START" --save-report=false $QODANA_CONFIG 2>&1 | grep -E "(Analysis results:|problems detected|problems count|new problems)" >&2 || true
 else
-    qodana scan --linter "$LINTER" --within-docker=false --save-report=false 2>&1 | grep -E "(Analysis results:|problems detected|problems count)" >&2 || true
+    echo "Running full project analysis..." >&2
+    qodana scan --linter "$LINTER" --within-docker=false --results-dir="$PROJECT_RESULTS_DIR" --save-report=false $QODANA_CONFIG 2>&1 | grep -E "(Analysis results:|problems detected|problems count)" >&2 || true
 fi
 
 echo "" >&2
 echo "Parsing results..." >&2
 
-# Find the most recent results directory
-LATEST_RESULTS=$(find "$RESULTS_DIR" -maxdepth 2 -name "results" -type d | sort -r | head -1)
-
-if [ -z "$LATEST_RESULTS" ]; then
-    echo "Error: No results directory found" >&2
-    exit 1
-fi
-
-SARIF_FILE="$LATEST_RESULTS/qodana.sarif.json"
+SARIF_FILE="$PROJECT_RESULTS_DIR/qodana.sarif.json"
 
 if [ ! -f "$SARIF_FILE" ]; then
     echo "Error: SARIF file not found at $SARIF_FILE" >&2

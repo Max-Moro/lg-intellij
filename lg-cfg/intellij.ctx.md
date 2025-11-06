@@ -3,7 +3,7 @@ ${tpl:agent/index}
 
 ---
 {% endif %}
-# ${md:README}
+${md:README}
 
 ---
 {% if tag:review %}
@@ -23,3 +23,6 @@ ${md@self:ai-integration/common, if:TAGSET:intellij-plugin:send-to-ai}
 # Описание текущей задачи
 
 ${task}{% endif %}
+{% if scope:local AND tag:agent %}
+${tpl:agent/footer}
+{% endif %}

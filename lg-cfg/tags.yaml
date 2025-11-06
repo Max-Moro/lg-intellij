@@ -28,3 +28,17 @@ tag-sets:
         title: "Стартовая конфигурация"
       send-to-ai:
         title: "Отправка в AI"
+
+  ai-providers:
+    title: "AI-провайдеры"
+    tags:
+      clipboard:
+        title: "Clipboard"
+      jetbrains-ai-assistant:
+        title: "JetBrains AI Assistant"
+      jetbrains-junie:
+        title: "JetBrains Junie"
+      github-copilot:
+        title: "GitHub Copilot"
+      claude-code-cli:
+        title: "Claude Code (CLI)"

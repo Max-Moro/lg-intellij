@@ -28,11 +28,15 @@ src:
                     mode: allow
                     allow:
                       - "/plugin.xml"
-                      - "/withGit.xml"
                     when:
-                    - condition: "TAGSET:intellij-plugin:send-to-ai"
-                      allow:
-                        - "/with**.xml"
+                      - condition: "TAGSET:intellij-plugin:modes-panel"
+                        allow: ["/withGit.xml"]
+                      - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:jetbrains-ai-assistant"
+                        allow: ["/withJetBrainsAi.xml"]
+                      - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:jetbrains-junie"
+                        allow: ["/withJunie.xml"]
+                      - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:github-copilot"
+                        allow: ["/withGitHubCopilot.xml"]
               kotlin:
                 mode: allow
                 allow:
@@ -144,3 +148,33 @@ src:
                             - "/settings/LgSettingsConfigurable.kt"
                             - "/ui/toolwindow/LgControlPanel.kt"
                             - "/models/AiInteractionMode.kt"
+                        children:
+                          services:
+                            mode: block
+                            children:
+                              ai:
+                                mode: block
+                                children:
+                                  base:
+                                    mode: allow
+                                    when:
+                                      - condition: >
+                                          TAGSET:ai-providers:jetbrains-ai-assistant OR 
+                                          TAGSET:ai-providers:jetbrains-junie OR 
+                                          TAGSET:ai-providers:github-copilot
+                                        allow: ["/BaseExtensionProvider.kt"]
+                                      - condition: "TAGSET:ai-providers:claude-code-cli"
+                                        allow: ["/BaseCliProvider.kt"]
+                                  providers:
+                                    mode: allow
+                                    when:
+                                      - condition: "TAGSET:ai-providers:clipboard"
+                                        allow: ["/ClipboardProvider.kt"]
+                                      - condition: "TAGSET:ai-providers:jetbrains-ai-assistant"
+                                        allow: ["/JetBrainsAiProvider.kt"]
+                                      - condition: "TAGSET:ai-providers:jetbrains-junie"
+                                        allow: ["/JunieProvider.kt"]
+                                      - condition: "TAGSET:ai-providers:github-copilot"
+                                        allow: ["/GitHubCopilotProvider.kt"]
+                                      - condition: "TAGSET:ai-providers:claude-code-cli"
+                                        allow: ["/claudeCodeCli.kt"]

@@ -1,6 +1,14 @@
-# Рекомендации по разработке в данном проекте
+# Рекомендации в рамках технологического стека
 
 В данном проекте ведется разработка плагина для **IntelliJ Platform**. Это вполне традиционный по структуре проект для этих целей.
+
+## Стек
+
+- **Platform**: IntelliJ IDEA Community 2025.2.3
+- **JVM**: 21 (toolchain)
+- **Gradle**: 9.0.0
+- **Kotlin**: см. `libs.versions.toml`
+- **IntelliJ Platform Gradle Plugin**: 2.x
 
 ## Архитектура
 
@@ -53,14 +61,6 @@
 **AI Integration**
 - Опциональная интеграция через плагины: JetBrains AI, GitHub Copilot, Junie
 - Установка в песочницу вручную, сохраняется между запусками
-
-## Стек
-
-- **Platform**: IntelliJ IDEA Community 2025.2.3
-- **JVM**: 21 (toolchain)
-- **Gradle**: 9.0.0
-- **Kotlin**: см. `libs.versions.toml`
-- **IntelliJ Platform Gradle Plugin**: 2.x
 
 ## Тестирование
 

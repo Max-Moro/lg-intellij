@@ -1,7 +1,11 @@
 <!-- Configuration file for Git integration support -->
 <idea-plugin>
     <!-- This file is loaded when Git4Idea plugin is available -->
-    <!-- Currently no Git-specific extensions needed -->
-    <!-- Service is registered via @Service annotation -->
+    <!-- Claude CLI provider (when Git is available for branch comparison) -->
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService
+            serviceImplementation="lg.intellij.services.ai.providers.claudecli.ClaudeCliProvider"
+            preload="true"/>
+    </extensions>
 </idea-plugin>
 

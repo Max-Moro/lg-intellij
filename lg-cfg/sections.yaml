@@ -148,6 +148,14 @@ src:
                             - "/settings/LgSettingsConfigurable.kt"
                             - "/ui/toolwindow/LgControlPanel.kt"
                             - "/models/AiInteractionMode.kt"
+                        - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:claude-code-cli"
+                          allow:
+                            - "/models/ClaudeIntegrationMethod.kt"
+                            - "/models/ClaudeModel.kt"
+                            - "/models/ShellType.kt"
+                            - "/models/CliExecutionContext.kt"
+                            - "/ui/toolwindow/LgCliSettingsPanel.kt"
+                            - "/services/state/LgPanelStateService.kt"
                         children:
                           services:
                             mode: block
@@ -177,4 +185,4 @@ src:
                                       - condition: "TAGSET:ai-providers:github-copilot"
                                         allow: ["/GitHubCopilotProvider.kt"]
                                       - condition: "TAGSET:ai-providers:claude-code-cli"
-                                        allow: ["/claudeCodeCli.kt"]
+                                        allow: ["/claudecli/"]

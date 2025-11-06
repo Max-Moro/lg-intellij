@@ -9,6 +9,7 @@ import lg.intellij.services.ai.providers.ClipboardProvider
 import lg.intellij.services.ai.providers.GitHubCopilotProvider
 import lg.intellij.services.ai.providers.JetBrainsAiProvider
 import lg.intellij.services.ai.providers.JunieProvider
+import lg.intellij.services.ai.providers.claudecli.ClaudeCliProvider
 
 /**
  * Центральный сервис для управления AI провайдерами.
@@ -37,6 +38,7 @@ class AiIntegrationService {
         registerProvider(JetBrainsAiProvider())
         registerProvider(GitHubCopilotProvider())
         registerProvider(JunieProvider())
+        registerProvider(ClaudeCliProvider())
 
         log.info("AI Integration Service initialized with ${providers.size} providers")
     }

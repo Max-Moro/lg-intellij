@@ -6,16 +6,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import lg.intellij.models.AiInteractionMode
+import lg.intellij.models.ClaudeIntegrationMethod
+import lg.intellij.models.ClaudeModel
+import lg.intellij.models.ShellType
 
 /**
  * Project-level service for storing Control Panel UI state.
- * 
- * Phase 6: Full implementation with collections (modes/tags) and effective values.
+ *
+ * Phase 6: Full implementation with collections (modes/tags) and default values.
  * Phase 9: Added reactive taskText for Stats Dialog sync.
- * 
- * Empty string fields ("") mean "use application defaults".
- * Effective values methods provide fallback to LgSettingsService defaults.
- * 
+ *
+ * All fields have sensible defaults configured via property delegates.
+ * Empty string fields ("") are semantically valid (e.g., cliScope = "" means workspace root).
+ *
  * Storage: workspace file (.idea/workspace.xml) - not committed to VCS.
  * Persistence: automatic via SimplePersistentStateComponent.
  */
@@ -25,7 +28,7 @@ import lg.intellij.models.AiInteractionMode
     storages = [Storage(StoragePathMacros.WORKSPACE_FILE)],
     category = SettingsCategory.TOOLS
 )
-class LgPanelStateService(project: Project) : SimplePersistentStateComponent<LgPanelStateService.State>(State()) {
+class LgPanelStateService() : SimplePersistentStateComponent<LgPanelStateService.State>(State()) {
     
     private val _taskTextFlow = MutableStateFlow(state.taskText ?: "")
     
@@ -49,75 +52,51 @@ class LgPanelStateService(project: Project) : SimplePersistentStateComponent<LgP
     class State : BaseState() {
         /** Selected template (context) name */
         var selectedTemplate by string("")
-        
+
         /** Selected section name */
-        var selectedSection by string("all")
-        
-        /** Tokenizer library (empty = use default from app settings) */
-        var tokenizerLib by string("")
-        
-        /** Encoder name (empty = use default) */
-        var encoder by string("")
-        
-        /** Context limit in tokens (0 = use default) */
-        var ctxLimit by property(0)
-        
+        var selectedSection by string("")
+
+        /** Tokenizer library */
+        var tokenizerLib by string("tiktoken")
+
+        /** Encoder name */
+        var encoder by string("cl100k_base")
+
+        /** Context limit in tokens */
+        var ctxLimit by property(128000)
+
         /** Selected modes: modeSetId -> modeId */
         var modes by map<String, String>()
-        
+
         /** Active tags: tagSetId -> Set<tagId> */
         var tags by map<String, MutableSet<String>>()
-        
+
         /** Task description text */
         var taskText by string("")
-        
+
         /** Target branch for review mode */
         var targetBranch by string("")
+
+        /** CLI scope - relative path from workspace root (empty = root) */
+        var cliScope by string("")
+
+        /** Terminal shell type */
+        var cliShell by enum(ShellType.getDefault())
+
+        /** Claude model selection */
+        var claudeModel by enum(ClaudeModel.SONNET)
+
+        /** Claude integration method */
+        var claudeIntegrationMethod by enum(ClaudeIntegrationMethod.SESSION)
     }
 
-    /**
-     * Returns effective tokenizer library (with fallback to application defaults).
-     */
-    fun getEffectiveTokenizerLib(): String {
-        val value = state.tokenizerLib
-        if (!value.isNullOrBlank()) {
-            return value
-        }
-
-        return "tiktoken"
-    }
-
-    /**
-     * Returns effective encoder (with fallback to application defaults).
-     */
-    fun getEffectiveEncoder(): String {
-        val value = state.encoder
-        if (!value.isNullOrBlank()) {
-            return value
-        }
-
-        return "cl100k_base"
-    }
-
-    /**
-     * Returns effective context limit (with fallback to application defaults).
-     */
-    fun getEffectiveContextLimit(): Int {
-        val value = state.ctxLimit
-        if (value > 0) {
-            return value
-        }
-
-        return 128000
-    }
-    
     /**
      * Returns AI interaction mode based on current modes selection.
-     * 
+     *
      * Logic:
      * - If "ai-interaction" mode set is present → return its value
      * - Otherwise → default to AGENT
-     * 
+     *
      * @return Typed AI interaction mode
      */
     fun getAiInteractionMode(): AiInteractionMode {
@@ -128,7 +107,8 @@ class LgPanelStateService(project: Project) : SimplePersistentStateComponent<LgP
             else -> AiInteractionMode.AGENT // Default to AGENT
         }
     }
-    
+
+
     companion object {
         /**
          * Returns the project-scoped instance of LgPanelStateService.

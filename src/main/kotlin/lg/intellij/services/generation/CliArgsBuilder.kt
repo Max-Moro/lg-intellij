@@ -107,9 +107,9 @@ object CliArgsBuilder {
      */
     fun fromPanelState(state: LgPanelStateService): GenerationParams {
         return GenerationParams(
-            tokenizerLib = state.getEffectiveTokenizerLib(),
-            encoder = state.getEffectiveEncoder(),
-            ctxLimit = state.getEffectiveContextLimit(),
+            tokenizerLib = state.state.tokenizerLib!!,
+            encoder = state.state.encoder!!,
+            ctxLimit = state.state.ctxLimit,
             modes = state.state.modes.toMap(),
             tags = state.state.tags.mapValues { it.value.toSet() },
             taskText = state.state.taskText?.takeIf { it.isNotBlank() },

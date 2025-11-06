@@ -5,6 +5,7 @@ import com.intellij.ide.DataManager
 import com.intellij.ide.actions.ShowSettingsUtilImpl
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
@@ -64,22 +65,26 @@ class LgControlPanel(
     private lateinit var libraryCombo: ComboBox<String>
     private lateinit var encoderField: LgEncoderCompletionField
     private lateinit var tagsButton: JButton
-    
+    private var cliSettingsGroup: JComponent? = null
+
     // Modes panel (self-contained, manages own state and data)
     private val modesPanel = LgModeSetsPanel(project, this)
-    
+
     // Tag-sets data (для dynamic rendering)
     private var currentTagSets: List<TagSet> = emptyList()
     
     init {
         setContent(createScrollableContent())
         toolbar = createToolbar()
-        
+
         // Запустить загрузку данных
         loadDataAsync()
-        
+
         // Подписаться на updates
         subscribeToDataUpdates()
+
+        // Подписаться на изменения Settings (для обновления CLI Settings visibility)
+        subscribeToSettingsChanges()
     }
     
     /**
@@ -95,7 +100,7 @@ class LgControlPanel(
                 tokenizerService.loadLibraries(project)
                 
                 // Загрузить encoders для текущей библиотеки
-                val currentLib = stateService.state.tokenizerLib ?: "tiktoken"
+                val currentLib = stateService.state.tokenizerLib!!
                 tokenizerService.getEncoders(currentLib, project)
                 
             } catch (e: CancellationException) {
@@ -155,7 +160,30 @@ class LgControlPanel(
             }
         }
     }
-    
+
+    /**
+     * Подписывается на изменения Settings для динамического обновления UI.
+     */
+    private fun subscribeToSettingsChanges() {
+        ApplicationManager.getApplication().messageBus
+            .connect(this)
+            .subscribe(lg.intellij.listeners.LgSettingsChangeListener.TOPIC,
+                object : lg.intellij.listeners.LgSettingsChangeListener {
+                    override fun settingsChanged() {
+                        rebuildUI()
+                    }
+                })
+    }
+
+    /**
+     * Обновляет видимость CLI Settings блока без пересоздания UI.
+     */
+    private fun rebuildUI() {
+        ApplicationManager.getApplication().invokeLater {
+            cliSettingsGroup?.isVisible = shouldShowCliSettings()
+        }
+    }
+
     // =============== UI Updates ===============
     
     private fun updateSectionsUI(sections: List<String>) {
@@ -203,12 +231,12 @@ class LgControlPanel(
     
     private fun updateLibrariesUI(libraries: List<String>) {
         if (!::libraryCombo.isInitialized) return
-        
-        val effectiveLib = stateService.getEffectiveTokenizerLib()
-        
+
+        val effectiveLib = stateService.state.tokenizerLib
+
         libraryCombo.removeAllItems()
         libraries.forEach { libraryCombo.addItem(it) }
-        
+
         if (effectiveLib in libraries) {
             libraryCombo.selectedItem = effectiveLib
         } else if (libraries.isNotEmpty()) {
@@ -240,30 +268,55 @@ class LgControlPanel(
     
     
     private fun createControlPanel(): JComponent {
+        // Create CLI settings panel separately for visibility management
+        cliSettingsGroup = panel {
+            group(LgBundle.message("control.group.cli.settings"), indent = false) {
+                row {
+                    val panel = LgCliSettingsPanel(project).createUI()
+                    cell(panel).align(AlignX.FILL)
+                }
+            }
+        }.apply {
+            isVisible = shouldShowCliSettings()
+        }
+
         return panel {
             // Group 1: AI Contexts
             group(LgBundle.message("control.group.ai.contexts"), indent = false) {
                 createAiContextsSection()
             }
-            
+
             // Group 2: Adaptive Settings
             group(LgBundle.message("control.group.adaptive.settings"), indent = false) {
                 createAdaptiveSettingsSection()
             }
-            
+
             // Group 3: Inspect
             group(LgBundle.message("control.group.inspect"), indent = false) {
                 createInspectSection()
             }
-            
+
             // Group 4: Tokenization Settings
             group(LgBundle.message("control.group.tokenization"), indent = false) {
                 createTokenizationSection()
             }
-            
+
+            // Group 5: CLI Settings (embedded as pre-created component)
+            row {
+                cell(cliSettingsGroup!!).align(AlignX.FILL)
+            }
+
         }.apply {
             border = JBUI.Borders.empty(8, 12)
         }
+    }
+
+    private fun shouldShowCliSettings(): Boolean {
+        val settings = lg.intellij.services.state.LgSettingsService.getInstance()
+        val providerId = settings.state.aiProvider
+        // Show for CLI-based providers
+        val cliProviders = listOf("claude.cli")
+        return providerId in cliProviders
     }
     
     private fun Panel.createAiContextsSection() {
@@ -478,23 +531,23 @@ class LgControlPanel(
                 // Encoder Completion Field (with auto-suggestions and custom values)
                 encoderField = LgEncoderCompletionField(project, this@LgControlPanel).apply {
                     // Set initial library
-                    val initialLib = stateService.getEffectiveTokenizerLib()
+                    val initialLib = stateService.state.tokenizerLib!!
                     setLibrary(initialLib)
-                    
+
                     // Set initial value (from state)
-                    text = stateService.getEffectiveEncoder()
-                    
+                    text = stateService.state.encoder
+
                     // Update state when text changes (supports custom values)
                     whenTextChangedFromUi(this@LgControlPanel) { newText ->
                         stateService.state.encoder = newText
                     }
                 }
                 add(LgLabeledComponent.create(LgBundle.message("control.encoder.label"), encoderField))
-                
+
                 // Context Limit TextField
                 val ctxLimitField = com.intellij.ui.components.JBTextField(10).apply {
-                    // Use effective context limit (with fallback to application defaults)
-                    val effectiveLimit = stateService.getEffectiveContextLimit()
+                    // Use context limit with default from delegate
+                    val effectiveLimit = stateService.state.ctxLimit
                     text = effectiveLimit.toString()
                     
                     document.addDocumentListener(object : javax.swing.event.DocumentListener {

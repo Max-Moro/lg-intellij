@@ -30,8 +30,6 @@ object ClaudeMethodManual {
         workingDirectory: Path,
         content: String
     ): String {
-        val cwd = workingDirectory
-
         // Generate session ID
         val sessionId = UUID.randomUUID().toString()
 
@@ -39,7 +37,7 @@ object ClaudeMethodManual {
         val version = getClaudeVersion() ?: "2.0.30"
 
         // Get git branch
-        val gitBranch = getGitBranch(cwd.toString())
+        val gitBranch = getGitBranch(workingDirectory.toString())
 
         // Create JSONL content
         val snapshotUuid = UUID.randomUUID().toString()
@@ -61,7 +59,7 @@ object ClaudeMethodManual {
             put("parentUuid", JsonPrimitive(null))
             put("isSidechain", false)
             put("userType", "external")
-            put("cwd", cwd.toString())
+            put("cwd", workingDirectory.toString())
             put("sessionId", sessionId)
             put("version", version)
             put("gitBranch", gitBranch)

@@ -24,7 +24,6 @@ object ClaudeMethodHeadless {
         workingDirectory: Path,
         content: String
     ): String {
-        val cwd = workingDirectory
         val projectDir = ClaudeCommon.getClaudeProjectDir(workingDirectory)
 
         // Get files BEFORE headless call
@@ -37,7 +36,7 @@ object ClaudeMethodHeadless {
         // Execute headless request with marker
         val marker = "TEMP_PLACEHOLDER_FOR_REPLACEMENT"
         val commandLine = ClaudeCommon.createCommandLine("claude", "-p", marker)
-            .withWorkDirectory(cwd.toString())
+            .withWorkDirectory(workingDirectory.toString())
 
         val result = ExecUtil.execAndGetOutput(commandLine, 240000)
         if (result.exitCode != 0) {

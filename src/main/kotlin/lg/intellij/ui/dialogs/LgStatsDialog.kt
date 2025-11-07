@@ -80,7 +80,7 @@ class LgStatsDialog(
             putValue(SMALL_ICON, AllIcons.Actions.Execute)
             putValue(DEFAULT_ACTION, true)
         }
-        
+
         override fun doAction(e: ActionEvent) {
             // Trigger Send to AI action (будет использовать текущий task text из panel state)
             val action = lg.intellij.actions.LgSendToAiAction()
@@ -94,6 +94,8 @@ class LgStatsDialog(
                 null
             )
             action.actionPerformed(event)
+
+            close(OK_EXIT_CODE)
         }
     }
     
@@ -101,7 +103,7 @@ class LgStatsDialog(
         init {
             putValue(SMALL_ICON, AllIcons.Actions.ShowCode)
         }
-        
+
         override fun doAction(e: ActionEvent) {
             // Trigger appropriate generation action and close dialog
             val action = if (currentStats.scope == Scope.Context) {
@@ -111,20 +113,18 @@ class LgStatsDialog(
             }
 
             // Trigger action with proper data context
-            DataManager.getInstance().dataContextFromFocusAsync.onSuccess { dataContext ->
-                val event = AnActionEvent.createEvent(
-                    action,
-                    dataContext,
-                    null,
-                    ActionPlaces.UNKNOWN,
-                    ActionUiKind.NONE,
-                    null
-                )
-                action.actionPerformed(event)
-                
-                // Close dialog
-                close(OK_EXIT_CODE)
-            }
+            val dataContext = DataManager.getInstance().getDataContext(contentPanel)
+            val event = AnActionEvent.createEvent(
+                action,
+                dataContext,
+                null,
+                ActionPlaces.UNKNOWN,
+                ActionUiKind.NONE,
+                null
+            )
+            action.actionPerformed(event)
+
+            close(OK_EXIT_CODE)
         }
     }
     
@@ -465,7 +465,7 @@ class LgStatsDialog(
         
         // Rendered Data card (if exists)
         if (hasRendered) {
-            val renderedTokens = total.renderedTokens!!
+            val renderedTokens = total.renderedTokens
             val overhead = total.renderedOverheadTokens ?: 0
             val overheadPct = if (renderedTokens > 0) (100.0 * overhead / renderedTokens) else 0.0
             
@@ -481,7 +481,7 @@ class LgStatsDialog(
         
         // Template Overhead card (contexts only)
         if (hasFinal) {
-            val ctx = stats.context!!
+            val ctx = stats.context
             summaryPanel.add(createCard(
                 LgBundle.message("stats.summary.template.title"),
                 buildString {
@@ -493,11 +493,11 @@ class LgStatsDialog(
         
         // Final Rendered card (contexts only)
         if (hasFinal) {
-            val ctx = stats.context!!
+            val ctx = stats.context
             summaryPanel.add(createCard(
                 LgBundle.message("stats.summary.final.title"),
                 buildString {
-                    appendLine("🔤 ${LgFormatUtils.formatInt(ctx.finalRenderedTokens!!)}")
+                    appendLine("🔤 ${LgFormatUtils.formatInt(ctx.finalRenderedTokens)}")
                     append("📊 ${LgFormatUtils.formatPercent(ctx.finalCtxShare ?: 0.0)} of context")
                 }
             ))

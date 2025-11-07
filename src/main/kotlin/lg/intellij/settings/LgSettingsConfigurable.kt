@@ -105,7 +105,7 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
             row(LgBundle.message("settings.cli.path.label")) {
                 @Suppress("UnstableApiUsage")
                 textFieldWithBrowseButton(
-                    FileChooserDescriptorFactory.createSingleFileDescriptor()
+                    FileChooserDescriptorFactory.singleFile()
                         .withTitle(LgBundle.message("settings.cli.path.browse.title"))
                 ).bindText(
                     getter = { settings.state.cliPath ?: "" },
@@ -116,7 +116,7 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
             row(LgBundle.message("settings.python.interpreter.label")) {
                 @Suppress("UnstableApiUsage")
                 textFieldWithBrowseButton(
-                    FileChooserDescriptorFactory.createSingleFileDescriptor()
+                    FileChooserDescriptorFactory.singleFile()
                         .withTitle(LgBundle.message("settings.python.interpreter.browse.title"))
                 ).bindText(
                     getter = { settings.state.pythonInterpreter ?: "" },

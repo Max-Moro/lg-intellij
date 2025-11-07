@@ -26,7 +26,7 @@ abstract class BaseNetworkProvider : AiProvider {
     private val log = logger<BaseNetworkProvider>()
     
     /**
-     * URL endpoint API (например, "https://api.openai.com/v1/chat/completions").
+     * URL endpoint API.
      */
     @Suppress("unused") // Part of base class API for derived implementations
     protected abstract val apiEndpoint: String

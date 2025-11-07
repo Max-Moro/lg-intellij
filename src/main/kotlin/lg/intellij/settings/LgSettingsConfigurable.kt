@@ -154,20 +154,6 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
             
             // Start async detection after UI is created
             startProviderDetection()
-            
-            row(LgBundle.message("settings.openai.key.label")) {
-                cell(com.intellij.ui.components.JBPasswordField())
-                    .columns(40)
-                    .comment(LgBundle.message("settings.openai.key.comment"))
-                
-                button(LgBundle.message("settings.openai.key.configure")) {
-                    // TODO: Phase 5 - Implement PasswordSafe integration for OpenAI
-                    com.intellij.openapi.ui.Messages.showInfoMessage(
-                        LgBundle.message("settings.openai.key.configure.not.implemented"),
-                        LgBundle.message("settings.openai.key.configure.title")
-                    )
-                }
-            }
         }
         
         group(LgBundle.message("settings.group.editor")) {

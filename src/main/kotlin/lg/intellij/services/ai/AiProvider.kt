@@ -4,7 +4,7 @@ package lg.intellij.services.ai
  * Интерфейс для AI провайдеров.
  * 
  * Каждый провайдер представляет способ отправки сгенерированного контента
- * в AI-систему (clipboard, JetBrains AI, GitHub Copilot, Claude CLI, OpenAI API и т.д.)
+ * в AI-систему (clipboard, JetBrains AI, GitHub Copilot, Claude CLI и т.д.)
  */
 interface AiProvider {
     /**
@@ -46,7 +46,6 @@ interface AiProvider {
      * - JetBrains AI: 90 (родной, высокий приоритет)
      * - GitHub Copilot: 80 (популярный)
      * - Claude CLI: 50
-     * - OpenAI API: 40
      */
     val priority: Int
 }

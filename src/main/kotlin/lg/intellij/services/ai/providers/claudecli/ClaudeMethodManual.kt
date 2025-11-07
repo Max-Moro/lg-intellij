@@ -8,7 +8,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import kotlinx.serialization.json.putJsonArray
-import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonNull
 
 /**
  * Manual session creation method.
@@ -56,7 +56,7 @@ object ClaudeMethodManual {
         }
 
         val userMessage = buildJsonObject {
-            put("parentUuid", JsonPrimitive(null))
+            put("parentUuid", JsonNull)
             put("isSidechain", false)
             put("userType", "external")
             put("cwd", workingDirectory.toString())

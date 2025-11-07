@@ -1,6 +1,5 @@
 package lg.intellij.ui.toolwindow
 
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -10,7 +9,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
@@ -36,8 +34,7 @@ import javax.swing.tree.TreeSelectionModel
  * - Flat: all files in flat list with full paths
  */
 class LgIncludedFilesPanel(
-    private val project: Project,
-    toolWindow: ToolWindow
+    private val project: Project
 ) : SimpleToolWindowPanel(
     true,   // vertical = true (toolbar at top)
     true    // borderless = true
@@ -55,8 +52,7 @@ class LgIncludedFilesPanel(
     
     // Empty state label
     private val emptyLabel = JBLabel(
-        LgBundle.message("included.empty.text"),
-        AllIcons.General.Information,
+        "<html><center>${LgBundle.message("included.empty.text")}</center></html>",
         SwingConstants.CENTER
     ).apply {
         foreground = com.intellij.util.ui.UIUtil.getInactiveTextColor()

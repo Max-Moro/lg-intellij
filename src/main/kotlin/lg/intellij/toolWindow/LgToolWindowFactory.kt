@@ -43,7 +43,7 @@ class LgToolWindowFactory : ToolWindowFactory, DumbAware {
         
         // Create panels
         val controlPanel = LgControlPanel(project)
-        val includedFilesPanel = LgIncludedFilesPanel(project, toolWindow)
+        val includedFilesPanel = LgIncludedFilesPanel(project)
         
         // Restore saved splitter proportion (default 0.7 if not set)
         val savedProportion = workspaceState.state.splitterProportion

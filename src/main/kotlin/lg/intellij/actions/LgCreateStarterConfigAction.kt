@@ -21,7 +21,7 @@ import lg.intellij.ui.dialogs.LgInitWizardDialog
  */
 class LgCreateStarterConfigAction : AnAction(
     LgBundle.message("control.btn.create.config"),
-    LgBundle.message("control.stub.create.config"),
+    LgBundle.message("action.create.config.description"),
     AllIcons.Actions.AddDirectory
 ) {
     

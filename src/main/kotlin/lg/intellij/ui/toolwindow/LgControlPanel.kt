@@ -588,7 +588,7 @@ class LgControlPanel(
             
             add(object : AnAction(
                 LgBundle.message("control.btn.settings"),
-                LgBundle.message("control.stub.settings"),
+                LgBundle.message("action.settings.description"),
                 AllIcons.General.Settings
             ) {
                 override fun actionPerformed(e: AnActionEvent) {

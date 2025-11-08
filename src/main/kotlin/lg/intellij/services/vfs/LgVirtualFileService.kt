@@ -211,6 +211,7 @@ class LgVirtualFileService(private val project: Project) {
      * 
      * Example: "Listing — all.md"
      */
+    @Suppress("SameParameterValue")
     private fun buildFilename(prefix: String, name: String, extension: String): String {
         val safeName = sanitizeFilename(name)
         return "$prefix — $safeName.$extension"

@@ -1,7 +1,6 @@
 package lg.intellij.services.vfs
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import lg.intellij.services.state.LgSettingsService
 
 /**
  * Tests for LgVirtualFileService.

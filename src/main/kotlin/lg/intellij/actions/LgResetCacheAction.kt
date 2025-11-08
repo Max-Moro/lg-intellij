@@ -16,10 +16,8 @@ import lg.intellij.services.diagnostics.LgDiagnosticsService
 
 /**
  * Action to reset LG cache via 'lg diag --rebuild-cache'.
- * 
+ *
  * Shows confirmation dialog before executing.
- * 
- * Phase 14: Doctor Diagnostics implementation.
  */
 class LgResetCacheAction : AnAction(
     LgBundle.message("action.reset.cache.text"),

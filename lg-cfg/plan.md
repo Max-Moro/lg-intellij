@@ -504,7 +504,6 @@
    - Simple `DialogWrapper` с `JTextArea` в `JScrollPane`
    - Read-only, monospace font
    - "Copy to Clipboard" button
-   - **TODO комментарий:** "Phase 8: replace with LightVirtualFile in editor"
 
 ### Критерии готовности
 ✅ "Generate Listing" → показывает результат в modal dialog  
@@ -607,19 +606,18 @@
        - onChange → debounced refresh stats
      
      - **Main section:** Files table
-       - **Временно:** простой `JBTable` с columns: Path, Size, Raw, Processed, Saved, Saved%, Prompt%, Ctx%
-       - **TODO комментарий:** "Phase 12: replace with LgGroupedTable component"
+       - Grouped table с columns: Path, Size, Raw, Processed, Saved, Saved%, Prompt%, Ctx%
        - Sorting по колонкам (встроенный `TableRowSorter`)
        - Filter text field (простой текстовый фильтр по path)
-     
+
      - **Bottom section (collapsible):**
        - Adapter Metrics (key-value pairs в простой таблице)
        - Raw JSON viewer (JTextArea, read-only, monospace)
 
 4. **Actions в dialog toolbar:**
    - **Refresh** — пересчитать stats с текущим task text
-   - **Send to AI** — stub notification "Phase 10"
-   - **Generate** — stub notification "Phase 10"
+   - **Send to AI** — интеграция с AI провайдером
+   - **Generate** — генерация контекста/листинга
    - **Copy JSON** — реализовать (в clipboard)
 
 5. **`actions/LgShowStatsAction` (реализация):**

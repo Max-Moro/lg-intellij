@@ -222,8 +222,8 @@ class LgControlPanel(
         if (tagSets == null) return
         
         currentTagSets = tagSets.tagSets
-        
-        // Update tags button text (Phase 13)
+
+        // Update tags button text
         updateTagsButtonText()
         
         LOG.debug("Updated tag-sets UI: ${tagSets.tagSets.size} sets")
@@ -587,7 +587,7 @@ class LgControlPanel(
             add(LgResetCacheAction())
             
             add(object : AnAction(
-                LgBundle.message("control.btn.settings"),
+                LgBundle.message("action.settings.text"),
                 LgBundle.message("action.settings.description"),
                 AllIcons.General.Settings
             ) {

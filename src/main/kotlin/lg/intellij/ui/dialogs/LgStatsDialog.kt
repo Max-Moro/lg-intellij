@@ -42,9 +42,8 @@ import javax.swing.table.DefaultTableModel
 
 /**
  * Dialog for displaying detailed statistics for sections or contexts.
- * 
- * Phase 9: Basic version with native JBTable (no grouping).
- * Phase 12: Enhanced with LgGroupedTable component.
+ *
+ * Features grouped table with collapsible sections and summary cards.
  */
 class LgStatsDialog(
     private val project: Project,

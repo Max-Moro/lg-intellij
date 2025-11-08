@@ -13,13 +13,11 @@ import lg.intellij.models.DiagReportSchema
 
 /**
  * Service for running diagnostics and cache management.
- * 
+ *
  * Features:
  * - Run diagnostics via 'lg diag'
  * - Rebuild cache via 'lg diag --rebuild-cache'
  * - Build diagnostic bundle via 'lg diag --bundle'
- * 
- * Phase 14: Doctor Diagnostics implementation.
  */
 @Service(Service.Level.PROJECT)
 class LgDiagnosticsService(private val project: Project) {

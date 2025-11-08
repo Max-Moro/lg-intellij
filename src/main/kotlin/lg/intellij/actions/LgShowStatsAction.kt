@@ -17,8 +17,8 @@ import lg.intellij.ui.dialogs.LgStatsDialog
 
 /**
  * Base action to show statistics dialog.
- * 
- * Phase 9: Basic implementation with stats loading and dialog display.
+ *
+ * Provides common functionality for stats loading and dialog display.
  */
 abstract class LgShowStatsAction(
     text: String,

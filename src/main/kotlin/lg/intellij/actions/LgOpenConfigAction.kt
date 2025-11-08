@@ -25,8 +25,8 @@ import kotlin.io.path.exists
  * - Tools → Listing Generator menu
  */
 class LgOpenConfigAction : AnAction(
-    LgBundle.message("control.btn.open.config"),
-    LgBundle.message("control.stub.open.config"),
+    LgBundle.message("action.open.config.text"),
+    LgBundle.message("action.open.config.description"),
     AllIcons.Ide.ConfigFile
 ) {
     

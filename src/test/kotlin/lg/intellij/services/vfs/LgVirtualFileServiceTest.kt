@@ -5,8 +5,8 @@ import lg.intellij.services.state.LgSettingsService
 
 /**
  * Tests for LgVirtualFileService.
- * 
- * Phase 8: Validates filename sanitization, VirtualFile creation, and tab reuse.
+ *
+ * Validates filename sanitization, VirtualFile creation, and tab reuse.
  */
 class LgVirtualFileServiceTest : BasePlatformTestCase() {
     

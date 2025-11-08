@@ -18,9 +18,7 @@ import lg.intellij.ui.toolwindow.LgIncludedFilesPanel
 
 /**
  * Action to load and display included files for the selected section.
- * 
- * Phase 11: Full implementation.
- * 
+ *
  * Fetches file list via `lg report sec:...`, parses files[] array,
  * updates Included Files panel and auto-switches to that tab.
  */

@@ -16,9 +16,7 @@ import javax.swing.ScrollPaneConstants
 
 /**
  * Modal dialog for configuring active tags.
- * 
- * Phase 13: Tags Configuration UI
- * 
+ *
  * Features:
  * - Displays all available tag-sets in collapsible groups
  * - Checkbox for each tag with description tooltip

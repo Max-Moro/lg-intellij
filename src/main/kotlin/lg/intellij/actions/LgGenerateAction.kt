@@ -18,9 +18,8 @@ import javax.swing.Icon
 
 /**
  * Universal action for generating content (listings or contexts).
- * 
- * Phase 7: Single action class with target type parameter.
- * Phase 8: Displays results in editor via LgVirtualFileService (read-only or editable).
+ *
+ * Displays results in editor via LgVirtualFileService (read-only or editable).
  */
 open class LgGenerateAction(
     text: String,

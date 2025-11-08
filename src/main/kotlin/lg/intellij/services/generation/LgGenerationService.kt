@@ -20,11 +20,8 @@ enum class GenerationTarget(val prefix: String, val displayName: String) {
 
 /**
  * Service for generating content via CLI.
- * 
+ *
  * Unified approach for both listings and contexts.
- * 
- * Phase 7: Foundation implementation.
- * Phase 8: Will be enhanced with VirtualFile integration.
  */
 @Service(Service.Level.PROJECT)
 class LgGenerationService(private val project: Project) {

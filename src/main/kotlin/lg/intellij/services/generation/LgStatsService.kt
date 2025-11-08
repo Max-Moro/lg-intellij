@@ -14,8 +14,6 @@ import lg.intellij.services.state.LgPanelStateService
 
 /**
  * Service for fetching statistics via CLI 'lg report' command.
- * 
- * Phase 9: Stats collection foundation.
  */
 @Service(Service.Level.PROJECT)
 class LgStatsService(private val project: Project) {

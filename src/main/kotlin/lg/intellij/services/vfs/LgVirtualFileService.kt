@@ -14,14 +14,13 @@ import kotlin.io.path.writeText
 
 /**
  * Service for managing generated content display in editor.
- * 
- * Phase 8: Replacement for OutputPreviewDialog.
+ *
  * Creates VirtualFiles (in-memory or on disk) and opens them in editor.
- * 
+ *
  * Two modes (controlled by Settings):
  * 1. Virtual mode (default): LightVirtualFile in memory (read-only)
  * 2. Editable mode: temporary file on disk (editable)
- * 
+ *
  * Features:
  * - Tab reuse: repeated generations update existing tab instead of creating new ones
  * - Automatic cleanup: invalid files are removed from cache

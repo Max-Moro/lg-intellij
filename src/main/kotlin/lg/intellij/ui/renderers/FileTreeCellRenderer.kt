@@ -10,9 +10,7 @@ import javax.swing.tree.DefaultMutableTreeNode
 
 /**
  * Custom tree cell renderer for Included Files tree.
- * 
- * Phase 11: Full implementation.
- * 
+ *
  * Renders:
  * - Files: file type icon + name (tree mode) or full path (flat mode)
  * - Directories: folder icon (open/closed) + name (bold)

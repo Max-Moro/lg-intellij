@@ -20,16 +20,14 @@ import javax.swing.table.AbstractTableModel
 
 /**
  * Grouped table component with filtering, sorting, and hierarchical grouping.
- * 
+ *
  * Inspired by VS Code Extension grouped-table component.
- * 
+ *
  * Features:
  * - Hierarchical grouping by path segments (1..N levels or ∞ for flat)
  * - Filtering by path or extension
  * - Sorting by any column (group-aware)
  * - Aggregation of numeric columns for group rows
- * 
- * Phase 12: Advanced table component for Statistics Dialog.
  */
 class LgGroupedTable(
     private val columns: List<ColumnConfig>,

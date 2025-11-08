@@ -25,9 +25,7 @@ import javax.swing.tree.TreeSelectionModel
 
 /**
  * Included Files panel for Listing Generator Tool Window.
- * 
- * Phase 11: Full implementation with tree/flat view modes.
- * 
+ *
  * Displays the list of files included in the selected section after applying filters.
  * Supports two view modes:
  * - Tree: hierarchical folder structure

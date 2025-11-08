@@ -16,11 +16,9 @@ import lg.intellij.models.TagSetsListSchema
 /**
  * Project-level service for storing Control Panel UI state.
  *
- * Phase 6: Full implementation with collections (modes/tags) and default values.
- * Phase 9: Added reactive taskText for Stats Dialog sync.
- *
  * All fields have sensible defaults configured via property delegates.
  * Empty string fields ("") are semantically valid (e.g., cliScope = "" means workspace root).
+ * Includes reactive taskText via StateFlow for synchronization across UI components.
  *
  * Storage: workspace file (.idea/workspace.xml) - not committed to VCS.
  * Persistence: automatic via SimplePersistentStateComponent.

@@ -12,9 +12,7 @@ import lg.intellij.ui.toolwindow.LgIncludedFilesPanel
 
 /**
  * Action for switching between Tree and Flat view modes in Included Files panel.
- * 
- * Phase 11: Full implementation.
- * 
+ *
  * Toggles ViewMode in LgWorkspaceStateService and triggers panel rebuild.
  */
 class LgToggleTreeViewModeAction : AnAction(

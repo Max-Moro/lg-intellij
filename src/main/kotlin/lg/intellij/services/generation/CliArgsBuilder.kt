@@ -7,8 +7,6 @@ import lg.intellij.services.state.LgPanelStateService
  *
  * Centralizes logic for constructing 'lg render' and 'lg report' command arguments
  * to avoid duplication across services and ensure consistency.
- *
- * Phase 7: Foundation for generation services.
  */
 object CliArgsBuilder {
 

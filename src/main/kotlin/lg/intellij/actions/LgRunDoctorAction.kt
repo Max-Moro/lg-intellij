@@ -15,8 +15,6 @@ import lg.intellij.ui.dialogs.LgDoctorDialog
 
 /**
  * Action to run diagnostics and show Doctor dialog.
- * 
- * Phase 14: Doctor Diagnostics implementation.
  */
 class LgRunDoctorAction : AnAction(
     LgBundle.message("action.doctor.text"),

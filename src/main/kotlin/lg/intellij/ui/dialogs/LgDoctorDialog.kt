@@ -35,15 +35,13 @@ import javax.swing.table.DefaultTableModel
 
 /**
  * Dialog for displaying diagnostic information from CLI 'lg diag' command.
- * 
+ *
  * Features:
  * - Summary cards: Config, Cache, Contexts, Environment
  * - Checks table with status icons
  * - Detailed sections (collapsible)
  * - Raw JSON viewer
  * - Actions: Refresh, Rebuild Cache, Build Bundle, Copy JSON
- * 
- * Phase 14: Doctor Diagnostics implementation.
  */
 class LgDoctorDialog(
     private val project: Project,

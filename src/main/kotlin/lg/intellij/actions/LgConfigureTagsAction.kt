@@ -11,9 +11,7 @@ import lg.intellij.ui.dialogs.LgTagsDialog
 
 /**
  * Action to open Tags Configuration Dialog.
- * 
- * Phase 13: Tags Configuration UI
- * 
+ *
  * Opens modal dialog with tag-sets, allows user to select tags,
  * saves selection to LgPanelStateService on OK.
  */

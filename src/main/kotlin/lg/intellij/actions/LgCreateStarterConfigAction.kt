@@ -20,7 +20,7 @@ import lg.intellij.ui.dialogs.LgInitWizardDialog
  * - Tools → Listing Generator menu
  */
 class LgCreateStarterConfigAction : AnAction(
-    LgBundle.message("control.btn.create.config"),
+    LgBundle.message("action.create.config.text"),
     LgBundle.message("action.create.config.description"),
     AllIcons.Actions.AddDirectory
 ) {

@@ -1,5 +1,6 @@
 package lg.intellij.services.catalog
 
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
@@ -17,6 +18,7 @@ import lg.intellij.models.ContextsListSchema
 import lg.intellij.models.ModeSetsListSchema
 import lg.intellij.models.SectionsListSchema
 import lg.intellij.models.TagSetsListSchema
+import lg.intellij.services.state.LgPanelStateService
 
 /**
  * Service for loading and caching catalog data from CLI.
@@ -58,12 +60,12 @@ class LgCatalogService(private val project: Project) {
 
     /**
      * Loads all catalog data sequentially.
-     * 
+     *
      * Sequential execution prevents CLI conflicts due to:
      * - File system locking during config migrations
      * - Heavy I/O operations
      * - Potential race conditions in CLI internals
-     * 
+     *
      * Safe to call multiple times (subsequent calls while loading are ignored).
      */
     suspend fun loadAll() {
@@ -72,9 +74,9 @@ class LgCatalogService(private val project: Project) {
             LOG.debug("Load already in progress, skipping")
             return
         }
-        
+
         _isLoading.value = true
-        
+
         try {
             withContext(Dispatchers.IO) {
                 loadSections()
@@ -82,6 +84,9 @@ class LgCatalogService(private val project: Project) {
                 loadModeSets()
                 loadTagSets()
                 loadBranches()
+
+                // Actualize panel state after loading catalogs
+                actualizeState()
             }
             LOG.info("Catalog data loaded successfully")
         } catch (e: Exception) {
@@ -224,7 +229,24 @@ class LgCatalogService(private val project: Project) {
         _branches.value = branches
         LOG.debug("Loaded ${branches.size} branches")
     }
-    
+
+    /**
+     * Actualizes LgPanelStateService by removing obsolete modes and tags.
+     */
+    private suspend fun actualizeState() {
+        withContext(Dispatchers.EDT) {
+            val panelState = project.service<LgPanelStateService>()
+            val modeSets = _modeSets.value
+            val tagSets = _tagSets.value
+
+            val changed = panelState.actualizeState(modeSets, tagSets)
+
+            if (changed) {
+                LOG.info("Panel state actualized: obsolete modes/tags removed")
+            }
+        }
+    }
+
     companion object {
         private val LOG = logger<LgCatalogService>()
         

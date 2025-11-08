@@ -1,6 +1,7 @@
 package lg.intellij.services.state
 
 import com.intellij.openapi.components.*
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -8,7 +9,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import lg.intellij.models.AiInteractionMode
 import lg.intellij.models.ClaudeIntegrationMethod
 import lg.intellij.models.ClaudeModel
+import lg.intellij.models.ModeSetsListSchema
 import lg.intellij.models.ShellType
+import lg.intellij.models.TagSetsListSchema
 
 /**
  * Project-level service for storing Control Panel UI state.
@@ -118,8 +121,85 @@ class LgPanelStateService() : SimplePersistentStateComponent<LgPanelStateService
         }
     }
 
+    /**
+     * Actualizes state by removing obsolete modes and tags.
+     *
+     * @param modeSets Current mode-sets from CLI
+     * @param tagSets Current tag-sets from CLI
+     * @return true if state was changed
+     */
+    fun actualizeState(
+        modeSets: ModeSetsListSchema?,
+        tagSets: TagSetsListSchema?
+    ): Boolean {
+        var changed = false
+
+        // Actualize modes
+        if (modeSets != null) {
+            val (validatedModes, modesChanged) = actualizeModes(state.modes, modeSets)
+            if (modesChanged) {
+                state.modes = validatedModes.toMutableMap()
+                changed = true
+                LOG.info("Actualized modes: removed obsolete entries")
+            }
+        }
+
+        // Actualize tags
+        if (tagSets != null) {
+            val (validatedTags, tagsChanged) = actualizeTags(state.tags, tagSets)
+            if (tagsChanged) {
+                state.tags = validatedTags.mapValues { it.value.toMutableSet() }.toMutableMap()
+                changed = true
+                LOG.info("Actualized tags: removed obsolete entries")
+            }
+        }
+
+        return changed
+    }
+
+    /**
+     * Actualizes modes: removes non-existent mode-sets and modes.
+     */
+    private fun actualizeModes(
+        currentModes: Map<String, String>,
+        modeSets: ModeSetsListSchema
+    ): Pair<Map<String, String>, Boolean> {
+        val modeSetById = modeSets.modeSets.associateBy { it.id }
+
+        val validatedModes = currentModes.filterKeys { modeSetId ->
+            modeSetById[modeSetId]?.modes?.any { it.id == currentModes[modeSetId] } ?: false
+        }
+
+        val changed = validatedModes != currentModes
+
+        return validatedModes to changed
+    }
+
+    /**
+     * Actualizes tags: removes non-existent tag-sets and tags.
+     */
+    private fun actualizeTags(
+        currentTags: Map<String, MutableSet<String>>,
+        tagSets: TagSetsListSchema
+    ): Pair<Map<String, Set<String>>, Boolean> {
+        val tagSetToTags = tagSets.tagSets.associate { ts ->
+            ts.id to ts.tags.mapTo(mutableSetOf()) { it.id }
+        }
+
+        val validatedTags = currentTags.mapNotNull { (tagSetId, tagIds) ->
+            tagSetToTags[tagSetId]?.let { availableTags ->
+                val validTags = tagIds.intersect(availableTags)
+                if (validTags.isNotEmpty()) tagSetId to validTags else null
+            }
+        }.toMap()
+
+        val changed = validatedTags != currentTags.mapValues { it.value.toSet() }
+
+        return validatedTags to changed
+    }
 
     companion object {
+        private val LOG = logger<LgPanelStateService>()
         /**
          * Returns the project-scoped instance of LgPanelStateService.
          */

@@ -13,22 +13,37 @@ import kotlinx.serialization.json.jsonPrimitive
 import lg.intellij.cli.CliExecutor
 import lg.intellij.models.CliResult
 import lg.intellij.models.InitResult
+import java.nio.file.Path
+import kotlin.io.path.exists
 
 /**
- * Service for managing lg-cfg initialization via `lg init` command.
- * 
+ * Service for managing lg-cfg initialization and project state.
+ *
  * Provides:
+ * - Project initialization check (lg-cfg/ existence)
  * - Listing available presets
  * - Initializing lg-cfg with selected preset
  * - Conflict resolution (force overwrite)
- * 
+ *
  * Thread safety: All public methods are suspend functions executing on appropriate dispatchers.
+ * Exception: isInitialized() is synchronous and lightweight (just file system check).
  */
 @Service(Service.Level.PROJECT)
-class LgInitService(project: Project) {
+class LgInitService(private val project: Project) {
 
     private val executor = project.service<CliExecutor>()
-    
+
+    /**
+     * Checks if project is initialized with lg-cfg configuration.
+     *
+     * @return true if lg-cfg/ directory exists, false otherwise
+     */
+    fun isInitialized(): Boolean {
+        val basePath = project.basePath ?: return false
+        val lgCfgPath = Path.of(basePath, "lg-cfg")
+        return lgCfgPath.exists()
+    }
+
     /**
      * Lists available presets from CLI.
      * 
@@ -194,6 +209,11 @@ class LgInitService(project: Project) {
     
     companion object {
         private val LOG = logger<LgInitService>()
+
+        /**
+         * Gets the service instance for the project.
+         */
+        fun getInstance(project: Project): LgInitService = project.service()
     }
 }
 

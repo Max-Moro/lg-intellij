@@ -7,6 +7,7 @@ import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import kotlinx.coroutines.*
 import lg.intellij.services.catalog.LgCatalogService
+import lg.intellij.services.LgInitService
 
 /**
  * Listens for file changes in lg-cfg/ directory and triggers catalog reload.
@@ -27,18 +28,25 @@ class LgConfigFileListener(private val project: Project) : BulkFileListener {
     private var pendingReload: Job? = null
     
     override fun after(events: List<VFileEvent>) {
-        // Фильтруем: интересуют только изменения в lg-cfg/
+        // Early pruning: пока нет lg-cfg/, слушать нечего
+        val initService = project.service<LgInitService>()
+        if (!initService.isInitialized()) {
+            return
+        }
+
+        // Фильтруем:
+        // интересуют только изменения в lg-cfg/
         val hasConfigChanges = events.any { event ->
             val file = event.file ?: return@any false
-            
+
             // Проверяем что файл в lg-cfg/ директории текущего проекта
             isInLgConfigDir(file.path)
         }
-        
+
         if (!hasConfigChanges) {
             return
         }
-        
+
         LOG.debug("Detected changes in lg-cfg/, scheduling reload")
         scheduleReload()
     }

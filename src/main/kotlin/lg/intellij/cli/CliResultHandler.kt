@@ -1,9 +1,11 @@
 package lg.intellij.cli
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import lg.intellij.models.CliResult
 import lg.intellij.services.LgErrorReportingService
+import lg.intellij.services.LgInitService
 
 /**
  * Утилита для обобщенной обработки результатов выполнения CLI команд.
@@ -60,9 +62,16 @@ object CliResultHandler {
             }
             
             is CliResult.Failure -> {
-                logger.warn("$operationName failed: exit code ${result.exitCode}")
-                errorReporting.reportCliFailure(project, operationName, result)
-                null
+                // Suppress errors for uninitialized projects (lg-cfg/ doesn't exist yet)
+                val initService = project.service<LgInitService>()
+                if (!initService.isInitialized()) {
+                    logger.debug("$operationName failed (project not initialized): exit code ${result.exitCode}")
+                    null
+                } else {
+                    logger.warn("$operationName failed: exit code ${result.exitCode}")
+                    errorReporting.reportCliFailure(project, operationName, result)
+                    null
+                }
             }
             
             is CliResult.Timeout -> {

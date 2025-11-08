@@ -92,6 +92,7 @@ src:
                             - "/cli/CliException.kt"
                             - "/cli/CliResultHandler.kt"
                             - "/listeners/LgSettingsChangeListener.kt"
+                            - "/services/LgInitService.kt"
                         - condition: "TAGSET:intellij-plugin:stats"
                           allow:
                             - "**Stats**"

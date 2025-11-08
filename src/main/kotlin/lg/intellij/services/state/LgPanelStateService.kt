@@ -45,6 +45,16 @@ class LgPanelStateService() : SimplePersistentStateComponent<LgPanelStateService
         state.taskText = newText
         _taskTextFlow.value = newText
     }
+
+    /**
+     * Overridden to sync Flow when state is loaded from persistence.
+     *
+     * Called by platform when restoring saved state (e.g., on IDE restart).
+     */
+    override fun loadState(state: State) {
+        super.loadState(state)
+        _taskTextFlow.value = state.taskText ?: ""
+    }
     
     /**
      * Persistent state class.

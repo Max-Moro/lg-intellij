@@ -5,185 +5,166 @@ src:
     allow:
       - "/build.gradle.kts"
       - "/settings.gradle.kts"
-      - "/src/"
+      - "/src/main/"
     children:
-      src:
+      src/main:
         mode: allow
         allow:
-          - "/main/"
+          - "/kotlin/icons/"
+          - "/resources/"
         children:
-          main:
+          resources:
             mode: allow
             allow:
-              - "/kotlin/"
-              - "/resources/"
+              - "/messages/"
+              - "/META-INF/"
             children:
-              resources:
+              META-INF:
                 mode: allow
-                allow:
-                  - "/messages/"
-                  - "/META-INF/"
-                children:
-                  META-INF:
-                    mode: allow
-                    allow:
-                      - "/plugin.xml"
-                    when:
-                      - condition: "TAGSET:intellij-plugin:modes-panel"
-                        allow: ["/withGit.xml"]
-                      - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:jetbrains-ai-assistant"
-                        allow: ["/withJetBrainsAi.xml"]
-                      - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:jetbrains-junie"
-                        allow: ["/withJunie.xml"]
-                      - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:github-copilot"
-                        allow: ["/withGitHubCopilot.xml"]
-              kotlin:
-                mode: allow
-                allow:
-                  - "/icons/"
-                  - "/lg/"
-                children:
-                  lg:
-                    mode: allow
-                    allow:
-                      - "/intellij/"
-                    children:
-                      intellij:
-                        mode: allow
-                        when:
-                        - condition: "TAGSET:intellij-plugin:core"
-                          allow:
-                            - "/cli/CliExecutor.kt"
-                            - "/LgBundle.kt"
-                            - "/models/CliResult.kt"
-                            - "/services/LgErrorReportingService.kt"
-                            - "/services/state/LgSettingsService.kt"
-                            - "/settings/LgSettingsConfigurable.kt"
-                            - "/toolWindow/LgToolWindowFactory.kt"
-                            - "/utils/LgStubNotifications.kt"
-                        - condition: "TAGSET:intellij-plugin:ui"
-                          allow: "/ui/components/"
-                        - condition: "TAGSET:intellij-plugin:control"
-                          allow:
-                            - "/ui/toolwindow/LgControlPanel.kt"
-                            - "/services/state/LgPanelStateService.kt"
-                            - "/services/state/LgWorkspaceStateService.kt"
-                            - "/ui/components/LgWrappingPanel.kt"
-                            - "/ui/components/LgTaskTextField.kt"
-                        - condition: "TAGSET:intellij-plugin:generate"
-                          allow:
-                            - "/services/generation/LgGenerationService.kt"
-                            - "/services/generation/CliArgsBuilder.kt"
-                            - "/services/vfs/LgVirtualFileService.kt"
-                            - "/actions/LgGenerate**.kt"
-                        - condition: "TAGSET:intellij-plugin:catalog"
-                          allow:
-                            - "/actions/LgRefreshCatalogsAction.kt"
-                            - "/models/ContextsListSchema.kt"
-                            - "/models/EncodersListSchema.kt"
-                            - "/models/SectionsListSchema.kt"
-                            - "/models/TokenizerLibsListSchema.kt"
-                            - "/listeners/LgConfigFileListener.kt"
-                            - "/services/catalog/LgCatalogService.kt"
-                            - "/services/catalog/TokenizerCatalogService.kt"
-                        - condition: "TAGSET:intellij-plugin:cli"
-                          allow:
-                            - "/cli/CliResolver.kt"
-                            - "/cli/CliException.kt"
-                            - "/cli/CliResultHandler.kt"
-                            - "/listeners/LgSettingsChangeListener.kt"
-                            - "/services/LgInitService.kt"
-                        - condition: "TAGSET:intellij-plugin:stats"
-                          allow:
-                            - "**Stats**"
-                            - "/generation/CliArgsBuilder.kt"
-                            - "/models/ReportSchema.kt"
-                            - "/services/state/LgPanelStateService.kt"
-                            - "/ui/components/LgTaskTextField.kt"
-                            - "/ui/components/LgGroupedTable.kt"
-                            - "/utils/LgFormatUtils.kt"
-                        - condition: "TAGSET:intellij-plugin:included-files"
-                          allow:
-                            - "/ui/toolwindow/LgIncludedFilesPanel.kt"
-                            - "/ui/renderers/FileTreeCellRenderer.kt"
-                            - "/actions/LgShowIncludedFilesAction.kt"
-                            - "/actions/LgToggleTreeViewModeAction.kt"
-                            - "/services/generation/LgStatsService.kt"
-                            - "/services/generation/CliArgsBuilder.kt"
-                            - "/services/state/LgWorkspaceStateService.kt"
-                            - "/models/ReportSchema.kt"
-                        - condition: "TAGSET:intellij-plugin:tags-dialog"
-                          allow:
-                            - "/ui/dialogs/LgTagsDialog.kt"
-                            - "/actions/LgConfigureTagsAction.kt"
-                            - "/models/TagSetsListSchema.kt"
-                        - condition: "TAGSET:intellij-plugin:modes-panel"
-                          allow:
-                            - "/ui/toolwindow/LgModeSetsPanel.kt"
-                            - "/ui/components/LgLabeledComponent.kt"
-                            - "/ui/components/LgWrappingPanel.kt"
-                            - "/models/ModeSetsListSchema.kt"
-                            - "/services/catalog/LgCatalogService.kt"
-                            - "/services/state/LgPanelStateService.kt"
-                            - "/services/generation/CliArgsBuilder.kt"
-                            - "/services/git/LgGitService.kt"
-                        - condition: "TAGSET:intellij-plugin:diag"
-                          allow:
-                            - "/ui/dialogs/LgDoctorDialog.kt"
-                            - "/services/diagnostics/LgDiagnosticsService.kt"
-                            - "/actions/LgResetCacheAction.kt"
-                            - "/actions/LgRunDoctorAction.kt"
-                            - "/models/DiagReportSchema.kt"
-                        - condition: "TAGSET:intellij-plugin:starter"
-                          allow:
-                            - "/ui/dialogs/LgInitWizardDialog.kt"
-                            - "/services/LgInitService.kt"
-                            - "/actions/LgCreateStarterConfigAction.kt"
-                            - "/actions/LgOpenConfigAction.kt"
-                            - "/models/InitResult.kt"
-                        - condition: "TAGSET:intellij-plugin:send-to-ai"
-                          allow:
-                            - "/services/ai/"
-                            - "/actions/LgSendToAiAction.kt"
-                            - "/services/state/LgSettingsService.kt"
-                            - "/settings/LgSettingsConfigurable.kt"
-                            - "/ui/toolwindow/LgControlPanel.kt"
-                            - "/models/AiInteractionMode.kt"
-                        - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:claude-code-cli"
-                          allow:
-                            - "/models/ClaudeIntegrationMethod.kt"
-                            - "/models/ClaudeModel.kt"
-                            - "/models/ShellType.kt"
-                            - "/models/CliExecutionContext.kt"
-                            - "/ui/toolwindow/LgCliSettingsPanel.kt"
-                            - "/services/state/LgPanelStateService.kt"
-                        children:
-                          services:
-                            mode: block
-                            children:
-                              ai:
-                                mode: block
-                                children:
-                                  base:
-                                    mode: allow
-                                    when:
-                                      - condition: >
-                                          TAGSET:ai-providers:jetbrains-ai-assistant OR 
-                                          TAGSET:ai-providers:jetbrains-junie OR 
-                                          TAGSET:ai-providers:github-copilot
-                                        allow: ["/BaseExtensionProvider.kt"]
-                                      - condition: "TAGSET:ai-providers:claude-code-cli"
-                                        allow: ["/BaseCliProvider.kt"]
-                                  providers:
-                                    mode: allow
-                                    when:
-                                      - condition: "TAGSET:ai-providers:clipboard"
-                                        allow: ["/ClipboardProvider.kt"]
-                                      - condition: "TAGSET:ai-providers:jetbrains-ai-assistant"
-                                        allow: ["/JetBrainsAiProvider.kt"]
-                                      - condition: "TAGSET:ai-providers:jetbrains-junie"
-                                        allow: ["/JunieProvider.kt"]
-                                      - condition: "TAGSET:ai-providers:github-copilot"
-                                        allow: ["/GitHubCopilotProvider.kt"]
-                                      - condition: "TAGSET:ai-providers:claude-code-cli"
-                                        allow: ["/claudecli/"]
+                allow: ["/plugin.xml"]
+                when:
+                  - condition: "TAGSET:intellij-plugin:modes-panel"
+                    allow: ["/withGit.xml"]
+                  - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:jetbrains-ai-assistant"
+                    allow: ["/withJetBrainsAi.xml"]
+                  - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:jetbrains-junie"
+                    allow: ["/withJunie.xml"]
+                  - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:github-copilot"
+                    allow: ["/withGitHubCopilot.xml"]
+
+      src/main/kotlin/lg/intellij:
+        mode: allow
+        when:
+        - condition: "TAGSET:intellij-plugin:core"
+          allow:
+            - "/cli/CliExecutor.kt"
+            - "/LgBundle.kt"
+            - "/models/CliResult.kt"
+            - "/services/LgErrorReportingService.kt"
+            - "/services/state/LgSettingsService.kt"
+            - "/settings/LgSettingsConfigurable.kt"
+            - "/toolWindow/LgToolWindowFactory.kt"
+            - "/utils/LgStubNotifications.kt"
+        - condition: "TAGSET:intellij-plugin:ui"
+          allow: ["/ui/components/"]
+        - condition: "TAGSET:intellij-plugin:control"
+          allow:
+            - "/ui/toolwindow/LgControlPanel.kt"
+            - "/services/state/LgPanelStateService.kt"
+            - "/services/state/LgWorkspaceStateService.kt"
+            - "/ui/components/LgWrappingPanel.kt"
+            - "/ui/components/LgTaskTextField.kt"
+        - condition: "TAGSET:intellij-plugin:generate"
+          allow:
+            - "/services/generation/LgGenerationService.kt"
+            - "/services/generation/CliArgsBuilder.kt"
+            - "/services/vfs/LgVirtualFileService.kt"
+            - "/actions/LgGenerate**.kt"
+        - condition: "TAGSET:intellij-plugin:catalog"
+          allow:
+            - "/actions/LgRefreshCatalogsAction.kt"
+            - "/models/ContextsListSchema.kt"
+            - "/models/EncodersListSchema.kt"
+            - "/models/SectionsListSchema.kt"
+            - "/models/TokenizerLibsListSchema.kt"
+            - "/listeners/LgConfigFileListener.kt"
+            - "/services/catalog/LgCatalogService.kt"
+            - "/services/catalog/TokenizerCatalogService.kt"
+        - condition: "TAGSET:intellij-plugin:cli"
+          allow:
+            - "/cli/CliResolver.kt"
+            - "/cli/CliException.kt"
+            - "/cli/CliResultHandler.kt"
+            - "/listeners/LgSettingsChangeListener.kt"
+            - "/services/LgInitService.kt"
+        - condition: "TAGSET:intellij-plugin:stats"
+          allow:
+            - "**Stats**"
+            - "/generation/CliArgsBuilder.kt"
+            - "/models/ReportSchema.kt"
+            - "/services/state/LgPanelStateService.kt"
+            - "/ui/components/LgTaskTextField.kt"
+            - "/ui/components/LgGroupedTable.kt"
+            - "/utils/LgFormatUtils.kt"
+        - condition: "TAGSET:intellij-plugin:included-files"
+          allow:
+            - "/ui/toolwindow/LgIncludedFilesPanel.kt"
+            - "/ui/renderers/FileTreeCellRenderer.kt"
+            - "/actions/LgShowIncludedFilesAction.kt"
+            - "/actions/LgToggleTreeViewModeAction.kt"
+            - "/services/generation/LgStatsService.kt"
+            - "/services/generation/CliArgsBuilder.kt"
+            - "/services/state/LgWorkspaceStateService.kt"
+            - "/models/ReportSchema.kt"
+        - condition: "TAGSET:intellij-plugin:tags-dialog"
+          allow:
+            - "/ui/dialogs/LgTagsDialog.kt"
+            - "/actions/LgConfigureTagsAction.kt"
+            - "/models/TagSetsListSchema.kt"
+        - condition: "TAGSET:intellij-plugin:modes-panel"
+          allow:
+            - "/ui/toolwindow/LgModeSetsPanel.kt"
+            - "/ui/components/LgLabeledComponent.kt"
+            - "/ui/components/LgWrappingPanel.kt"
+            - "/models/ModeSetsListSchema.kt"
+            - "/services/catalog/LgCatalogService.kt"
+            - "/services/state/LgPanelStateService.kt"
+            - "/services/generation/CliArgsBuilder.kt"
+            - "/services/git/LgGitService.kt"
+        - condition: "TAGSET:intellij-plugin:diag"
+          allow:
+            - "/ui/dialogs/LgDoctorDialog.kt"
+            - "/services/diagnostics/LgDiagnosticsService.kt"
+            - "/actions/LgResetCacheAction.kt"
+            - "/actions/LgRunDoctorAction.kt"
+            - "/models/DiagReportSchema.kt"
+        - condition: "TAGSET:intellij-plugin:starter"
+          allow:
+            - "/ui/dialogs/LgInitWizardDialog.kt"
+            - "/services/LgInitService.kt"
+            - "/actions/LgCreateStarterConfigAction.kt"
+            - "/actions/LgOpenConfigAction.kt"
+            - "/models/InitResult.kt"
+        - condition: "TAGSET:intellij-plugin:send-to-ai"
+          allow:
+            - "/services/ai/"
+            - "/actions/LgSendToAiAction.kt"
+            - "/services/state/LgSettingsService.kt"
+            - "/settings/LgSettingsConfigurable.kt"
+            - "/ui/toolwindow/LgControlPanel.kt"
+            - "/models/AiInteractionMode.kt"
+        - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:claude-code-cli"
+          allow:
+            - "/models/ClaudeIntegrationMethod.kt"
+            - "/models/ClaudeModel.kt"
+            - "/models/ShellType.kt"
+            - "/models/CliExecutionContext.kt"
+            - "/ui/toolwindow/LgCliSettingsPanel.kt"
+            - "/services/state/LgPanelStateService.kt"
+
+      src/main/kotlin/lg/intellij/services/ai:
+        mode: block
+        children:
+          base:
+            mode: allow
+            when:
+              - condition: >
+                  TAGSET:ai-providers:jetbrains-ai-assistant OR 
+                  TAGSET:ai-providers:jetbrains-junie OR 
+                  TAGSET:ai-providers:github-copilot
+                allow: ["/BaseExtensionProvider.kt"]
+              - condition: "TAGSET:ai-providers:claude-code-cli"
+                allow: ["/BaseCliProvider.kt"]
+          providers:
+            mode: allow
+            when:
+              - condition: "TAGSET:ai-providers:clipboard"
+                allow: ["/ClipboardProvider.kt"]
+              - condition: "TAGSET:ai-providers:jetbrains-ai-assistant"
+                allow: ["/JetBrainsAiProvider.kt"]
+              - condition: "TAGSET:ai-providers:jetbrains-junie"
+                allow: ["/JunieProvider.kt"]
+              - condition: "TAGSET:ai-providers:github-copilot"
+                allow: ["/GitHubCopilotProvider.kt"]
+              - condition: "TAGSET:ai-providers:claude-code-cli"
+                allow: ["/claudecli/"]

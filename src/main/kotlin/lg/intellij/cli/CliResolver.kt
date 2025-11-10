@@ -10,102 +10,117 @@ import lg.intellij.services.state.LgSettingsService
 import java.io.File
 
 /**
+ * Structured CLI command specification.
+ *
+ * Equivalent to RunSpec from VS Code extension.
+ *
+ * @property cmd Executable path (e.g., "listing-generator" or "python3")
+ * @property args Additional arguments before CLI args (e.g., ["-m", "lg.cli"] for Python module)
+ */
+data class CliRunSpec(
+    val cmd: String,
+    val args: List<String> = emptyList()
+)
+
+/**
  * Resolves the path to listing-generator CLI executable.
- * 
+ *
  * Resolution strategies (in order):
  * 1. Explicit path from Settings (cliPath)
- * 2. Search in system PATH for "listing-generator"
- * 3. Try Python module invocation (python -m lg.cli) if interpreter configured
- * 4. Fallback to "python -m lg.cli" with auto-detected Python
- * 
+ * 2. System strategy - use configured Python interpreter with -m lg.cli
+ * 3. Managed venv strategy - use venv-installed CLI (not implemented yet)
+ * 4. Search in system PATH for "listing-generator"
+ * 5. Try Python module with configured interpreter
+ * 6. Fallback to auto-detected Python with -m lg.cli
+ *
  * Equivalent to CliResolver.ts from VS Code extension.
  */
 @Service(Service.Level.APP)
 class CliResolver {
-    
+
     private val log = logger<CliResolver>()
-    
+
     @Volatile
-    private var cachedPath: String? = null
-    
+    private var cachedSpec: CliRunSpec? = null
+
     /**
-     * Resolves CLI executable path with caching.
-     * 
-     * @return CLI command to execute (executable path or python invocation)
+     * Resolves CLI run specification with caching.
+     *
+     * @return CLI run specification (command + args)
      * @throws CliNotFoundException if CLI cannot be located
      */
-    fun resolve(): String {
+    fun resolve(): CliRunSpec {
         // Check cache first
-        cachedPath?.let { 
-            log.debug("Using cached CLI path: $it")
-            return it 
+        cachedSpec?.let {
+            log.debug("Using cached CLI spec: ${it.cmd} ${it.args.joinToString(" ")}")
+            return it
         }
-        
+
         val resolved = resolveInternal()
-        cachedPath = resolved
-        
-        log.info("Resolved CLI path: $resolved")
+        cachedSpec = resolved
+
+        log.info("Resolved CLI spec: ${resolved.cmd} ${resolved.args.joinToString(" ")}")
         return resolved
     }
-    
+
     /**
-     * Invalidates cached path.
+     * Invalidates cached spec.
      * Should be called when Settings change.
      */
     fun invalidateCache() {
-        log.debug("Invalidating CLI path cache")
-        cachedPath = null
+        log.debug("Invalidating CLI spec cache")
+        cachedSpec = null
     }
     
     /**
      * Internal resolution logic.
-     * 
+     *
      * Implements full resolution chain matching VS Code extension behavior.
      */
-    private fun resolveInternal(): String {
+    private fun resolveInternal(): CliRunSpec {
         val settings = service<LgSettingsService>()
-        
+
         // Strategy 1: Explicit path from Settings
         val explicitPath = settings.state.cliPath?.trim() ?: ""
         if (explicitPath.isNotEmpty()) {
             if (isExecutable(explicitPath)) {
                 log.info("Using explicit CLI path from Settings: $explicitPath")
-                return explicitPath
+                return CliRunSpec(cmd = explicitPath, args = emptyList())
             } else {
                 log.warn("Configured CLI path not executable or not found: $explicitPath")
             }
         }
-        
+
         // Strategy 2: System strategy - use configured Python interpreter
         if (settings.state.installStrategy == LgSettingsService.InstallStrategy.SYSTEM) {
             val interpreter = settings.state.pythonInterpreter?.trim() ?: ""
             if (interpreter.isNotEmpty() && isExecutable(interpreter)) {
                 log.info("Using system Python interpreter: $interpreter")
-                return interpreter
+                return CliRunSpec(cmd = interpreter, args = listOf("-m", "lg.cli"))
             }
         }
-        
+
         // Strategy 3: Search in PATH for "listing-generator"
         val inPath = findInPath("listing-generator")
         if (inPath != null) {
             log.info("Found listing-generator in PATH: $inPath")
-            return inPath
+            return CliRunSpec(cmd = inPath, args = emptyList())
         }
-        
+
         // Strategy 4: Try Python module with configured interpreter
         val configuredPython = settings.state.pythonInterpreter?.trim() ?: ""
         if (configuredPython.isNotEmpty() && isExecutable(configuredPython)) {
             log.info("Falling back to Python module with configured interpreter: $configuredPython")
-            return configuredPython
+            return CliRunSpec(cmd = configuredPython, args = listOf("-m", "lg.cli"))
         }
-        
+
         // Strategy 5: Auto-detect Python and use module
         val detectedPython = findPython()
         if (detectedPython != null) {
             log.info("Falling back to Python module with auto-detected Python: $detectedPython")
-            return detectedPython
+            return CliRunSpec(cmd = detectedPython, args = listOf("-m", "lg.cli"))
         }
-        
+
         // Give up
         throw CliNotFoundException(
             "listing-generator CLI not found. Please configure CLI path or Python interpreter in Settings."

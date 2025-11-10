@@ -52,25 +52,25 @@ class CliExecutor(private val project: Project) {
         workingDirectory: String? = null
     ): CliResult<String> = withContext(Dispatchers.IO) {
         try {
-            // Resolve CLI executable
-            val cliCommand = resolver.resolve()
-            
+            // Resolve CLI run specification
+            val runSpec = resolver.resolve()
+
             // Build command line
             val commandLine = buildCommandLine(
-                cliCommand,
+                runSpec,
                 args,
                 workingDirectory ?: project.basePath
             )
-            
+
             log.debug("Executing CLI: ${commandLine.commandLineString}")
-            
+
             // Create process handler
             val handler = CapturingProcessHandler(commandLine)
             
             // Write stdin if provided
             if (stdinData != null) {
                 log.debug("Writing ${stdinData.length} bytes to stdin")
-                handler.processInput?.use { stdin ->
+                handler.processInput.use { stdin ->
                     stdin.write(stdinData.toByteArray(StandardCharsets.UTF_8))
                 }
             }
@@ -95,45 +95,33 @@ class CliExecutor(private val project: Project) {
     
     /**
      * Builds GeneralCommandLine with proper configuration.
-     * 
+     *
+     * Uses CliRunSpec to construct command line with correct arguments.
      * Handles both direct CLI execution and Python module invocation.
      */
     private fun buildCommandLine(
-        cliCommand: String,
+        runSpec: CliRunSpec,
         args: List<String>,
         workingDirectory: String?
     ): GeneralCommandLine {
-        val settings = service<lg.intellij.services.state.LgSettingsService>()
-        
-        // Determine if we're using Python module invocation
-        val isPythonModule = settings.state.installStrategy == 
-            lg.intellij.services.state.LgSettingsService.InstallStrategy.SYSTEM &&
-            (cliCommand.endsWith("python") || cliCommand.endsWith("python3") || cliCommand.endsWith("py"))
-        
-        val commandLine = if (isPythonModule) {
-            // Python module invocation: python -m lg.cli <args>
-            GeneralCommandLine()
-                .withExePath(cliCommand)
-                .withParameters(listOf("-m", "lg.cli") + args)
-        } else {
-            // Direct CLI execution: listing-generator <args>
-            GeneralCommandLine()
-                .withExePath(cliCommand)
-                .withParameters(args)
-        }
-        
-        commandLine
+        // Combine run spec args with CLI command args
+        // E.g., for Python: ["-m", "lg.cli"] + ["render", "sec:all"]
+        val allArgs = runSpec.args + args
+
+        val commandLine = GeneralCommandLine()
+            .withExePath(runSpec.cmd)
+            .withParameters(allArgs)
             .withCharset(StandardCharsets.UTF_8)
             .withEnvironment(mapOf(
                 "PYTHONIOENCODING" to "utf-8",
                 "PYTHONUTF8" to "1",
                 "PYTHONUNBUFFERED" to "1"
             ))
-        
+
         if (workingDirectory != null) {
             commandLine.withWorkDirectory(workingDirectory)
         }
-        
+
         return commandLine
     }
     

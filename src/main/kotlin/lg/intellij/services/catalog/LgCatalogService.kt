@@ -6,9 +6,11 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import lg.intellij.cli.CliExecutor
@@ -59,12 +61,10 @@ class LgCatalogService(private val project: Project) {
     private val _isLoading = MutableStateFlow(false)
 
     /**
-     * Loads all catalog data sequentially.
+     * Loads all catalog data with parallel CLI execution.
      *
-     * Sequential execution prevents CLI conflicts due to:
-     * - File system locking during config migrations
-     * - Heavy I/O operations
-     * - Potential race conditions in CLI internals
+     * Independent CLI requests (sections, contexts, mode-sets, tag-sets, branches)
+     * are executed in parallel for better responsiveness.
      *
      * Safe to call multiple times (subsequent calls while loading are ignored).
      */
@@ -79,11 +79,14 @@ class LgCatalogService(private val project: Project) {
 
         try {
             withContext(Dispatchers.IO) {
-                loadSections()
-                loadContexts()
-                loadModeSets()
-                loadTagSets()
-                loadBranches()
+                // Parallel loading of all independent catalog data
+                coroutineScope {
+                    launch { loadSections() }
+                    launch { loadContexts() }
+                    launch { loadModeSets() }
+                    launch { loadTagSets() }
+                    launch { loadBranches() }
+                }
 
                 // Actualize panel state after loading catalogs
                 actualizeState()

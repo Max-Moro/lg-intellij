@@ -88,21 +88,21 @@ class LgControlPanel(
     }
     
     /**
-     * Запускает асинхронную загрузку всех каталогов.
+     * Запускает асинхронную загрузку всех каталогов с параллельным выполнением CLI запросов.
      */
     private fun loadDataAsync() {
         scope.launch {
             try {
-                // Загрузить catalog data
-                catalogService.loadAll()
-                
-                // Загрузить tokenizer libraries
-                tokenizerService.loadLibraries(project)
-                
-                // Загрузить encoders для текущей библиотеки
+                // Получаем текущую библиотеку токенизации из состояния
                 val currentLib = stateService.state.tokenizerLib!!
-                tokenizerService.getEncoders(currentLib, project)
-                
+
+                // Параллельная загрузка catalog и tokenizer данных
+                coroutineScope {
+                    launch { catalogService.loadAll() }
+                    launch { tokenizerService.loadLibraries(project) }
+                    launch { tokenizerService.getEncoders(currentLib, project) }
+                }
+
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

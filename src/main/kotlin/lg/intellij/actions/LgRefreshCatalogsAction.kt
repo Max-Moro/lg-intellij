@@ -9,6 +9,8 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
 import lg.intellij.services.catalog.LgCatalogService
@@ -46,19 +48,21 @@ class LgRefreshCatalogsAction : AnAction(
                 indicator.text = LgBundle.message("action.refresh.progress.text")
                 
                 try {
-                    // Reload catalog service data
-                    runBlocking {
-                        val catalogService = project.service<LgCatalogService>()
-                        catalogService.reload()
-                    }
-                    
-                    // Invalidate tokenizer cache
+                    // Invalidate tokenizer cache first (fast sync operation)
                     val tokenizerService = TokenizerCatalogService.getInstance()
                     tokenizerService.invalidateAll()
-                    
-                    // Reload tokenizer libraries
+
+                    // Parallel reload of catalog and tokenizer data
                     runBlocking {
-                        tokenizerService.loadLibraries(project)
+                        coroutineScope {
+                            launch {
+                                val catalogService = project.service<LgCatalogService>()
+                                catalogService.reload()
+                            }
+                            launch {
+                                tokenizerService.loadLibraries(project)
+                            }
+                        }
                     }
                     
                     indicator.text = LgBundle.message("action.refresh.progress.completed")

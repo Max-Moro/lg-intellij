@@ -65,8 +65,3 @@ This project is developing a plugin for **IntelliJ Platform**. It's a fairly tra
 ## Testing
 
 The project has no automated tests. Testing is done by the user through running IntelliJ IDEA (Development Instance) with the installed plugin.
-<!-- lg:if tag:claude-code -->
-## File Paths
-
-This project runs on Windows. When using Read/Edit/Write tools, always use **backslashes** (`\`) in file paths.
-<!-- lg:endif -->

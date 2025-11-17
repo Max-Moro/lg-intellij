@@ -10,15 +10,15 @@ import java.net.http.HttpResponse
 import java.time.Duration
 
 /**
- * Базовый класс для Network-based AI провайдеров.
+ * Base class for Network-based AI providers.
  *
- * Используется для провайдеров, которые работают через HTTP API
- * (например, OpenAI API, Anthropic API).
+ * Used for providers that work through HTTP API
+ * (e.g., OpenAI API, Anthropic API).
  *
- * Основные возможности:
- * - Безопасное хранение API токенов через PasswordSafe
- * - HTTP запросы с таймаутом
- * - Централизованная обработка ошибок сети
+ * Key features:
+ * - Secure API token storage via PasswordSafe
+ * - HTTP requests with timeout
+ * - Centralized network error handling
  */
 @Suppress("unused") // Base class for future network-based AI providers
 abstract class BaseNetworkProvider : AiProvider {
@@ -26,27 +26,27 @@ abstract class BaseNetworkProvider : AiProvider {
     private val log = logger<BaseNetworkProvider>()
     
     /**
-     * URL endpoint API.
+     * API endpoint URL.
      */
     @Suppress("unused") // Part of base class API for derived implementations
     protected abstract val apiEndpoint: String
-    
+
     /**
-     * Ключ для хранения токена в PasswordSafe (например, "lg.openai.apiKey").
+     * Key for storing token in PasswordSafe (e.g., "lg.openai.apiKey").
      */
     protected abstract val credentialKey: String
-    
+
     /**
-     * HTTP клиент для выполнения запросов.
+     * HTTP client for executing requests.
      */
     protected val httpClient: HttpClient by lazy {
         HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build()
     }
-    
+
     /**
-     * Проверяет наличие API токена.
+     * Checks API token presence.
      */
     override suspend fun isAvailable(): Boolean {
         return try {
@@ -59,29 +59,29 @@ abstract class BaseNetworkProvider : AiProvider {
     }
     
     /**
-     * Получает API токен из PasswordSafe.
-     * 
-     * @return API токен
-     * @throws AiProviderException если токен не найден
+     * Gets API token from PasswordSafe.
+     *
+     * @return API token
+     * @throws AiProviderException if token not found
      */
     protected fun getApiToken(): String {
         val token = PasswordSafe.instance.getPassword(
             com.intellij.credentialStore.CredentialAttributes(credentialKey)
         )
-        
+
         if (token.isNullOrBlank()) {
             throw AiProviderException(
                 "API token not configured for $name. Please set it in Settings."
             )
         }
-        
+
         return token
     }
-    
+
     /**
-     * Сохраняет API токен в PasswordSafe.
+     * Saves API token to PasswordSafe.
      *
-     * @param token API токен для сохранения
+     * @param token API token to save
      */
     @Suppress("unused") // Part of base class API for configuration
     fun setApiToken(token: String) {
@@ -92,22 +92,22 @@ abstract class BaseNetworkProvider : AiProvider {
     }
     
     /**
-     * Отправляет контент через API.
-     * 
-     * Получает токен и делегирует sendToApi.
+     * Sends content through the API.
+     *
+     * Retrieves token and delegates to sendToApi.
      */
     override suspend fun send(content: String) {
         val token = getApiToken()
 
         sendToApi(content, token)
     }
-    
+
     /**
-     * Выполняет HTTP запрос с таймаутом.
+     * Executes HTTP request with timeout.
      *
-     * @param request HTTP запрос
-     * @param timeoutSeconds Таймаут в секундах
-     * @return HTTP ответ
+     * @param request HTTP request
+     * @param timeoutSeconds Timeout in seconds
+     * @return HTTP response
      */
     @Suppress("unused") // Part of base class API for HTTP operations
     protected fun executeRequest(
@@ -121,13 +121,13 @@ abstract class BaseNetworkProvider : AiProvider {
     }
     
     /**
-     * Отправляет контент в конкретный API.
-     * 
-     * Реализуется наследниками для специфичной логики взаимодействия с API.
-     * Должен обрабатывать формирование запроса, отправку и разбор ответа.
-     * 
-     * @param content Контент для отправки
-     * @param token API токен
+     * Sends content to a specific API.
+     *
+     * Implemented by subclasses for API-specific interaction logic.
+     * Should handle request formation, sending, and response parsing.
+     *
+     * @param content Content to send
+     * @param token API token
      */
     protected abstract suspend fun sendToApi(content: String, token: String)
 }

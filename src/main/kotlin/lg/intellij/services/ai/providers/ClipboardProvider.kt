@@ -7,29 +7,29 @@ import lg.intellij.services.ai.AiProvider
 import java.awt.datatransfer.StringSelection
 
 /**
- * Провайдер для копирования контента в буфер обмена.
- * 
- * Всегда доступен, используется как fallback если другие провайдеры недоступны.
+ * Provider for copying content to clipboard.
+ *
+ * Always available, used as fallback if other providers are unavailable.
  */
 class ClipboardProvider : AiProvider {
     
     override val id = "clipboard"
     override val name = "Clipboard"
-    override val priority = 10 // Низкий приоритет (fallback)
+    override val priority = 10 // Low priority (fallback)
     
     /**
-     * Clipboard всегда доступен.
+     * Clipboard is always available.
      */
     override suspend fun isAvailable(): Boolean = true
     
     /**
-     * Копирует контент в буфер обмена и показывает notification.
+     * Copies content to clipboard and shows a notification.
      */
     override suspend fun send(content: String) {
-        // Копировать в clipboard
+        // Copy to clipboard
         CopyPasteManager.getInstance().setContents(StringSelection(content))
-        
-        // Показать notification
+
+        // Show notification
         NotificationGroupManager.getInstance()
             .getNotificationGroup("LG Notifications")
             .createNotification(

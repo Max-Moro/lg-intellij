@@ -140,8 +140,8 @@ class CliExecutor(private val project: Project) {
             
             output.exitCode != 0 -> {
                 log.warn("CLI failed with exit code ${output.exitCode}: $commandString")
-                
-                // ВАЖНО: stderr содержит Python traceback - всегда включаем в результат
+
+                // IMPORTANT: stderr contains Python traceback - always include in result
                 if (output.stderr.isNotEmpty()) {
                     log.debug("Full stderr output:\n${output.stderr}")
                 }
@@ -155,9 +155,9 @@ class CliExecutor(private val project: Project) {
             
             else -> {
                 log.debug("CLI succeeded, output length: ${output.stdout.length}")
-                
-                // ВАЖНО: даже при успехе stderr может содержать полезную информацию
-                // (например, путь к bundle в `lg diag --bundle`)
+
+                // IMPORTANT: even on success stderr may contain useful information
+                // (e.g., bundle path in `lg diag --bundle`)
                 if (output.stderr.isNotEmpty()) {
                     log.debug("stderr on success:\n${output.stderr}")
                 }

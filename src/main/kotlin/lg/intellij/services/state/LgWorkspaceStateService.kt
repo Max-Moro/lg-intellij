@@ -19,7 +19,7 @@ import com.intellij.openapi.project.Project
     name = "LgWorkspaceState",
     storages = [Storage(StoragePathMacros.WORKSPACE_FILE)],
     category = SettingsCategory.UI,
-    reportStatistic = false // UI state не интересен для статистики
+    reportStatistic = false // UI state is not relevant for statistics
 )
 class LgWorkspaceStateService : SimplePersistentStateComponent<LgWorkspaceStateService.State>(State()) {
     

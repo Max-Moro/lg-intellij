@@ -8,15 +8,15 @@ import lg.intellij.services.LgErrorReportingService
 import lg.intellij.services.LgInitService
 
 /**
- * Утилита для обобщенной обработки результатов выполнения CLI команд.
- * 
- * Реализует паттерн DRY для единообразной обработки ошибок:
- * - CliResult.Success -> обработка успешного результата
- * - CliResult.Failure -> логирование и отчет об ошибке
- * - CliResult.Timeout -> логирование и отчет о таймауте
- * - CliResult.NotFound -> логирование и отчет об отсутствии CLI
- * 
- * Пример использования:
+ * Utility for generalized processing of CLI command execution results.
+ *
+ * Implements DRY pattern for uniform error handling:
+ * - CliResult.Success -> process successful result
+ * - CliResult.Failure -> log and report error
+ * - CliResult.Timeout -> log and report timeout
+ * - CliResult.NotFound -> log and report CLI not found
+ *
+ * Usage example:
  * ```kotlin
  * val result = cliExecutor.execute(args = listOf("render", "sec:all"))
  * val content = result.handleWith(
@@ -24,7 +24,7 @@ import lg.intellij.services.LgInitService
  *     operationName = "Listing Generation",
  *     logger = LOG
  * ) { data ->
- *     // Обработка успешного результата
+ *     // Process successful result
  *     data
  * }
  * ```
@@ -32,16 +32,16 @@ import lg.intellij.services.LgInitService
 object CliResultHandler {
     
     /**
-     * Обрабатывает результат выполнения CLI команды с единообразной обработкой ошибок.
-     * 
-     * @param T тип данных в CliResult.Success
-     * @param R тип возвращаемого результата
-     * @param project проект для отчетов об ошибках
-     * @param operationName название операции для логов и уведомлений (например, "Listing Generation")
-     * @param logger логгер для записи сообщений
-     * @param errorReporting сервис для отчетов об ошибках (по умолчанию - singleton)
-     * @param onSuccess обработчик успешного результата, получает CliResult.Success и возвращает значение типа R или null
-     * @return результат обработки или null при ошибке (пользователь уже уведомлен)
+     * Processes CLI command execution result with uniform error handling.
+     *
+     * @param T data type in CliResult.Success
+     * @param R return result type
+     * @param project project for error reports
+     * @param operationName operation name for logs and notifications (e.g., "Listing Generation")
+     * @param logger logger for message recording
+     * @param errorReporting service for error reports (default - singleton)
+     * @param onSuccess successful result handler, receives CliResult.Success and returns value of type R or null
+     * @return processing result or null on error (user already notified)
      */
     fun <T, R> handle(
         result: CliResult<T>,
@@ -89,17 +89,17 @@ object CliResultHandler {
     }
     
     /**
-     * Обрабатывает результат с дополнительным fallback-значением при ошибке.
-     * 
-     * @param T тип данных в CliResult.Success
-     * @param R тип возвращаемого результата
-     * @param project проект для отчетов об ошибках
-     * @param operationName название операции для логов и уведомлений
-     * @param logger логгер для записи сообщений
-     * @param fallback значение, возвращаемое при любой ошибке
-     * @param errorReporting сервис для отчетов об ошибках (по умолчанию - singleton)
-     * @param onSuccess обработчик успешного результата
-     * @return результат обработки или fallback при ошибке
+     * Processes result with additional fallback value on error.
+     *
+     * @param T data type in CliResult.Success
+     * @param R return result type
+     * @param project project for error reports
+     * @param operationName operation name for logs and notifications
+     * @param logger logger for message recording
+     * @param fallback value returned on any error
+     * @param errorReporting service for error reports (default - singleton)
+     * @param onSuccess successful result handler
+     * @return processing result or fallback on error
      */
     fun <T, R> handleWithFallback(
         result: CliResult<T>,
@@ -115,9 +115,9 @@ object CliResultHandler {
 }
 
 /**
- * Extension-функция для более удобного использования обработчика результатов.
- * 
- * Пример:
+ * Extension function for more convenient usage of result handler.
+ *
+ * Example:
  * ```kotlin
  * val content = result.handleWith(
  *     project = project,
@@ -135,9 +135,9 @@ fun <T, R> CliResult<T>.handleWith(
 ): R? = CliResultHandler.handle(result = this, project, operationName, logger, errorReporting, onSuccess)
 
 /**
- * Extension-функция с fallback-значением.
- * 
- * Пример:
+ * Extension function with fallback value.
+ *
+ * Example:
  * ```kotlin
  * val sections = result.handleWithFallback(
  *     project = project,

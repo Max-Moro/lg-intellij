@@ -51,7 +51,7 @@ class LgConfigureTagsAction : AnAction() {
     }
     
     override fun update(e: AnActionEvent) {
-        // Доступно только если проект открыт
+        // Available only if project is open
         e.presentation.isEnabled = e.project != null
     }
     

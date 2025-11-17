@@ -9,17 +9,16 @@ import lg.intellij.models.AiInteractionMode
 import lg.intellij.services.ai.base.BaseExtensionProvider
 
 /**
- * Провайдер для интеграции с JetBrains AI Assistant.
- * 
-
- * Использует рефлексию для работы с JetBrains AI API, чтобы избежать
- * compile-time зависимости (плагин не является bundled в Community Edition).
- * 
- * Функциональность:
- * - Открывает панель AI Assistant
- * - Создаёт новую чат-сессию (оптимально для LG)
- * - Отправляет сгенерированный контент как сообщение
- * 
+ * Provider for JetBrains AI Assistant integration.
+ *
+ * Uses reflection to work with JetBrains AI API to avoid
+ * compile-time dependency (plugin is not bundled in Community Edition).
+ *
+ * Features:
+ * - Opens AI Assistant panel
+ * - Creates a new chat session (optimal for LG)
+ * - Sends generated content as a message
+ *
  * Priority: 90 (highest among all providers)
  */
 class JetBrainsAiProvider : BaseExtensionProvider() {
@@ -39,22 +38,22 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
     ) {
         log.info("Sending content to JetBrains AI Assistant in ${mode.name} mode")
 
-        // 1. Получаем или создаём чат-сессию
+        // 1. Get or create a chat session
         val chatSession = getOrCreateChatSession(project)
 
-        // 2. Переключаем фокус на новую сессию (на EDT)
+        // 2. Switch focus to the new session (on EDT)
         withContext(Dispatchers.EDT) {
             focusChatSession(project, chatSession)
         }
 
-        // 3. Отправляем сообщение с режимом
+        // 3. Send message with mode
         sendMessage(chatSession, content, mode)
 
         log.info("Successfully sent to JetBrains AI")
     }
     
     /**
-     * Переключает фокус на указанную чат-сессию.
+     * Switches focus to the specified chat session.
      */
     private fun focusChatSession(project: Project, chatSession: Any) {
         val classLoader = this::class.java.classLoader
@@ -76,14 +75,14 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
     }
     
     /**
-     * Получает текущий активный чат или создаёт новый через рефлексию.
-     * 
-     * @param createNew Если true — всегда создаёт новую сессию (по умолчанию)
+     * Gets the current active chat or creates a new one via reflection.
+     *
+     * @param createNew If true — always creates a new session (default)
      */
     private suspend fun getOrCreateChatSession(project: Project, createNew: Boolean = true): Any {
         val classLoader = this::class.java.classLoader
         
-        // Если нужна новая сессия — сразу создаём
+        // If a new session is needed — create it immediately
         if (createNew) {
             log.debug("Creating new chat session (createNew=true)")
             return createNewChatSession(project, classLoader)
@@ -120,7 +119,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
     }
     
     /**
-     * Создаёт новую чат-сессию через рефлексию.
+     * Creates a new chat session via reflection.
      */
     private suspend fun createNewChatSession(project: Project, classLoader: ClassLoader): Any {
         val chatHostClass = Class.forName(
@@ -175,8 +174,8 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         val context = contextConstructor.newInstance(
             aiAssistantOrigin,
             newChatAction,
-            null,  // PsiFile (nullable) - отключает автоприкрепление активных файлов
-            emptyList<Any>(),  // List<ChatContextItem> - пустой список (без файлов из контекста)
+            null,  // PsiFile (nullable) - disables auto-attachment of active files
+            emptyList<Any>(),  // List<ChatContextItem> - empty list (no files from context)
             emptyTaskContext   // PrivacySafeTaskContext (not nullable!)
         )
         
@@ -227,9 +226,9 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
     }
     
     /**
-     * Отправляет сообщение в чат через рефлексию.
-     * 
-     * Соответствие режимов:
+     * Sends a message to the chat via reflection.
+     *
+     * Mode mapping:
      * - ASK → Chat
      * - AGENT → Quick Edit
      */

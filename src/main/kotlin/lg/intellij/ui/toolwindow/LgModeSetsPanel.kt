@@ -21,13 +21,13 @@ import lg.intellij.ui.components.LgWrappingPanel
 import javax.swing.JComponent
 
 /**
- * Самостоятельный panel для управления режимами (mode-sets).
+ * Self-contained panel for managing modes (mode-sets).
  *
- * Полностью инкапсулирует:
- * - Загрузку mode-sets из LgCatalogService
- * - Управление состоянием через LgPanelStateService
- * - Динамическое обновление UI при изменении данных
- * - Target branch selector (показывается при review режиме)
+ * Fully encapsulates:
+ * - Loading mode-sets from LgCatalogService
+ * - State management via LgPanelStateService
+ * - Dynamic UI updates when data changes
+ * - Target branch selector (shown in review mode)
  */
 class LgModeSetsPanel(
     project: Project,
@@ -42,7 +42,7 @@ class LgModeSetsPanel(
 
     // Track current mode-sets data
     private var currentModeSets: List<ModeSet> = emptyList()
-    
+
     // Track current branches data
     private var currentBranches: List<String> = emptyList()
 
@@ -65,7 +65,7 @@ class LgModeSetsPanel(
                 }
             }
         }
-        
+
         // Subscribe to branches updates
         scope.launch {
             catalogService.branches.collectLatest { branches ->
@@ -80,8 +80,8 @@ class LgModeSetsPanel(
     }
 
     /**
-     * Создаёт UI компонент.
-     * Возвращает JComponent для встраивания в layout.
+     * Creates UI component.
+     * Returns JComponent for embedding in layout.
      */
     fun createUI(): JComponent {
         wrappingPanel = LgWrappingPanel(hgap = 16)
@@ -90,7 +90,7 @@ class LgModeSetsPanel(
     }
 
     /**
-     * Перестраивает UI с текущими данными.
+     * Rebuilds UI with current data.
      */
     private fun rebuildUI() {
         if (!::wrappingPanel.isInitialized) return
@@ -159,7 +159,7 @@ class LgModeSetsPanel(
     }
 
     /**
-     * Добавляет target branch selector в конец panel.
+     * Adds target branch selector at the end of panel.
      */
     private fun addTargetBranchSelector() {
         if (!hasReviewMode()) {
@@ -168,11 +168,11 @@ class LgModeSetsPanel(
         }
 
         val combo = ComboBox<String>().apply {
-            // На данном этапе просто плейсхолдер для верстки (ждем вызова updateTargetBranchCombo)
+            // At this stage, just a placeholder for layout (waiting for updateTargetBranchCombo call)
             isEnabled = false
             addItem(LgBundle.message("control.target.branch.no.git"))
         }
-        
+
         targetBranchCombo = combo
 
         val labeledCombo = LgLabeledComponent.create(
@@ -180,8 +180,8 @@ class LgModeSetsPanel(
             component = combo
         )
         wrappingPanel.add(labeledCombo)
-        
-        // Если ветки еще не загружены, триггерим их загрузку
+
+        // If branches have not been loaded yet, trigger their loading
         if (currentBranches.isEmpty()) {
             scope.launch {
                 catalogService.loadBranchesOnly()
@@ -192,16 +192,16 @@ class LgModeSetsPanel(
     }
     
     /**
-     * Обновляет содержимое target branch ComboBox без полного rebuild UI.
+     * Updates target branch ComboBox content without full UI rebuild.
      */
     private fun updateTargetBranchCombo() {
         val combo = targetBranchCombo ?: return
-        
+
         if (!hasReviewMode()) {
             return
         }
-        
-        // Удаляем все listeners
+
+        // Remove all listeners
         val listeners = combo.actionListeners
         listeners.forEach { combo.removeActionListener(it) }
 
@@ -218,19 +218,19 @@ class LgModeSetsPanel(
             combo.isEnabled = true
             currentBranches.forEach { combo.addItem(it) }
 
-            // Приоритет: сохраненная из state > текущая выбранная > main/master > первая
+            // Priority: saved from state > current selection > main/master > first
             val savedBranch = stateService.state.targetBranch
 
             when {
-                // 1. Восстановить из state (приоритет)
+                // 1. Restore from state (priority)
                 !savedBranch.isNullOrBlank() && savedBranch in currentBranches -> {
                     combo.selectedItem = savedBranch
                 }
-                // 2. Сохранить текущий выбор если он еще актуален
+                // 2. Keep current selection if still valid
                 currentSelection != null && currentSelection in currentBranches -> {
                     combo.selectedItem = currentSelection
                 }
-                // 3. Fallback: искать main/master или первая в списке
+                // 3. Fallback: search for main/master or first in list
                 else -> {
                     val defaultBranch = findDefaultBranch(currentBranches)
                     if (defaultBranch != null) {
@@ -244,7 +244,7 @@ class LgModeSetsPanel(
             }
         }
 
-        // Установить listener ПОСЛЕ того как заполнили и выбрали нужный item
+        // Set listener AFTER filling and selecting the right item
         combo.addActionListener {
             val selected = combo.selectedItem as? String
             if (selected != null && selected != LgBundle.message("control.target.branch.no.git")) {
@@ -254,25 +254,25 @@ class LgModeSetsPanel(
     }
     
     /**
-     * Ищет дефолтную родительскую ветку (main или master).
-     * Возвращает первую найденную в порядке приоритета.
+     * Searches for default parent branch (main or master).
+     * Returns the first found in priority order.
      */
     private fun findDefaultBranch(branches: List<String>): String? {
-        // Варианты дефолтных веток в порядке приоритета
+        // Default branch name options in priority order
         val defaultBranchNames = listOf("main", "master", "origin/main", "origin/master")
-        
+
         for (defaultName in defaultBranchNames) {
             val found = branches.find { it == defaultName || it.endsWith("/$defaultName") }
             if (found != null) {
                 return found
             }
         }
-        
+
         return null
     }
 
     /**
-     * Обновляет видимость target branch selector на основе текущих режимов.
+     * Updates visibility of target branch selector based on current modes.
      */
     private fun updateTargetBranchVisibility() {
         // Full rebuild to add/remove target branch selector
@@ -280,7 +280,7 @@ class LgModeSetsPanel(
     }
 
     /**
-     * Проверяет наличие режима "review" в текущих выборах.
+     * Checks for "review" mode in current selections.
      */
     private fun hasReviewMode(): Boolean {
         return stateService.state.modes.values.any { it == "review" }

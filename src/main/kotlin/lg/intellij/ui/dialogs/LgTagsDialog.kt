@@ -29,7 +29,7 @@ class LgTagsDialog(
     initialSelectedTags: Map<String, Set<String>>
 ) : DialogWrapper(project) {
     
-    // Mutable state для tracking выбранных тегов: tagSetId -> Set<tagId>
+    // Mutable state for tracking selected tags: tagSetId -> Set<tagId>
     private val selectedTags = initialSelectedTags.mapValues { it.value.toMutableSet() }.toMutableMap()
     
     // Store panel reference for apply()

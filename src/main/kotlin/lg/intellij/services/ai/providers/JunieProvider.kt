@@ -8,17 +8,17 @@ import lg.intellij.models.AiInteractionMode
 import lg.intellij.services.ai.base.BaseExtensionProvider
 
 /**
- * Провайдер для интеграции с Junie, the AI coding agent by JetBrains.
- * 
- * Использует рефлексию для работы с Junie API, чтобы избежать
- * compile-time зависимости (плагин опциональный).
- * 
- * Функциональность:
- * - Создаёт новую task chain
- * - Отправляет сгенерированный контент как task description
- * - Использует IssueType.ISSUE для формальных задач
- * 
- * Priority: 70 (ниже чем JetBrains AI и GitHub Copilot, но выше CLI)
+ * Provider for Junie integration, the AI coding agent by JetBrains.
+ *
+ * Uses reflection to work with Junie API to avoid
+ * compile-time dependency (plugin is optional).
+ *
+ * Features:
+ * - Creates a new task chain
+ * - Sends generated content as a task description
+ * - Uses IssueType.ISSUE for formal tasks
+ *
+ * Priority: 70 (lower than JetBrains AI and GitHub Copilot, but higher than CLI)
  */
 class JunieProvider : BaseExtensionProvider() {
     
@@ -81,7 +81,7 @@ class JunieProvider : BaseExtensionProvider() {
     }
     
     /**
-     * Создаёт TaskChainId через рефлексию.
+     * Creates TaskChainId via reflection.
      */
     private fun createTaskChainId(classLoader: ClassLoader): Any {
         val taskChainIdClass = Class.forName(
@@ -99,11 +99,11 @@ class JunieProvider : BaseExtensionProvider() {
     }
     
     /**
-     * Создаёт ExplicitTaskContext через рефлексию.
-     * 
-     * Соответствие режимов:
-     * - ASK → IssueType.CHAT (свободный диалог)
-     * - AGENT → IssueType.ISSUE (формальная задача с инструментами)
+     * Creates ExplicitTaskContext via reflection.
+     *
+     * Mode mapping:
+     * - ASK → IssueType.CHAT (free-form dialogue)
+     * - AGENT → IssueType.ISSUE (formal task with tools)
      */
     private fun createTaskContext(
         description: String,

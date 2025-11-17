@@ -24,7 +24,7 @@ class LgVirtualFileServiceTest : BasePlatformTestCase() {
     }
     
     fun testSanitizeFilename_RemovesSlashes() {
-        // Reflection для доступа к private методу
+        // Reflection for accessing private method
         val method = service.javaClass.getDeclaredMethod("sanitizeFilename", String::class.java)
         method.isAccessible = true
         
@@ -98,8 +98,8 @@ class LgVirtualFileServiceTest : BasePlatformTestCase() {
         
         val result = method.invoke(service, "# Content", "test.md")
         assertNotNull(result)
-        
-        // Проверяем что это LightVirtualFile
+
+        // Verify that it is a LightVirtualFile
         assertTrue(result is com.intellij.testFramework.LightVirtualFile)
         
         val virtualFile = result as com.intellij.testFramework.LightVirtualFile

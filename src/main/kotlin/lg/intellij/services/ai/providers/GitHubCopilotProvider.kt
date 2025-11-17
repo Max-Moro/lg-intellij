@@ -8,17 +8,17 @@ import lg.intellij.services.ai.base.BaseExtensionProvider
 import kotlin.jvm.functions.Function1
 
 /**
- * Провайдер для интеграции с GitHub Copilot.
- * 
- * Использует рефлексию для работы с GitHub Copilot API, чтобы избежать
- * compile-time зависимости (плагин опциональный).
- * 
- * Функциональность:
- * - Открывает новую чат-сессию
- * - Отправляет сгенерированный контент как запрос
- * - Использует режим "Ask" (вопрос-ответ)
+ * Provider for GitHub Copilot integration.
  *
- * Priority: 80 (высокий, но ниже чем JetBrains AI)
+ * Uses reflection to work with GitHub Copilot API to avoid
+ * compile-time dependency (plugin is optional).
+ *
+ * Features:
+ * - Opens a new chat session
+ * - Sends generated content as a request
+ * - Uses "Ask" mode (question-answer)
+ *
+ * Priority: 80 (high, but lower than JetBrains AI)
  */
 class GitHubCopilotProvider : BaseExtensionProvider() {
     
@@ -49,7 +49,7 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
         @Suppress("IncorrectServiceRetrieving")
         val chatService = project.getService(chatServiceClass)
         
-        // Create DataContext (empty, можно расширить при необходимости)
+        // Create DataContext (empty, can be extended if needed)
         val dataContext = SimpleDataContext.builder().build()
         
         // Create QueryOptionBuilder lambda with mode
@@ -68,7 +68,7 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
     }
     
     /**
-     * Создаёт лямбду для QueryOptionBuilder с настройками.
+     * Creates a lambda for QueryOptionBuilder with settings.
      */
     private fun createQueryOptionBuilderLambda(
         content: String,
@@ -90,9 +90,9 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
     }
     
     /**
-     * Настраивает QueryOptionBuilder через рефлексию.
-     * 
-     * Соответствие режимов:
+     * Configures QueryOptionBuilder through reflection.
+     *
+     * Mode mapping:
      * - ASK → withAskMode()
      * - AGENT → withAgentMode()
      */
@@ -105,12 +105,12 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
         // withInput(content)
         val withInputMethod = builderClass.getMethod("withInput", String::class.java)
         withInputMethod.invoke(builder, content)
-        
-        // withNewSession() - создаём новую сессию для каждого запроса
+
+        // withNewSession() - create a new session for each request
         val withNewSessionMethod = builderClass.getMethod("withNewSession")
         withNewSessionMethod.invoke(builder)
-        
-        // hideWelcomeMessage() - скрываем приветственное сообщение
+
+        // hideWelcomeMessage() - hide welcome message
         val hideWelcomeMethod = builderClass.getMethod("hideWelcomeMessage")
         hideWelcomeMethod.invoke(builder)
         

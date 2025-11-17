@@ -21,25 +21,25 @@ import lg.intellij.services.LgInitService
  */
 class LgConfigFileListener(private val project: Project) : BulkFileListener {
     
-    // Scope для debounce механизма
+    // Scope for debounce mechanism
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    
-    // Текущая отложенная задача reload (для отмены)
+
+    // Current pending reload task (for cancellation)
     private var pendingReload: Job? = null
     
     override fun after(events: List<VFileEvent>) {
-        // Early pruning: пока нет lg-cfg/, слушать нечего
+        // Early pruning: while no lg-cfg/, nothing to listen to
         val initService = project.service<LgInitService>()
         if (!initService.isInitialized()) {
             return
         }
 
-        // Фильтруем:
-        // интересуют только изменения в lg-cfg/
+        // Filter:
+        // only interested in changes in lg-cfg/
         val hasConfigChanges = events.any { event ->
             val file = event.file ?: return@any false
 
-            // Проверяем что файл в lg-cfg/ директории текущего проекта
+            // Check that file is in lg-cfg/ directory of current project
             isInLgConfigDir(file.path)
         }
 
@@ -52,23 +52,23 @@ class LgConfigFileListener(private val project: Project) : BulkFileListener {
     }
     
     /**
-     * Планирует reload с debounce (500ms).
-     * Отменяет предыдущий pending reload если есть.
+     * Schedules reload with debounce (500ms).
+     * Cancels previous pending reload if exists.
      */
     private fun scheduleReload() {
-        // Отменить предыдущую задачу
+        // Cancel previous task
         pendingReload?.cancel()
-        
-        // Запланировать новую с задержкой
+
+        // Schedule new with delay
         pendingReload = scope.launch {
             delay(DEBOUNCE_DELAY_MS)
-            
+
             try {
                 val catalogService = project.service<LgCatalogService>()
                 catalogService.reload()
                 LOG.info("Catalog reloaded after lg-cfg/ changes")
             } catch (e: CancellationException) {
-                // Отменено новым событием - норма
+                // Cancelled by new event - normal
                 throw e
             } catch (e: Exception) {
                 LOG.error("Failed to reload catalog after file changes", e)
@@ -77,16 +77,16 @@ class LgConfigFileListener(private val project: Project) : BulkFileListener {
     }
     
     /**
-     * Проверяет что файл находится в lg-cfg/ директории проекта.
+     * Checks that file is in project's lg-cfg/ directory.
      */
     private fun isInLgConfigDir(filePath: String): Boolean {
         val basePath = project.basePath ?: return false
-        
-        // Нормализуем пути (Windows vs Unix)
+
+        // Normalize paths (Windows vs Unix)
         val normalizedBase = basePath.replace('\\', '/')
         val normalizedFile = filePath.replace('\\', '/')
-        
-        // Проверяем что файл в {basePath}/lg-cfg/
+
+        // Check that file is in {basePath}/lg-cfg/
         val lgCfgPath = "$normalizedBase/lg-cfg/"
         return normalizedFile.startsWith(lgCfgPath)
     }

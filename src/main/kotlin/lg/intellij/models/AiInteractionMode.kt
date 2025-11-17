@@ -1,29 +1,29 @@
 package lg.intellij.models
 
 /**
- * Типизированный режим AI-взаимодействия.
- * 
- * Соответствует набору режимов `ai-interaction` из lg-cfg/modes.yaml:
- * - ask: Базовый режим вопрос-ответ
- * - agent: Режим с инструментами и агентными возможностями
- * 
- * Используется для унификации поведения Extension AI-провайдеров.
+ * Typed AI interaction mode.
+ *
+ * Corresponds to the `ai-interaction` mode set from lg-cfg/modes.yaml:
+ * - ask: Basic question-answer mode
+ * - agent: Mode with tools and agent capabilities
+ *
+ * Used to unify behavior of Extension AI providers.
  */
 enum class AiInteractionMode {
     /**
-     * Режим "Спросить" — базовый вопрос-ответ.
-     * 
-     * Соответствует:
+     * "Ask" mode — basic question-answer.
+     *
+     * Corresponds to:
      * - JetBrains AI: Chat (SimpleChat)
      * - GitHub Copilot: Ask mode
      * - Junie: IssueType.CHAT
      */
     ASK,
-    
+
     /**
-     * Режим "Агентная работа" — с инструментами.
-     * 
-     * Соответствует:
+     * "Agent" mode — with tools.
+     *
+     * Corresponds to:
      * - JetBrains AI: Quick Edit (SmartChat)
      * - GitHub Copilot: Agent mode
      * - Junie: IssueType.ISSUE

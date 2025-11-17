@@ -33,7 +33,7 @@ class LgCreateStarterConfigAction : AnAction(
     }
     
     override fun update(e: AnActionEvent) {
-        // Enabled только если есть проект
+        // Enabled only if there is a project
         e.presentation.isEnabledAndVisible = e.project != null
     }
     

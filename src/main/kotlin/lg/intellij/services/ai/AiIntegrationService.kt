@@ -12,13 +12,13 @@ import lg.intellij.services.ai.providers.JunieProvider
 import lg.intellij.services.ai.providers.claudecli.ClaudeCliProvider
 
 /**
- * Центральный сервис для управления AI провайдерами.
+ * Central service for managing AI providers.
  *
- * Предоставляет:
- * - Registry провайдеров
- * - Детекцию доступных провайдеров
- * - Отправку контента в выбранный провайдер
- * - Fallback на clipboard при ошибках
+ * Provides:
+ * - Provider registry
+ * - Detection of available providers
+ * - Sending content to selected provider
+ * - Fallback to clipboard on errors
  *
  * Application-level service (singleton).
  */
@@ -28,12 +28,12 @@ class AiIntegrationService {
     private val log = logger<AiIntegrationService>()
 
     /**
-     * Зарегистрированные провайдеры: id -> provider.
+     * Registered providers: id -> provider.
      */
     private val providers = mutableMapOf<String, AiProvider>()
 
     init {
-        // Регистрация встроенных провайдеров
+        // Register built-in providers
         registerProvider(ClipboardProvider())
         registerProvider(JetBrainsAiProvider())
         registerProvider(GitHubCopilotProvider())
@@ -44,9 +44,9 @@ class AiIntegrationService {
     }
 
     /**
-     * Регистрирует провайдер.
+     * Registers a provider.
      *
-     * @param provider Провайдер для регистрации
+     * @param provider Provider to register
      */
     fun registerProvider(provider: AiProvider) {
         providers[provider.id] = provider
@@ -54,21 +54,21 @@ class AiIntegrationService {
     }
 
     /**
-     * Возвращает имя провайдера по ID.
+     * Returns the provider name by ID.
      *
-     * @return Имя провайдера или сам ID если провайдер не найден
+     * @return Provider name or the ID itself if provider is not found
      */
     fun getProviderName(id: String): String {
         return providers[id]?.name ?: id
     }
 
     /**
-     * Детектирует доступные провайдеры в текущем окружении.
+     * Detects available providers in the current environment.
      *
-     * Проверяет все зарегистрированные провайдеры и возвращает
-     * список доступных, отсортированный по приоритету (убывание).
+     * Checks all registered providers and returns
+     * list of available ones sorted by priority (descending).
      *
-     * @return Список ID доступных провайдеров (sorted by priority desc)
+     * @return List of available provider IDs (sorted by priority desc)
      */
     suspend fun detectAvailableProviders(): List<String> = withContext(Dispatchers.IO) {
         val available = mutableListOf<Pair<String, Int>>() // id to priority
@@ -86,7 +86,7 @@ class AiIntegrationService {
             }
         }
 
-        // Сортировать по приоритету (убывание)
+        // Sort by priority (descending)
         available.sortByDescending { it.second }
 
         val result = available.map { it.first }
@@ -96,15 +96,15 @@ class AiIntegrationService {
     }
 
     /**
-     * Детектирует лучший провайдер (с наивысшим приоритетом).
+     * Detects the best provider (with highest priority).
      *
-     * @return ID лучшего провайдера (по умолчанию "clipboard" если ничего не найдено)
+     * @return ID of the best provider (defaults to "clipboard" if none found)
      */
     suspend fun detectBestProvider(): String {
         val available = detectAvailableProviders()
 
         return if (available.isNotEmpty()) {
-            available.first() // Уже отсортировано по приоритету
+            available.first() // Already sorted by priority
         } else {
             log.warn("No available providers detected, falling back to clipboard")
             "clipboard"
@@ -129,11 +129,11 @@ class AiIntegrationService {
     }
 
     /**
-     * Отправляет контент в указанный провайдер.
+     * Sends content to the specified provider.
      *
-     * @param providerId ID провайдера
-     * @param content Контент для отправки
-     * @throws AiProviderException если провайдер не найден или отправка не удалась
+     * @param providerId Provider ID
+     * @param content Content to send
+     * @throws AiProviderException if provider not found or sending failed
      */
     suspend fun sendTo(providerId: String, content: String) = withContext(Dispatchers.IO) {
         val provider = providers[providerId]
@@ -147,7 +147,7 @@ class AiIntegrationService {
 
     companion object {
         /**
-         * Возвращает singleton instance сервиса.
+         * Returns the singleton instance of the service.
          */
         fun getInstance(): AiIntegrationService = service()
     }

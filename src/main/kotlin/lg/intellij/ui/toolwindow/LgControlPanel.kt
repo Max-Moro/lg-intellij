@@ -37,12 +37,12 @@ import javax.swing.ScrollPaneConstants
 
 /**
  * Control Panel for Listing Generator Tool Window.
- * 
+ *
  * Integrates:
  * - LgCatalogService (sections/contexts/mode-sets/tag-sets)
  * - TokenizerCatalogService (libraries/encoders)
- * - Reactive updates через Flow collectors
- * - Auto-reload через VFS listener
+ * - Reactive updates via Flow collectors
+ * - Auto-reload via VFS listener
  */
 class LgControlPanel(
     private val project: Project
@@ -55,10 +55,10 @@ class LgControlPanel(
     private val catalogService = project.service<LgCatalogService>()
     private val tokenizerService = TokenizerCatalogService.getInstance()
     
-    // Scope для coroutines (отменяется при dispose)
+    // Coroutine scope (cancelled on dispose)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    
-    // UI component references для dynamic updates
+
+    // UI component references for dynamic updates
     private lateinit var taskTextField: LgTaskTextField.TaskFieldWrapper
     private lateinit var templateCombo: ComboBox<String>
     private lateinit var sectionCombo: ComboBox<String>
@@ -70,33 +70,33 @@ class LgControlPanel(
     // Modes panel (self-contained, manages own state and data)
     private val modesPanel = LgModeSetsPanel(project, this)
 
-    // Tag-sets data (для dynamic rendering)
+    // Tag-sets data (for dynamic rendering)
     private var currentTagSets: List<TagSet> = emptyList()
     
     init {
         setContent(createScrollableContent())
         toolbar = createToolbar()
 
-        // Запустить загрузку данных
+        // Start loading data
         loadDataAsync()
 
-        // Подписаться на updates
+        // Subscribe to updates
         subscribeToDataUpdates()
 
-        // Подписаться на изменения Settings (для обновления CLI Settings visibility)
+        // Subscribe to settings changes (for updating CLI Settings visibility)
         subscribeToSettingsChanges()
     }
     
     /**
-     * Запускает асинхронную загрузку всех каталогов с параллельным выполнением CLI запросов.
+     * Starts asynchronous loading of all catalogs with parallel execution of CLI requests.
      */
     private fun loadDataAsync() {
         scope.launch {
             try {
-                // Получаем текущую библиотеку токенизации из состояния
+                // Get current tokenizer library from state
                 val currentLib = stateService.state.tokenizerLib!!
 
-                // Параллельная загрузка catalog и tokenizer данных
+                // Parallel loading of catalog and tokenizer data
                 coroutineScope {
                     launch { catalogService.loadAll() }
                     launch { tokenizerService.loadLibraries(project) }
@@ -112,7 +112,7 @@ class LgControlPanel(
     }
     
     /**
-     * Подписывается на Flow updates от catalog services.
+     * Subscribes to Flow updates from catalog services.
      */
     private fun subscribeToDataUpdates() {
         // Sections
@@ -123,7 +123,7 @@ class LgControlPanel(
                 }
             }
         }
-        
+
         // Contexts
         scope.launch {
             catalogService.contexts.collectLatest { contexts ->
@@ -141,7 +141,7 @@ class LgControlPanel(
                 }
             }
         }
-        
+
         // Tokenizer libraries
         scope.launch {
             tokenizerService.libraries.collectLatest { libraries ->
@@ -150,7 +150,7 @@ class LgControlPanel(
                 }
             }
         }
-        
+
         // Task text (from Stats Dialog or other sources)
         scope.launch {
             stateService.taskTextFlow.collectLatest { newText ->
@@ -162,7 +162,7 @@ class LgControlPanel(
     }
 
     /**
-     * Подписывается на изменения Settings для динамического обновления UI.
+     * Subscribes to settings changes for dynamic UI updates.
      */
     private fun subscribeToSettingsChanges() {
         ApplicationManager.getApplication().messageBus
@@ -176,7 +176,7 @@ class LgControlPanel(
     }
 
     /**
-     * Обновляет видимость CLI Settings блока без пересоздания UI.
+     * Updates visibility of CLI Settings block without full UI recreation.
      */
     private fun rebuildUI() {
         ApplicationManager.getApplication().invokeLater {
@@ -247,14 +247,14 @@ class LgControlPanel(
     
     private fun updateTaskTextUI(newText: String) {
         if (!::taskTextField.isInitialized) return
-        
+
         // Update UI only if text differs (avoid loops)
         val currentText = taskTextField.editorField.text
         if (currentText != newText) {
             taskTextField.editorField.text = newText
         }
     }
-    
+
     // =============== UI Creation ===============
     
     private fun createScrollableContent(): JComponent {
@@ -265,8 +265,8 @@ class LgControlPanel(
         }
         return scrollPane
     }
-    
-    
+
+
     private fun createControlPanel(): JComponent {
         // Create CLI settings panel separately for visibility management
         cliSettingsGroup = panel {
@@ -518,7 +518,7 @@ class LgControlPanel(
                         val newLib = selectedItem as? String
                         if (newLib != null) {
                             stateService.state.tokenizerLib = newLib
-                            
+
                             // Update encoder field library (triggers reload of suggestions)
                             if (::encoderField.isInitialized) {
                                 encoderField.setLibrary(newLib)
@@ -546,7 +546,7 @@ class LgControlPanel(
 
                 // Context Limit TextField
                 val ctxLimitField = com.intellij.ui.components.JBTextField(10).apply {
-                    // Use context limit with default from delegate
+                    // Use context limit with default from state
                     val effectiveLimit = stateService.state.ctxLimit
                     text = effectiveLimit.toString()
                     
@@ -573,19 +573,19 @@ class LgControlPanel(
         val actionGroup = DefaultActionGroup().apply {
             // Refresh
             add(LgRefreshCatalogsAction())
-            
+
             addSeparator()
-            
+
             // Config Management
             add(LgCreateStarterConfigAction())
             add(LgOpenConfigAction())
-            
+
             addSeparator()
-            
+
             // Diagnostics
             add(LgRunDoctorAction())
             add(LgResetCacheAction())
-            
+
             add(object : AnAction(
                 LgBundle.message("action.settings.text"),
                 LgBundle.message("action.settings.description"),
@@ -616,7 +616,7 @@ class LgControlPanel(
      */
     private fun updateTagsButtonText() {
         if (!::tagsButton.isInitialized) return
-        
+
         val selectedCount = stateService.state.tags.values.sumOf { it.size }
         if (selectedCount > 0) {
             tagsButton.text = LgBundle.message("control.btn.configure.tags.with.count", selectedCount)

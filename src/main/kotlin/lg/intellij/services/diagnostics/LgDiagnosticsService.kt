@@ -101,7 +101,7 @@ class LgDiagnosticsService(private val project: Project) {
                 logger = LOG
             ) { success ->
                 val report = json.decodeFromString<DiagReportSchema>(success.data)
-                // Извлекаем bundle path из stderr (даже при успехе CLI пишет туда путь)
+                // Extract bundle path from stderr (even on success, CLI writes the path there)
                 val bundlePath = extractBundlePath(success.stderr)
                 Pair(report, bundlePath)
             }

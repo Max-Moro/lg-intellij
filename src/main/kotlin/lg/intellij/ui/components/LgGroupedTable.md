@@ -1,14 +1,14 @@
 ## LgGroupedTable
 
-Продвинутая таблица с иерархической группировкой, фильтрацией и сортировкой.
+Advanced table with hierarchical grouping, filtering, and sorting.
 
 ### Features
 
-- **Hierarchical Grouping**: Группировка файлов по уровням вложенности директорий (1..N или ∞ для flat)
-- **Filtering**: Быстрая фильтрация по path или extension (debounced 300ms)
-- **Sorting**: Сортировка по любой колонке с визуальными индикаторами (▲/▼)
-- **Aggregation**: Автоматическое суммирование/усреднение числовых колонок для групп
-- **Path Normalization**: Автоматическое выравнивание путей (файлы рядом с директориями → виртуальная `self/`)
+- **Hierarchical Grouping**: Group files by directory nesting levels (1..N or ∞ for flat)
+- **Filtering**: Fast filtering by path or extension (debounced 300ms)
+- **Sorting**: Sorting by any column with visual indicators (▲/▼)
+- **Aggregation**: Automatic summation/averaging of numeric columns for groups
+- **Path Normalization**: Automatic path alignment (files alongside directories → virtual `self/`)
 
 ### Usage
 
@@ -80,34 +80,34 @@ panel.add(table, BorderLayout.CENTER)
 
 **ColumnConfig Properties:**
 
-- `key` (String, required): Ключ данных в RowData
-- `label` (String, required): Заголовок колонки
-- `format` (ColumnFormat): Формат отображения значений
+- `key` (String, required): Data key in RowData
+- `label` (String, required): Column header
+- `format` (ColumnFormat): Value display format
   - `TEXT` — plain text
-  - `INT` — целые числа с разделителями (1,234,567)
-  - `PERCENT` — проценты с одним знаком (12.3%)
-  - `SIZE` — размеры в байтах (1.5 KB, 2.3 MB)
-- `align` (Align): Выравнивание (LEFT | RIGHT)
-- `sortable` (Boolean): Можно ли сортировать по этой колонке
-- `aggregate` (Aggregate?): Метод агрегации для групп
-  - `SUM` — сумма значений
-  - `AVG` — среднее значение
-  - `null` — не агрегировать
-- `aggregateFormula` ((Map<String, Any?>) -> Any?): Произвольная формула для агрегации
+  - `INT` — integers with separators (1,234,567)
+  - `PERCENT` — percentages with one decimal (12.3%)
+  - `SIZE` — byte sizes (1.5 KB, 2.3 MB)
+- `align` (Align): Alignment (LEFT | RIGHT)
+- `sortable` (Boolean): Whether this column is sortable
+- `aggregate` (Aggregate?): Aggregation method for groups
+  - `SUM` — sum of values
+  - `AVG` — average value
+  - `null` — no aggregation
+- `aggregateFormula` ((Map<String, Any?>) -> Any?): Custom aggregation formula
 
 ### Grouping Control
 
-Контрол группировки позволяет изменять уровень вложенности:
+Grouping control allows changing the nesting level:
 
-- **← / →**: Уменьшить/увеличить уровень группировки
-- **∞**: Отключить группировку (показывать все файлы flat)
-- **1-N**: Группировать до N-го уровня вложенности
+- **← / →**: Decrease/increase grouping level
+- **∞**: Disable grouping (show all files flat)
+- **1-N**: Group up to the N-th nesting level
 
-Максимальный уровень определяется автоматически на основе структуры путей в данных.
+The maximum level is determined automatically based on the path structure in the data.
 
 ### Path Normalization
 
-При группировке компонент автоматически нормализует пути так, чтобы файлы не смешивались с директориями на одном уровне:
+When grouping, the component automatically normalizes paths so that files are not mixed with directories at the same level:
 
 ```
 Before normalization:
@@ -128,16 +128,16 @@ After normalization:
 
 **Methods:**
 
-- `setData(data: List<RowData>)`: Обновить данные таблицы
-- `setGroupLevel(level: Int)`: Установить уровень группировки
-- `setFilter(query: String)`: Установить текст фильтра
+- `setData(data: List<RowData>)`: Update table data
+- `setGroupLevel(level: Int)`: Set grouping level
+- `setFilter(query: String)`: Set filter text
 
 **Data Models:**
 
-- `RowData(values: Map<String, Any?>)`: Строка данных
-- `ColumnConfig`: Конфигурация колонки
-- `TableRow.GroupRow`: Строка группы (internal)
-- `TableRow.FileRow`: Строка файла (internal)
+- `RowData(values: Map<String, Any?>)`: Data row
+- `ColumnConfig`: Column configuration
+- `TableRow.GroupRow`: Group row (internal)
+- `TableRow.FileRow`: File row (internal)
 
 ### Performance
 
@@ -153,7 +153,7 @@ Currently integrated in:
 
 ## LgTaskTextField
 
-Auto-expanding text field для task description (аналог chat input в VS Code).
+Auto-expanding text field for task description (similar to chat input in VS Code).
 
 ### Usage
 
@@ -180,7 +180,7 @@ panel.add(wrapper)
 
 ### Features
 
-- Multi-line editing с soft wrap
+- Multi-line editing with soft wrap
 - Placeholder support
 - Proper theme integration (dark/light)
 - DPI-aware sizing

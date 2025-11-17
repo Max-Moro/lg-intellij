@@ -16,35 +16,35 @@ import lg.intellij.services.ai.AiProviderException
 import lg.intellij.services.state.LgPanelStateService
 
 /**
- * Базовый класс для Extension-based AI провайдеров.
- * 
- * Используется для провайдеров, которые работают через другие плагины IntelliJ Platform
- * (например, JetBrains AI Assistant, GitHub Copilot).
- * 
- * Основные возможности:
- * - Проверка наличия и активности плагина
- * - Автоматическая активация tool window
- * - Получение текущего проекта
- * - Обработка ошибок отсутствия плагина
+ * Base class for Extension-based AI providers.
+ *
+ * Used for providers that work through other IntelliJ Platform plugins
+ * (e.g., JetBrains AI Assistant, GitHub Copilot).
+ *
+ * Key features:
+ * - Plugin presence and enablement checks
+ * - Automatic tool window activation
+ * - Current project retrieval
+ * - Plugin absence error handling
  */
 abstract class BaseExtensionProvider : AiProvider {
     
     private val log = logger<BaseExtensionProvider>()
     
     /**
-     * ID плагина, с которым интегрируется данный провайдер.
-     * Например, "com.intellij.ml.llm" для JetBrains AI.
+     * ID of the plugin with which this provider integrates.
+     * For example, "com.intellij.ml.llm" for JetBrains AI.
      */
     protected abstract val pluginId: String
-    
+
     /**
-     * ID tool window для автоматической активации.
-     * Например, "AIAssistant" для JetBrains AI.
+     * ID of the tool window for automatic activation.
+     * For example, "AIAssistant" for JetBrains AI.
      */
     protected abstract val toolWindowId: String
-    
+
     /**
-     * Проверяет наличие и активность плагина.
+     * Checks plugin presence and enablement.
      */
     override suspend fun isAvailable(): Boolean {
         return try {
@@ -57,10 +57,10 @@ abstract class BaseExtensionProvider : AiProvider {
     }
     
     /**
-     * Отправляет контент через плагин.
-     * 
-     * Проверяет доступность плагина, активирует tool window, определяет режим
-     * взаимодействия и делегирует sendToExtension.
+     * Sends content through the plugin.
+     *
+     * Checks plugin availability, activates tool window, determines interaction mode
+     * and delegates to sendToExtension.
      */
     override suspend fun send(content: String) {
         if (!isAvailable()) {
@@ -68,35 +68,35 @@ abstract class BaseExtensionProvider : AiProvider {
                 "$name is not available. Please install and enable the plugin: $pluginId"
             )
         }
-        
+
         val project = getCurrentProject()
-        
-        // Активировать tool window
+
+        // Activate tool window
         openToolWindow(project)
-        
-        // Получить режим AI-взаимодействия из panel state
+
+        // Get AI interaction mode from panel state
         val panelState = project.service<LgPanelStateService>()
         val mode = panelState.getAiInteractionMode()
-        
-        // Отправить контент с режимом
+
+        // Send content with mode
         sendToExtension(project, content, mode)
     }
     
     /**
-     * Получает текущий активный проект.
+     * Gets the current active project.
      */
     protected fun getCurrentProject(): Project {
         val openProjects = ProjectManager.getInstance().openProjects
         return openProjects.first()
     }
-    
+
     /**
-     * Открывает tool window провайдера.
+     * Opens the provider's tool window.
      */
     private suspend fun openToolWindow(project: Project) = withContext(Dispatchers.EDT) {
         val toolWindow = ToolWindowManager.getInstance(project)
             .getToolWindow(toolWindowId)
-        
+
         if (toolWindow != null) {
             log.debug("Opening tool window: $toolWindowId")
             toolWindow.activate(null)
@@ -104,15 +104,15 @@ abstract class BaseExtensionProvider : AiProvider {
             log.warn("Tool window not found: $toolWindowId")
         }
     }
-    
+
     /**
-     * Отправляет контент в конкретный плагин.
-     * 
-     * Реализуется наследниками для специфичной логики взаимодействия с плагином.
-     * 
-     * @param project Текущий проект
-     * @param content Контент для отправки
-     * @param mode Режим AI-взаимодействия (Ask или Agent)
+     * Sends content to a specific plugin.
+     *
+     * Implemented by subclasses for plugin-specific interaction logic.
+     *
+     * @param project Current project
+     * @param content Content to send
+     * @param mode AI interaction mode (Ask or Agent)
      */
     protected abstract suspend fun sendToExtension(
         project: Project,

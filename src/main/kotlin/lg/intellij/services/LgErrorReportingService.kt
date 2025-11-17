@@ -36,8 +36,8 @@ class LgErrorReportingService {
         result: CliResult.Failure
     ) {
         val title = "$operation Failed"
-        
-        // Просто показываем stderr как есть (без анализа)
+
+        // Simply display stderr as-is (without analysis)
         showCliError(project, title, result.stderr)
     }
     
@@ -99,7 +99,7 @@ class LgErrorReportingService {
         stderr: String
     ) {
         val content = if (stderr.isNotEmpty()) {
-            // Показываем первые несколько строк в notification
+            // Display first few lines in notification
             val preview = stderr.lines().take(3).joinToString("<br/>")
             "<html><body><p>$preview</p><p><small>Click 'Copy Full Error' to see complete output.</small></p></body></html>"
         } else {

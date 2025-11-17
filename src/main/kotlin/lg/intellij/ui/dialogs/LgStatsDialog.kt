@@ -81,7 +81,7 @@ class LgStatsDialog(
         }
 
         override fun doAction(e: ActionEvent) {
-            // Trigger Send to AI action (будет использовать текущий task text из panel state)
+            // Trigger Send to AI action (will use current task text from panel state)
             val action = lg.intellij.actions.LgSendToAiAction()
             val dataContext = DataManager.getInstance().getDataContext(contentPanel)
             val event = AnActionEvent.createEvent(

@@ -78,7 +78,7 @@ class LgIncludedFilesPanel(
                 if (e.isPopupTrigger) showContextMenu(e)
             }
         })
-        
+
         // Speed Search (type to filter)
         TreeUIHelper.getInstance().installTreeSpeedSearch(tree, { treePath ->
             val node = treePath.lastPathComponent as? DefaultMutableTreeNode
@@ -123,56 +123,56 @@ class LgIncludedFilesPanel(
     
     private fun buildFlatTree() {
         rootNode.removeAllChildren()
-        
+
         for (path in currentPaths.sorted()) {
             val file = findVirtualFile(path)
-            // В flat режиме сохраняем путь как userObject для отображения
+            // In flat mode, preserve path as userObject for display
             val node = DefaultMutableTreeNode(FlatFileItem(file, path))
             rootNode.add(node)
         }
-        
+
         treeModel.nodeStructureChanged(rootNode)
         LOG.debug("Built flat tree with ${currentPaths.size} files")
     }
     
     private fun buildHierarchicalTree() {
         rootNode.removeAllChildren()
-        
+
         // Build file hierarchy
         val fileTree = buildFileHierarchy(currentPaths)
-        
+
         // Add nodes to tree
         addNodesToTree(rootNode, fileTree)
-        
+
         treeModel.nodeStructureChanged(rootNode)
-        
+
         // Expand first level
         if (rootNode.childCount > 0) {
             tree.expandRow(0)
         }
-        
+
         LOG.debug("Built hierarchical tree with ${currentPaths.size} files")
     }
     
     private fun buildFileHierarchy(paths: List<String>): FileNode {
         val root = FileNode("Root", null)
-        
+
         for (path in paths) {
             val parts = path.split('/').filter { it.isNotBlank() }
             insertPath(root, parts, path)
         }
-        
+
         return root
     }
-    
+
     private fun insertPath(parent: FileNode, parts: List<String>, fullPath: String) {
         if (parts.isEmpty()) return
-        
+
         val name = parts.first()
         val remaining = parts.drop(1)
-        
+
         var child = parent.children.find { it.name == name }
-        
+
         if (child == null) {
             val isFile = remaining.isEmpty()
             val file = if (isFile) {
@@ -180,11 +180,11 @@ class LgIncludedFilesPanel(
             } else {
                 null
             }
-            
+
             child = FileNode(name, file)
             parent.children.add(child)
         }
-        
+
         if (remaining.isNotEmpty()) {
             insertPath(child, remaining, fullPath)
         }
@@ -195,16 +195,16 @@ class LgIncludedFilesPanel(
         val sortedChildren = fileNode.children.sortedWith(
             compareBy<FileNode> { it.file != null }.thenBy { it.name }
         )
-        
+
         for (child in sortedChildren) {
             val node = if (child.file != null) {
                 DefaultMutableTreeNode(child.file)
             } else {
                 DefaultMutableTreeNode(child.name)
             }
-            
+
             parent.add(node)
-            
+
             if (child.children.isNotEmpty()) {
                 addNodesToTree(node, child)
             }
@@ -219,13 +219,13 @@ class LgIncludedFilesPanel(
     
     private fun openSelectedFile() {
         val node = tree.lastSelectedPathComponent as? DefaultMutableTreeNode ?: return
-        
+
         val file = when (val obj = node.userObject) {
             is VirtualFile -> obj
             is FlatFileItem -> obj.file
             else -> null
         }
-        
+
         if (file != null && !file.isDirectory) {
             FileEditorManager.getInstance(project).openFile(file, true)
         }
@@ -235,15 +235,15 @@ class LgIncludedFilesPanel(
         // Select node under cursor
         val path = tree.getPathForLocation(e.x, e.y) ?: return
         tree.selectionPath = path
-        
+
         // Use standard platform context menu for files
         val actionGroup = ActionManager.getInstance()
             .getAction("ProjectViewPopupMenu") as? ActionGroup
             ?: return
-        
+
         val popupMenu = ActionManager.getInstance()
             .createActionPopupMenu(ActionPlaces.PROJECT_VIEW_POPUP, actionGroup)
-        
+
         popupMenu.setTargetComponent(tree)
         popupMenu.component.show(e.component, e.x, e.y)
     }
@@ -260,7 +260,7 @@ class LgIncludedFilesPanel(
             }
             else -> null
         }
-        
+
         sink[CommonDataKeys.PROJECT] = project
         if (file != null) {
             sink[CommonDataKeys.VIRTUAL_FILE] = file
@@ -272,20 +272,20 @@ class LgIncludedFilesPanel(
         // Build full path from tree hierarchy
         val pathSegments = mutableListOf<String>()
         var currentNode: Any? = dirNode
-        
+
         while (currentNode is DefaultMutableTreeNode) {
             if (currentNode == rootNode) break
-            
+
             val name = currentNode.userObject as? String
             if (name != null) {
                 pathSegments.add(0, name)
             }
-            
+
             currentNode = currentNode.parent
         }
-        
+
         if (pathSegments.isEmpty()) return null
-        
+
         // Resolve path
         val basePath = project.basePath ?: return null
         val fullPath = "$basePath/${pathSegments.joinToString("/")}"
@@ -293,11 +293,11 @@ class LgIncludedFilesPanel(
 
         return resolved
     }
-    
+
     private fun showEmptyState() {
         setContent(emptyLabel)
     }
-    
+
     private fun showTree() {
         setContent(JBScrollPane(tree))
     }

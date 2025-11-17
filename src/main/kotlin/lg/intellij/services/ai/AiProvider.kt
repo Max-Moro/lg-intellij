@@ -1,57 +1,57 @@
 package lg.intellij.services.ai
 
 /**
- * Интерфейс для AI провайдеров.
- * 
- * Каждый провайдер представляет способ отправки сгенерированного контента
- * в AI-систему (clipboard, JetBrains AI, GitHub Copilot, Claude CLI и т.д.)
+ * Interface for AI providers.
+ *
+ * Each provider represents a way to send generated content
+ * to an AI system (clipboard, JetBrains AI, GitHub Copilot, Claude CLI, etc.)
  */
 interface AiProvider {
     /**
-     * Уникальный идентификатор провайдера (например, "clipboard", "jetbrains.ai").
+     * Unique provider identifier (e.g., "clipboard", "jetbrains.ai").
      */
     val id: String
-    
+
     /**
-     * Человекочитаемое имя провайдера для отображения в UI.
+     * Human-readable provider name for UI display.
      */
     val name: String
-    
+
     /**
-     * Отправляет контент в AI-систему.
-     * 
-     * @param content Сгенерированный контент для отправки
-     * @throws AiProviderException если отправка не удалась
+     * Sends content to the AI system.
+     *
+     * @param content Generated content to send
+     * @throws AiProviderException if sending failed
      */
     suspend fun send(content: String)
-    
+
     /**
-     * Проверяет доступность провайдера в текущем окружении.
-     * 
-     * Например:
-     * - Для extension-based: проверка наличия и активности плагина
-     * - Для CLI-based: проверка наличия утилиты в PATH
-     * - Для API-based: проверка наличия API ключа
-     * 
-     * @return true если провайдер доступен для использования
+     * Checks provider availability in the current environment.
+     *
+     * For example:
+     * - For extension-based: checks plugin presence and enablement
+     * - For CLI-based: checks utility availability in PATH
+     * - For API-based: checks API key availability
+     *
+     * @return true if provider is available for use
      */
     suspend fun isAvailable(): Boolean
-    
+
     /**
-     * Приоритет провайдера для автоматического выбора (0-100).
-     * Выше = предпочтительнее при auto-detection.
-     * 
-     * Рекомендуемые значения:
-     * - clipboard: 10 (всегда доступен, но fallback)
-     * - JetBrains AI: 90 (родной, высокий приоритет)
-     * - GitHub Copilot: 80 (популярный)
+     * Provider priority for automatic selection (0-100).
+     * Higher = more preferred during auto-detection.
+     *
+     * Recommended values:
+     * - clipboard: 10 (always available, but fallback)
+     * - JetBrains AI: 90 (native, high priority)
+     * - GitHub Copilot: 80 (popular)
      * - Claude CLI: 50
      */
     val priority: Int
 }
 
 /**
- * Исключение при ошибке отправки в AI провайдер.
+ * Exception raised when sending to an AI provider fails.
  */
 class AiProviderException(
     message: String,

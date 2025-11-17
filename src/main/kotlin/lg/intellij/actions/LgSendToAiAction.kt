@@ -51,7 +51,7 @@ class LgSendToAiAction : AnAction(
         val aiService = AiIntegrationService.getInstance()
         val generationService = project.service<LgGenerationService>()
         
-        // Определить target
+        // Determine target
         val selectedTemplate = panelState.state.selectedTemplate
         val target = if (!selectedTemplate.isNullOrBlank()) {
             GenerationTarget.CONTEXT
@@ -70,7 +70,7 @@ class LgSendToAiAction : AnAction(
         }
         val providerName = aiService.getProviderName(providerId)
 
-        // Генерация и отправка с progress indicator
+        // Generation and sending with progress indicator
         ProgressManager.getInstance().run(object : Task.Backgroundable(
             project,
             LgBundle.message("action.send.ai.progress", targetName),
@@ -79,25 +79,25 @@ class LgSendToAiAction : AnAction(
             private var generatedContent: String? = null
 
             override fun run(indicator: ProgressIndicator) {
-                // Генерация (blocking call для suspend функции)
+                // Generation (blocking call for suspend function)
                 indicator.text = LgBundle.message("action.send.ai.progress.text", targetName)
                 generatedContent = runBlocking {
                     generationService.generate(target, targetName)
                 }
 
-                // Если генерация провалилась, не продолжаем
+                // If generation failed, don't continue
                 if (generatedContent == null) {
                     return
                 }
 
-                // Отправка
+                // Send to provider
                 indicator.text = "Sending to $providerName..."
 
                 scope.launch {
                     try {
                         aiService.sendTo(providerId, generatedContent!!)
                     } catch (ex: AiProviderException) {
-                        // Error notification с fallback на clipboard
+                        // Error notification with clipboard fallback
                         val notification = NotificationGroupManager.getInstance()
                             .getNotificationGroup("LG Important")
                             .createNotification(

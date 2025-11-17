@@ -1,72 +1,72 @@
-# Рекомендации в рамках технологического стека
+# Technology Stack Recommendations
 
-В данном проекте ведется разработка плагина для **IntelliJ Platform**. Это вполне традиционный по структуре проект для этих целей.
+This project is developing a plugin for **IntelliJ Platform**. It's a fairly traditional project structure for these purposes.
 
-## Стек
+## Stack
 
 - **Platform**: IntelliJ IDEA Community 2025.2.3
 - **JVM**: 21 (toolchain)
 - **Gradle**: 9.0.0
-- **Kotlin**: см. `libs.versions.toml`
+- **Kotlin**: see `libs.versions.toml`
 - **IntelliJ Platform Gradle Plugin**: 2.x
 
-## Архитектура
+## Architecture
 
-**Паттерн:** Слоистая сервис-ориентированная архитектура с реактивным управлением состоянием UI.
+**Pattern:** Layered service-oriented architecture with reactive UI state management.
 
-### Слои
+### Layers
 
 **CLI Integration** (`lg/intellij/cli/`)
-- `CliExecutor` — асинхронный запуск внешней CLI `lg` с timeout/stdin
-- `CliResolver` — поиск исполняемого файла (venv → system Python → pipx)
-- `CliResult` — sealed class для type-safe обработки результатов
+- `CliExecutor` — asynchronous execution of external CLI `lg` with timeout/stdin
+- `CliResolver` — executable file search (venv → system Python → pipx)
+- `CliResult` — sealed class for type-safe result processing
 
 **Services** (`lg/intellij/services/`)
-- **Generation**: `LgGenerationService` (рендеринг), `LgStatsService` (токены)
-- **Catalog**: `LgCatalogService` (секции/контексты/режимы/теги), `TokenizerCatalogService` (библиотеки/энкодеры)
+- **Generation**: `LgGenerationService` (rendering), `LgStatsService` (tokens)
+- **Catalog**: `LgCatalogService` (sections/contexts/modes/tags), `TokenizerCatalogService` (libraries/encoders)
 - **State**:
-    - `LgSettingsService` — app-level (путь к CLI, AI провайдер)
-    - `LgPanelStateService` — project-level UI (выбранные section/template, режимы, теги, task text) с `StateFlow`
-    - `LgWorkspaceStateService` — UI layout (режимы отображения, позиции сплиттеров)
+    - `LgSettingsService` — app-level (CLI path, AI provider)
+    - `LgPanelStateService` — project-level UI (selected section/template, modes, tags, task text) with `StateFlow`
+    - `LgWorkspaceStateService` — UI layout (display modes, splitter positions)
 - **Diagnostics/Git**: `LgDiagnosticsService`, `LgGitService`, `LgErrorReportingService`
 
 **Actions** (`lg/intellij/actions/`)
-- Базовый `LgGenerateAction` параметризован `GenerationTarget` (SECTION/CONTEXT)
+- Base `LgGenerateAction` parameterized by `GenerationTarget` (SECTION/CONTEXT)
 - Actions → background tasks → CLI execution → parse JSON → open in editor
 
 **UI** (`lg/intellij/ui/`)
-- Tool Window: вертикальный split (Control Panel + Included Files)
+- Tool Window: vertical split (Control Panel + Included Files)
 - Panels: `LgControlPanel`, `LgModeSetsPanel`, `LgIncludedFilesPanel`
-- Кастомные компоненты: `LgTaskTextField`, `LgEncoderCompletionField`, `LgGroupedTable`
+- Custom components: `LgTaskTextField`, `LgEncoderCompletionField`, `LgGroupedTable`
 
-### Управление состоянием
+### State Management
 
-- Реактивное: `StateFlow` для синхронизации task text между панелью и диалогами
-- Персистентное: `BaseState` properties → `workspace.xml` (panel state) / `lg-settings.xml` (app settings)
-- Эффективные значения: Panel state с fallback на application defaults
+- Reactive: `StateFlow` for task text synchronization between panels and dialogs
+- Persistent: `BaseState` properties → `workspace.xml` (panel state) / `lg-settings.xml` (app settings)
+- Effective values: Panel state with fallback to application defaults
 
-## Важные особенности
+## Important Features
 
 **Kotlin Coroutines**
-- Все CLI операции — suspend functions
-- UI updates через `coroutineScope.launch`
+- All CLI operations — suspend functions
+- UI updates via `coroutineScope.launch`
 
-**Запрет на object**
-- НЕ используй Kotlin `object` для классов в `plugin.xml` (проблемы с DI)
-- Только `class` для Services, Actions, etc.
+**Prohibition on object**
+- DO NOT use Kotlin `object` for classes in `plugin.xml` (DI issues)
+- Only `class` for Services, Actions, etc.
 
 **VFS Listeners**
-- `LgConfigFileListener` — авто-перезагрузка каталогов при изменении `lg-cfg/`
+- `LgConfigFileListener` — auto-reload catalogs when `lg-cfg/` changes
 
 **AI Integration**
-- Опциональная интеграция через плагины: JetBrains AI, GitHub Copilot, Junie
-- Установка в песочницу вручную, сохраняется между запусками
+- Optional integration via plugins: JetBrains AI, GitHub Copilot, Junie
+- Manual sandbox installation, persists between runs
 
-## Тестирование
+## Testing
 
-Проект не имеет автоматических тестов. Тестирование делается пользователем через запуск IntelliJ IDEA (Development Instance) с установленным плагином.
+The project has no automated tests. Testing is done by the user through running IntelliJ IDEA (Development Instance) with the installed plugin.
 <!-- lg:if tag:claude-code -->
-## Пути файлов
+## File Paths
 
-Данный проект работает на Windows. При использовании инструментов Read/Edit/Write всегда используй **обратные слеши** (`\`) в путях файлов.
+This project runs on Windows. When using Read/Edit/Write tools, always use **backslashes** (`\`) in file paths.
 <!-- lg:endif -->

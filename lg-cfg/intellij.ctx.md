@@ -7,16 +7,16 @@ ${md:README}
 
 ---
 {% if tag:review %}
-# Измененный исходный код LG IntelliJ Platform Plugin в текущей ветке
+# Modified Source Code of LG IntelliJ Platform Plugin in Current Branch
 {% else %}
-# Исходный код LG IntelliJ Platform Plugin
+# Source Code of LG IntelliJ Platform Plugin
 {% endif %}
 
 ${src}
 {% if task AND scope:local %}
 ---
 
-# Описание текущей задачи
+# Description of Current Task
 
 ${task}{% endif %}
 {% if scope:local AND tag:agent %}

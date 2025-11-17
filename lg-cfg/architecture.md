@@ -1,51 +1,51 @@
-# Архитектура плагина Listing Generator для IntelliJ Platform
+# Architecture of Listing Generator Plugin for IntelliJ Platform
 
-## Обзор
+## Overview
 
-**Listing Generator IntelliJ Plugin** — плагин для интеграции CLI инструмента Listing Generator в экосистему JetBrains IDE.
+**Listing Generator IntelliJ Plugin** — plugin for integrating CLI tool Listing Generator into JetBrains IDE ecosystem.
 
-**Целевая платформа:** IntelliJ Platform 2024.1+  
-**Язык разработки:** Kotlin  
-**UI Toolkit:** Swing + IntelliJ UI Components + Kotlin UI DSL  
+**Target Platform:** IntelliJ Platform 2024.1+
+**Development Language:** Kotlin
+**UI Toolkit:** Swing + IntelliJ UI Components + Kotlin UI DSL
 **Async:** Kotlin Coroutines
 
-**Совместимость:** IntelliJ IDEA, PyCharm, WebStorm, CLion и другие IDE на базе IntelliJ Platform.
+**Compatibility:** IntelliJ IDEA, PyCharm, WebStorm, CLion and other IDE based on IntelliJ Platform.
 
 ---
 
-## Ключевые принципы архитектуры
+## Key Architecture Principles
 
-### 1. Соответствие платформенным паттернам
+### 1. Conformance to Platform Patterns
 
-- **Services** для инкапсуляции бизнес-логики и состояния
-- **Actions** для команд пользователя
-- **Extensions** для интеграции с IDE
-- **Message Bus** для слабосвязанной коммуникации между компонентами
-- **Disposable** для корректного управления lifecycle и ресурсами
+- **Services** for encapsulation of business logic and state
+- **Actions** for user commands
+- **Extensions** for IDE integration
+- **Message Bus** for loosely coupled communication between components
+- **Disposable** for correct lifecycle and resource management
 
-### 2. Разделение ответственности (High Cohesion, Low Coupling)
+### 2. Separation of Concerns (High Cohesion, Low Coupling)
 
-- **Presentation Layer** (UI) изолирован от бизнес-логики
-- **Service Layer** не знает о UI компонентах
-- **CLI Integration Layer** инкапсулирует все взаимодействия с внешним процессом
-- **State Management** централизован в dedicated services
+- **Presentation Layer** (UI) isolated from business logic
+- **Service Layer** unaware of UI components
+- **CLI Integration Layer** encapsulates all interactions with external process
+- **State Management** centralized in dedicated services
 
-### 3. Расширяемость
+### 3. Extensibility
 
-- Чёткие интерфейсы между слоями
-- Extension Points для будущих расширений
-- Модульная структура позволяет добавлять функциональность без переписывания существующего кода
+- Clear interfaces between layers
+- Extension Points for future extensions
+- Modular structure allows adding functionality without rewriting existing code
 
-### 4. Асинхронность и Production-Ready
+### 4. Asynchronous and Production-Ready
 
-- Kotlin Coroutines для всех длительных операций
-- Корректное управление потоками (EDT для UI, BGT для чтения, IO для внешних процессов)
-- Cancellation support для всех фоновых операций
-- Structured concurrency через Service-injected CoroutineScope
+- Kotlin Coroutines for all long-running operations
+- Correct thread management (EDT for UI, BGT for reading, IO for external processes)
+- Cancellation support for all background operations
+- Structured concurrency via Service-injected CoroutineScope
 
 ---
 
-## Структура проекта
+## Project Structure
 
 ```
 lg-intellij/
@@ -55,28 +55,28 @@ lg-intellij/
 ├── src/
 │   ├── main/
 │   │   ├── kotlin/lg/intellij/
-│   │   │   ├── actions/              # Команды пользователя
-│   │   │   ├── cli/                  # CLI интеграция
-│   │   │   ├── services/             # Бизнес-логика
-│   │   │   │   ├── core/             # Основные services
-│   │   │   │   ├── catalog/          # Каталог sections/contexts
-│   │   │   │   ├── generation/       # Генерация контента
-│   │   │   │   ├── state/            # Управление состоянием
-│   │   │   │   ├── vfs/              # Virtual File System интеграция
-│   │   │   │   └── ai/               # AI интеграция
-│   │   │   ├── ui/                   # UI компоненты
-│   │   │   │   ├── toolwindow/       # Tool Window панели
-│   │   │   │   ├── dialogs/          # Диалоги
-│   │   │   │   ├── components/       # Переиспользуемые компоненты
+│   │   │   ├── actions/              # User commands
+│   │   │   ├── cli/                  # CLI integration
+│   │   │   ├── services/             # Business logic
+│   │   │   │   ├── core/             # Core services
+│   │   │   │   ├── catalog/          # Catalog of sections/contexts
+│   │   │   │   ├── generation/       # Content generation
+│   │   │   │   ├── state/            # State management
+│   │   │   │   ├── vfs/              # Virtual File System integration
+│   │   │   │   └── ai/               # AI integration
+│   │   │   ├── ui/                   # UI components
+│   │   │   │   ├── toolwindow/       # Tool Window panels
+│   │   │   │   ├── dialogs/          # Dialogs
+│   │   │   │   ├── components/       # Reusable components
 │   │   │   │   └── renderers/        # Tree/List renderers
-│   │   │   ├── settings/             # Настройки плагина
-│   │   │   ├── git/                  # Git интеграция
+│   │   │   ├── settings/             # Plugin settings
+│   │   │   ├── git/                  # Git integration
 │   │   │   ├── listeners/            # Event listeners
 │   │   │   ├── models/               # Data models
-│   │   │   └── utils/                # Утилиты
+│   │   │   └── utils/                # Utilities
 │   │   └── resources/
 │   │       ├── META-INF/
-│   │       │   └── plugin.xml        # Конфигурация плагина
+│   │       │   └── plugin.xml        # Plugin configuration
 │   │       ├── messages/
 │   │       │   └── LgBundle.properties  # i18n
 │   │       └── icons/
@@ -90,131 +90,131 @@ lg-intellij/
 
 ---
 
-## Основные архитектурные слои
+## Main Architectural Layers
 
-### Layer 1: CLI Integration (нижний слой)
+### Layer 1: CLI Integration (Lower Layer)
 
-**Ответственность:** изоляция всего взаимодействия с внешним CLI процессом.
+**Responsibility:** isolation of all interaction with external CLI process.
 
 #### `cli/CliExecutor`
-- Единая точка выполнения команд CLI
-- Управление жизненным циклом процесса (запуск, остановка, timeout)
-- Захват stdout/stderr
-- Обработка ошибок выполнения
-- Поддержка stdin для передачи task text
-- Cancellation support через Kotlin Coroutines
+- Single point for CLI command execution
+- Process lifecycle management (start, stop, timeout)
+- Stdout/stderr capturing
+- Execution error handling
+- Stdin support for task text transmission
+- Cancellation support via Kotlin Coroutines
 
 #### `cli/CliResolver`
-- Обнаружение местоположения listing-generator executable
-- Стратегии резолюции: explicit path (из настроек) → system PATH → managed venv → Python module
-- Кэширование resolved path
-- Invalidation cache при изменении настроек
+- Detection of listing-generator executable location
+- Resolution strategies: explicit path (from settings) → system PATH → managed venv → Python module
+- Caching of resolved path
+- Cache invalidation on settings change
 
 #### `cli/CliResponseParser`
-- Парсинг JSON ответов от CLI
-- Маппинг в Kotlin data classes
-- Обработка ошибок парсинга
-- Версионирование протокола взаимодействия
+- Parsing JSON responses from CLI
+- Mapping to Kotlin data classes
+- Parsing error handling
+- Protocol versioning
 
-**Зависимости:** IntelliJ Platform Process API (`GeneralCommandLine`, `CapturingProcessHandler`)
+**Dependencies:** IntelliJ Platform Process API (`GeneralCommandLine`, `CapturingProcessHandler`)
 
-**Потребители:** Service Layer
+**Consumers:** Service Layer
 
 ---
 
-### Layer 2: Service Layer (бизнес-логика)
+### Layer 2: Service Layer (Business Logic)
 
-Все Services реализованы как **Light Services** с `@Service` аннотацией. Project-level services получают injected `CoroutineScope` для асинхронных операций.
+All Services are implemented as **Light Services** with `@Service` annotation. Project-level services receive injected `CoroutineScope` for asynchronous operations.
 
 #### Core Services
 
 ##### `services/core/LgCatalogService` (Project-level)
-- Загрузка списков sections, contexts, mode-sets, tag-sets из CLI
-- Кэширование списков в памяти
-- Автоматическая инвалидация при изменении lg-cfg/ (через VFS listener)
-- Reactive exposure через Kotlin Flow (`StateFlow<List<String>>`)
-- Методы: `getSections()`, `getContexts()`, `getModeSets()`, `getTagSets()`, `reload()`
+- Loading lists of sections, contexts, mode-sets, tag-sets from CLI
+- In-memory caching of lists
+- Automatic invalidation on lg-cfg/ changes (via VFS listener)
+- Reactive exposure via Kotlin Flow (`StateFlow<List<String>>`)
+- Methods: `getSections()`, `getContexts()`, `getModeSets()`, `getTagSets()`, `reload()`
 
 ##### `services/core/LgGenerationService` (Project-level)
-- Генерация listings и contexts через CLI
-- Управление параметрами генерации (tokenizer, encoder, modes, tags, task)
-- Progress reporting через IntelliJ Platform Progress API
-- Методы: `generateListing()`, `generateContext()`, `generateReport()` (возвращают suspending functions)
+- Generation of listings and contexts via CLI
+- Management of generation parameters (tokenizer, encoder, modes, tags, task)
+- Progress reporting via IntelliJ Platform Progress API
+- Methods: `generateListing()`, `generateContext()`, `generateReport()` (return suspending functions)
 
 ##### `services/core/LgDiagnosticsService` (Project-level)
-- Запуск диагностики через `lg diag`
-- Сброс кэша через `lg diag --rebuild-cache`
-- Построение diagnostic bundle
-- Методы: `runDiagnostics()`, `rebuildCache()`, `buildBundle()`
+- Running diagnostics via `lg diag`
+- Cache reset via `lg diag --rebuild-cache`
+- Building diagnostic bundle
+- Methods: `runDiagnostics()`, `rebuildCache()`, `buildBundle()`
 
 #### State Management Services
 
 ##### `services/state/LgPanelStateService` (Project-level)
-- Сохранение состояния Control Panel (selected section/template, tokenization params, modes, tags, task text, target branch)
-- Реализует `PersistentStateComponent` через `SimplePersistentStateComponent`
-- Storage: workspace file (не коммитится в VCS)
-- Reactive state exposure через `StateFlow`
+- Saving Control Panel state (selected section/template, tokenization params, modes, tags, task text, target branch)
+- Implements `PersistentStateComponent` via `SimplePersistentStateComponent`
+- Storage: workspace file (not committed to VCS)
+- Reactive state exposure via `StateFlow`
 
 ##### `services/state/LgSettingsService` (Application-level)
-- Глобальные настройки плагина (CLI path, Python interpreter, install strategy, default tokenizer/encoder/ctx-limit, AI provider, openAsEditable flag)
-- Реализует `PersistentStateComponent`
+- Global plugin settings (CLI path, Python interpreter, install strategy, default tokenizer/encoder/ctx-limit, AI provider, openAsEditable flag)
+- Implements `PersistentStateComponent`
 - Storage: application config directory, roaming enabled
-- Методы: `getInstance()` (singleton getter)
+- Methods: `getInstance()` (singleton getter)
 
 ##### `services/state/LgWorkspaceStateService` (Project-level)
-- Workspace-specific UI state (tree view mode для Included Files, последние выбранные значения, window positions)
+- Workspace-specific UI state (tree view mode for Included Files, last selected values, window positions)
 - Storage: workspace file
-- Не подлежит синхронизации между машинами
+- Not synchronized between machines
 
 #### Catalog Services
 
 ##### `services/catalog/TokenizerCatalogService` (Application-level)
-- Загрузка списка tokenizer libraries и encoders через CLI
-- Кэширование с TTL
-- Определение cached vs available encoders
-- Методы: `getLibraries()`, `getEncoders(lib: String)`, `invalidate()`
+- Loading list of tokenizer libraries and encoders via CLI
+- Caching with TTL
+- Determining cached vs available encoders
+- Methods: `getLibraries()`, `getEncoders(lib: String)`, `invalidate()`
 
 ##### `services/catalog/GitBranchCatalogService` (Project-level)
-- Интеграция с Git4Idea API для получения списка веток
-- Опциональная зависимость от Git plugin
-- Graceful degradation если Git недоступен
-- Методы: `isGitAvailable()`, `getBranches()`, `getCurrentBranch()`
+- Integration with Git4Idea API for getting branch list
+- Optional dependency on Git plugin
+- Graceful degradation if Git is unavailable
+- Methods: `isGitAvailable()`, `getBranches()`, `getCurrentBranch()`
 
 #### Generation Services
 
 ##### `services/generation/LgContextGenerator` (Project-level)
-- Генерация контекстов с учётом всех параметров
+- Generation of contexts considering all parameters
 - Mapping UI state → CLI arguments
 - Task text handling (inline, from file, from stdin)
-- Возврат typed результата (`GenerationResult` data class)
+- Returns typed result (`GenerationResult` data class)
 
 ##### `services/generation/LgListingGenerator` (Project-level)
-- Генерация listings для секций
-- Аналогично `LgContextGenerator` но для sections
+- Generation of listings for sections
+- Similar to `LgContextGenerator` but for sections
 
 ##### `services/generation/LgStatsCollector` (Project-level)
-- Получение статистики через `lg report`
-- Парсинг ReportSchema JSON
-- Предоставление typed моделей для UI
+- Getting statistics via `lg report`
+- Parsing ReportSchema JSON
+- Providing typed models for UI
 
 #### AI Integration
 
 ##### `services/ai/AiIntegrationService` (Application-level)
-- Центральный сервис для AI провайдеров
-- Registry паттерн для провайдеров (clipboard, местные копайлоты — JetBrains AI Assistant + Junie, openai.api и др.)
-- Детекция доступных провайдеров при старте
-- Единая точка отправки контента в AI
-- Методы: `detectProviders()`, `sendTo(providerId, content)`, `getAvailableProviders()`
+- Central service for AI providers
+- Registry pattern for providers (clipboard, local copilots — JetBrains AI Assistant + Junie, openai.api and others)
+- Detection of available providers on startup
+- Single point for sending content to AI
+- Methods: `detectProviders()`, `sendTo(providerId, content)`, `getAvailableProviders()`
 
-##### `services/ai/providers/*` (пакет с провайдерами)
-- Реализации для каждого AI provider
-- Общий интерфейс `AiProvider`
-- Базовые классы: `CliBasedProvider`, `ApiBasedProvider`, `ExtensionBasedProvider`
-- Graceful degradation если провайдер недоступен
+##### `services/ai/providers/*` (Package with providers)
+- Implementations for each AI provider
+- Common interface `AiProvider`
+- Base classes: `CliBasedProvider`, `ApiBasedProvider`, `ExtensionBasedProvider`
+- Graceful degradation if provider is unavailable
 
-**Зависимости:** CLI Integration Layer, Settings Services
+**Dependencies:** CLI Integration Layer, Settings Services
 
-**Потребители:** UI Layer, Actions
+**Consumers:** UI Layer, Actions
 
 ---
 
@@ -223,247 +223,247 @@ lg-intellij/
 #### Tool Window
 
 ##### `ui/toolwindow/LgToolWindowFactory`
-- Реализует `ToolWindowFactory` с `DumbAware`
-- Создаёт Tool Window с двумя вкладками: Control Panel и Included Files
-- Инициализация: установка свойств tool window (anchor, icon, stripe title)
-- Conditional visibility через `isApplicableAsync()` — показывать только если есть lg-cfg/ в проекте
+- Implements `ToolWindowFactory` with `DumbAware`
+- Creates Tool Window with two tabs: Control Panel and Included Files
+- Initialization: setting tool window properties (anchor, icon, stripe title)
+- Conditional visibility via `isApplicableAsync()` — show only if lg-cfg/ exists in project
 
 ##### `ui/toolwindow/LgControlPanel`
-- Главная панель управления (первая вкладка)
-- Наследуется от `SimpleToolWindowPanel`
-- Содержит: template selector, section selector, task input field, tokenization settings (library/encoder/ctx-limit), adaptive settings (mode-sets, tag-sets, target-branch selector), action buttons
-- Построена с использованием **Kotlin UI DSL**
-- Интеграция с `LgPanelStateService` для персистентности
-- Reactive updates через подписку на StateFlow из catalog services
-- Toolbar с actions: Refresh, Settings, Help
+- Main control panel (first tab)
+- Inherits from `SimpleToolWindowPanel`
+- Contains: template selector, section selector, task input field, tokenization settings (library/encoder/ctx-limit), adaptive settings (mode-sets, tag-sets, target-branch selector), action buttons
+- Built using **Kotlin UI DSL**
+- Integration with `LgPanelStateService` for persistence
+- Reactive updates via subscription to StateFlow from catalog services
+- Toolbar with actions: Refresh, Settings, Help
 
 ##### `ui/toolwindow/LgIncludedFilesPanel`
-- Вторая вкладка Tool Window
-- Tree view с поддержкой flat/tree режимов
-- Использует стандартный IntelliJ `Tree` компонент
-- Custom `TreeCellRenderer` для отображения файлов с иконками
-- Double-click открывает файл в editor
+- Second tab of Tool Window
+- Tree view with support for flat/tree modes
+- Uses standard IntelliJ `Tree` component
+- Custom `TreeCellRenderer` for displaying files with icons
+- Double-click opens file in editor
 - Context menu: Open, Copy Path, Refresh
-- Toggle view mode через dedicated Action в toolbar
-- Состояние (view mode) хранится в `LgWorkspaceStateService`
+- Toggle view mode via dedicated Action in toolbar
+- State (view mode) stored in `LgWorkspaceStateService`
 
 #### Dialogs
 
 ##### `ui/dialogs/LgStatsDialog`
-- Наследуется от `DialogWrapper`
-- Отображает детальную статистику по ReportSchema
-- Содержит: summary cards (files count, tokens, size), grouped table с файлами (с фильтрацией и сортировкой), adapter metrics (collapsible sections)
+- Inherits from `DialogWrapper`
+- Displays detailed statistics per ReportSchema
+- Contains: summary cards (files count, tokens, size), grouped table with files (with filtering and sorting), adapter metrics (collapsible sections)
 - Toolbar: Refresh, Send to AI, Generate
 - Copy to clipboard action
-- Task text input field (integrated, как в Stats webview VS Code версии)
-- Построен с использованием Swing components и частично Kotlin UI DSL
+- Task text input field (integrated, like in VS Code Stats webview)
+- Built using Swing components and partially Kotlin UI DSL
 
 ##### `ui/dialogs/LgDoctorDialog`
-- Отображает результаты диагностики
-- Содержит: config status, cache status, environment info, checks table, applied migrations list
+- Displays diagnostic results
+- Contains: config status, cache status, environment info, checks table, applied migrations list
 - Actions: Refresh, Rebuild Cache, Build Bundle, Copy JSON
-- Raw JSON viewer в collapsible section
+- Raw JSON viewer in collapsible section
 
-##### `ui/dialogs/LgInitWizardDialog` (опционально)
-- Wizard для создания lg-cfg/ через `lg init`
-- Multi-step dialog с выбором preset
+##### `ui/dialogs/LgInitWizardDialog` (Optional)
+- Wizard for creating lg-cfg/ via `lg init`
+- Multi-step dialog with preset selection
 - Conflict resolution UI
-- Может быть упрощён до простого dialog с ComboBox
+- Can be simplified to simple dialog with ComboBox
 
-#### UI Components (переиспользуемые)
+#### UI Components (Reusable)
 
 ##### `ui/components/LgComboBoxWithAutoComplete`
-- Wrapper над `ComboBox` с поддержкой фильтрации и autocomplete
-- Для encoder selector (поддержка custom values)
-- Отображение cached items (badge или icon)
+- Wrapper over `ComboBox` with filtering and autocomplete support
+- For encoder selector (custom values support)
+- Display of cached items (badge or icon)
 
 ##### `ui/components/LgTaskInputField`
-- Custom component для ввода task description
-- Multi-line expandable текст (аналог chat input в VS Code)
-- Может быть реализован через `JTextArea` с custom sizing logic или `EditorTextField`
+- Custom component for task description input
+- Multi-line expandable text (similar to chat input in VS Code)
+- Can be implemented via `JTextArea` with custom sizing logic or `EditorTextField`
 
 ##### `ui/components/LgGroupedTable`
-- Table с поддержкой группировки по директориям (аналог grouped table в VS Code Stats)
+- Table with support for grouping by directories (similar to grouped table in VS Code Stats)
 - Hierarchical grouping level control (slider ←N→ ∞)
-- Filtering и sorting
-- Может быть реализован через `JBTable` с custom `TableModel`
+- Filtering and sorting
+- Can be implemented via `JBTable` with custom `TableModel`
 
 ##### `ui/components/LgModeSetsPanel`
-- Panel с динамически генерируемыми ComboBox для каждого mode-set
-- Layout через Kotlin UI DSL
-- Two-way binding с `LgPanelStateService`
+- Panel with dynamically generated ComboBox for each mode-set
+- Layout via Kotlin UI DSL
+- Two-way binding with `LgPanelStateService`
 
 ##### `ui/components/LgTagSetsPanel`
-- Panel с checkboxes для tag selection
-- Организация в collapsible groups по tag-set
-- ScrollPane для большого количества тегов
-- Может быть реализован как отдельный Dialog или inline panel
+- Panel with checkboxes for tag selection
+- Organization in collapsible groups by tag-set
+- ScrollPane for large number of tags
+- Can be implemented as separate Dialog or inline panel
 
 ##### `ui/renderers/FileTreeCellRenderer`
-- Custom `ColoredTreeCellRenderer` для дерева файлов
-- Отображение файлов с иконками по file type
-- Отображение директорий с folder icons
-- Опциональное отображение metadata (size, modified status)
+- Custom `ColoredTreeCellRenderer` for file tree
+- Display files with icons by file type
+- Display directories with folder icons
+- Optional display of metadata (size, modified status)
 
 ---
 
 ### Layer 4: Actions
 
-Actions регистрируются в `plugin.xml` и используются в меню, toolbar, keyboard shortcuts.
+Actions are registered in `plugin.xml` and used in menus, toolbars, keyboard shortcuts.
 
 #### Main Actions
 
 ##### `actions/LgGenerateListingAction`
-- Генерация listing для выбранной section
-- Получение параметров из `LgPanelStateService`
-- Вызов `LgListingGenerator` service
-- Отображение результата через `LgVirtualFileService`
+- Generation of listing for selected section
+- Getting parameters from `LgPanelStateService`
+- Calling `LgListingGenerator` service
+- Display result via `LgVirtualFileService`
 - Keyboard shortcut: Ctrl+Shift+G (tentative)
 
 ##### `actions/LgGenerateContextAction`
-- Генерация context для выбранного template
-- Аналогичен `LgGenerateListingAction` но для contexts
+- Generation of context for selected template
+- Similar to `LgGenerateListingAction` but for contexts
 - Keyboard shortcut: Ctrl+Shift+C (tentative)
 
 ##### `actions/LgShowStatsAction`
-- Открытие `LgStatsDialog` с детальной статистикой
-- Выбор: stats для section или для context (в зависимости от выбранного в Control Panel)
+- Opening `LgStatsDialog` with detailed statistics
+- Selection: stats for section or for context (depending on Control Panel selection)
 
 ##### `actions/LgShowIncludedFilesAction`
-- Загрузка списка included files через CLI
-- Обновление Included Files tab
-- Автоматический switch на эту вкладку в Tool Window
+- Loading list of included files via CLI
+- Updating Included Files tab
+- Automatic switch to this tab in Tool Window
 
 ##### `actions/LgSendToAiAction`
-- Генерация контента (listing или context)
-- Отправка через `AiIntegrationService`
-- Обработка ошибок и fallback на clipboard
+- Generation of content (listing or context)
+- Sending via `AiIntegrationService`
+- Error handling and fallback to clipboard
 
 ##### `actions/LgCreateStarterConfigAction`
-- Запуск wizard для `lg init`
-- Интеграция с `LgInitWizardDialog`
-- Открытие sections.yaml после создания
+- Running wizard for `lg init`
+- Integration with `LgInitWizardDialog`
+- Opening sections.yaml after creation
 
 ##### `actions/LgOpenConfigAction`
-- Открытие lg-cfg/sections.yaml в editor
-- Fallback: предложение создать через `LgCreateStarterConfigAction` если не существует
+- Opening lg-cfg/sections.yaml in editor
+- Fallback: offering to create via `LgCreateStarterConfigAction` if not exists
 
 ##### `actions/LgRunDoctorAction`
-- Запуск диагностики
-- Открытие `LgDoctorDialog` с результатами
+- Running diagnostics
+- Opening `LgDoctorDialog` with results
 
 ##### `actions/LgResetCacheAction`
-- Сброс LG cache через diagnostics service
-- Confirmation dialog перед выполнением
+- Resetting LG cache via diagnostics service
+- Confirmation dialog before execution
 
 ##### `actions/LgRefreshCatalogsAction`
-- Принудительная перезагрузка lists из CLI (sections, contexts, encoders, branches)
-- Обновление UI после загрузки
+- Forced reload of lists from CLI (sections, contexts, encoders, branches)
+- UI update after loading
 
 #### Toggle Actions
 
 ##### `actions/LgToggleTreeViewModeAction`
-- Переключение между flat и tree режимами для Included Files
-- Обновление состояния в `LgWorkspaceStateService`
-- Обновление UI панели
+- Toggling between flat and tree modes for Included Files
+- Updating state in `LgWorkspaceStateService`
+- Updating UI panel
 
 #### Toolbar Action Groups
 
-Действия группируются в `DefaultActionGroup` для использования в toolbars:
+Actions are grouped in `DefaultActionGroup` for use in toolbars:
 - Control Panel Toolbar Group: Refresh, Settings, Help
 - Included Files Toolbar Group: Refresh, Toggle View Mode
 - Stats Dialog Toolbar Group: Refresh, Generate, Send to AI
 
-**Зависимости:** Service Layer
+**Dependencies:** Service Layer
 
-**Потребители:** зарегистрированы в `plugin.xml`, вызываются IDE
+**Consumers:** registered in `plugin.xml`, invoked by IDE
 
 ---
 
 ### Layer 5: Settings & Configuration
 
 #### `settings/LgSettingsConfigurable`
-- Реализует `BoundConfigurable`
-- Application-level настройки
-- UI построен через Kotlin UI DSL
-- Секции:
+- Implements `BoundConfigurable`
+- Application-level settings
+- UI built via Kotlin UI DSL
+- Sections:
   - **CLI Configuration**: CLI Path, Python Interpreter, Install Strategy
   - **Tokenization Defaults**: Default Library, Default Encoder, Default Context Limit
   - **Editor Behavior**: Open As Editable checkbox
   - **AI Integration**: AI Provider selector, OpenAI API Key configuration
 
-#### `settings/LgProjectSettingsConfigurable` (опционально)
-- Project-level настройки
-- Секции:
+#### `settings/LgProjectSettingsConfigurable` (Optional)
+- Project-level settings
+- Sections:
   - **Defaults**: Default Section, Default Template
-  - **Modes**: Default mode для каждого mode-set
-  
-Может быть избыточным на первом этапе, так как эти значения сохраняются в `LgPanelStateService`.
+  - **Modes**: Default mode for each mode-set
 
-**Зависимости:** `LgSettingsService`, `LgPanelStateService`
+May be redundant at first stage, as these values are saved in `LgPanelStateService`.
 
-**Интеграция:** регистрация через `<applicationConfigurable>` в `plugin.xml`
+**Dependencies:** `LgSettingsService`, `LgPanelStateService`
+
+**Integration:** registration via `<applicationConfigurable>` in `plugin.xml`
 
 ---
 
-### Layer 6: Virtual Files (аналог VirtualDocProvider в VS Code)
+### Layer 6: Virtual Files (Similar to VirtualDocProvider in VS Code)
 
 #### `vfs/LgVirtualFileService` (Project-level)
-- Управление созданием и отображением generated контента
-- Два режима работы (в зависимости от `openAsEditable` настройки):
-  1. **Virtual mode**: `LightVirtualFile` в памяти (read-only)
-  2. **Editable mode**: temporary файл на диске в system temp directory
-- Определение `FileType` для syntax highlighting (Markdown, YAML, JSON)
-- Методы: `openListing()`, `openContext()`, `openStats()` (принимают content и filename)
+- Management of creation and display of generated content
+- Two modes of operation (depending on `openAsEditable` setting):
+  1. **Virtual mode**: `LightVirtualFile` in memory (read-only)
+  2. **Editable mode**: temporary file on disk in system temp directory
+- Determining `FileType` for syntax highlighting (Markdown, YAML, JSON)
+- Methods: `openListing()`, `openContext()`, `openStats()` (accept content and filename)
 
-**Отличия от VS Code:**
-- В VS Code используется custom URI scheme (`lg://`)
-- В IntelliJ используется `LightVirtualFile` (поддерживается платформой из коробки)
-- `LightVirtualFile` автоматически получает syntax highlighting по `FileType`
+**Differences from VS Code:**
+- VS Code uses custom URI scheme (`lg://`)
+- IntelliJ uses `LightVirtualFile` (supported by platform out of the box)
+- `LightVirtualFile` automatically gets syntax highlighting by `FileType`
 
-**Зависимости:** IntelliJ Platform VFS API, `FileEditorManager`
+**Dependencies:** IntelliJ Platform VFS API, `FileEditorManager`
 
-**Потребители:** Actions, Generation Services
+**Consumers:** Actions, Generation Services
 
 ---
 
-### Layer 7: Git Integration (опциональная зависимость)
+### Layer 7: Git Integration (Optional Dependency)
 
 #### `git/LgGitService` (Project-level)
-- Опциональная зависимость от `Git4Idea` plugin
-- Получение списка веток (local + remote) для target branch selector
-- Получение текущей ветки
-- Graceful degradation если Git plugin отсутствует или проект не под Git
-- Методы: `isGitAvailable()`, `getBranches()`, `getCurrentBranch()`
+- Optional dependency on `Git4Idea` plugin
+- Getting list of branches (local + remote) for target branch selector
+- Getting current branch
+- Graceful degradation if Git plugin is absent or project not under Git
+- Methods: `isGitAvailable()`, `getBranches()`, `getCurrentBranch()`
 
-**Зависимости:** Git4Idea plugin (optional dependency через `plugin.xml`)
+**Dependencies:** Git4Idea plugin (optional dependency via `plugin.xml`)
 
-**Потребители:** `LgCatalogService`, `LgControlPanel`
+**Consumers:** `LgCatalogService`, `LgControlPanel`
 
 ---
 
-### Layer 8: Listeners (реактивность)
+### Layer 8: Listeners (Reactivity)
 
 #### `listeners/LgConfigFileListener` (Project-level)
-- Слушает изменения файлов в lg-cfg/ через `BulkFileListener`
-- При изменении sections.yaml, *.sec.yaml, *.ctx.md, *.tpl.md → invalidation catalog cache
-- Уведомление UI через `LgCatalogService` о необходимости refresh
-- Debounce механизм для избежания множественных reload при batch изменениях
+- Listens for file changes in lg-cfg/ via `BulkFileListener`
+- On change of sections.yaml, *.sec.yaml, *.ctx.md, *.tpl.md → catalog cache invalidation
+- Notification to UI via `LgCatalogService` about need to refresh
+- Debounce mechanism to avoid multiple reloads on batch changes
 
 #### `listeners/LgSettingsChangeListener` (Application-level)
-- Слушает изменения в `LgSettingsService` через custom Topic
-- При изменении CLI path или Python interpreter → invalidation CLI resolver cache
-- При изменении tokenizer defaults → update UI defaults
+- Listens for changes in `LgSettingsService` via custom Topic
+- On change of CLI path or Python interpreter → CLI resolver cache invalidation
+- On change of tokenizer defaults → update UI defaults
 
-**Реализация:** через IntelliJ Platform Message Bus
+**Implementation:** via IntelliJ Platform Message Bus
 
-**Зависимости:** VFS API, Settings Services, Catalog Services
+**Dependencies:** VFS API, Settings Services, Catalog Services
 
 ---
 
-## Потоки данных и взаимодействие компонентов
+## Data Flows and Component Interaction
 
-### Поток 1: Генерация Listing
+### Flow 1: Listing Generation
 
 ```
 User Action (Generate Button Click)
@@ -472,7 +472,7 @@ LgGenerateListingAction.actionPerformed()
   ↓
 LgPanelStateService.getState() → CliParams
   ↓
-LgListingGenerator.generate(params) [в корутине с Progress]
+LgListingGenerator.generate(params) [in coroutine with Progress]
   ↓
 CliExecutor.execute(args) [Dispatchers.IO]
   ↓
@@ -480,10 +480,10 @@ CliResponseParser.parseText(stdout)
   ↓
 LgVirtualFileService.openListing(content) [EDT]
   ↓
-FileEditorManager.openFile() [платформа открывает в editor]
+FileEditorManager.openFile() [platform opens in editor]
 ```
 
-### Поток 2: Загрузка каталогов
+### Flow 2: Catalog Loading
 
 ```
 Plugin Startup
@@ -492,7 +492,7 @@ LgToolWindowFactory.createToolWindowContent()
   ↓
 LgControlPanel init
   ↓
-LgCatalogService.loadAll() [корутина]
+LgCatalogService.loadAll() [coroutine]
   ↓
 Parallel coroutines:
   - CliExecutor.execute(["list", "sections"])
@@ -506,12 +506,12 @@ CliResponseParser.parse*() → Data models
   ↓
 LgCatalogService._sections.value = result [StateFlow update]
   ↓
-LgControlPanel collect() [Flow collector на EDT]
+LgControlPanel collect() [Flow collector on EDT]
   ↓
 UI Components update (ComboBox.removeAllItems/addItem)
 ```
 
-### Поток 3: VFS Change → Reload
+### Flow 3: VFS Change → Reload
 
 ```
 User edits lg-cfg/sections.yaml
@@ -524,21 +524,21 @@ Filter: event.file?.parent?.name == "lg-cfg"?
   ↓
 Debounce (500ms)
   ↓
-LgCatalogService.reload() [корутина]
+LgCatalogService.reload() [coroutine]
   ↓
-Reload flow (как в Поток 2)
+Reload flow (like in Flow 2)
 ```
 
-### Поток 4: Send to AI
+### Flow 4: Send to AI
 
 ```
 User Action (Send to AI Button)
   ↓
 LgSendToAiAction.actionPerformed()
   ↓
-Determine: context или section?
+Determine: context or section?
   ↓
-LgGenerationService.generate*() [с Progress]
+LgGenerationService.generate*() [with Progress]
   ↓
 content: String
   ↓
@@ -548,42 +548,42 @@ AiIntegrationService.sendTo(providerId, content)
   ↓
 Provider-specific logic:
   - Clipboard: CopyPasteManager.setContents()
-  - OpenAI: HTTP request через OpenAI API
+  - OpenAI: HTTP request via OpenAI API
   - Cursor/Copilot: IDE command execution
   ↓
-Success Notification или Error Notification
+Success Notification or Error Notification
 ```
 
 ---
 
-## Управление состоянием
+## State Management
 
-### Три уровня State
+### Three Levels of State
 
 #### 1. Application State (`LgSettingsService`)
-- **Lifetime:** весь жизненный цикл IDE
-- **Scope:** все проекты
+- **Lifetime:** entire IDE lifecycle
+- **Scope:** all projects
 - **Storage:** `~/.config/JetBrains/.../options/lg-settings.xml`
 - **Sync:** roaming enabled
-- **Содержимое:** CLI path, Python interpreter, install strategy, default tokenizer/encoder/ctx-limit, AI provider, openAsEditable
+- **Content:** CLI path, Python interpreter, install strategy, default tokenizer/encoder/ctx-limit, AI provider, openAsEditable
 
 #### 2. Project State (`LgPanelStateService`)
-- **Lifetime:** пока проект открыт
-- **Scope:** текущий проект
+- **Lifetime:** while project is open
+- **Scope:** current project
 - **Storage:** `.idea/workspace.xml`
-- **Sync:** disabled (не коммитится в VCS)
-- **Содержимое:** selected section, selected template, current modes, active tags, task text, target branch, tokenizer params (override defaults)
+- **Sync:** disabled (not committed to VCS)
+- **Content:** selected section, selected template, current modes, active tags, task text, target branch, tokenizer params (override defaults)
 
 #### 3. Workspace State (`LgWorkspaceStateService`)
-- **Lifetime:** пока проект открыт
-- **Scope:** текущий проект
+- **Lifetime:** while project is open
+- **Scope:** current project
 - **Storage:** `.idea/workspace.xml`
 - **Sync:** disabled
-- **Содержимое:** UI-specific state (tree view mode, tool window tab selection, column widths, etc.)
+- **Content:** UI-specific state (tree view mode, tool window tab selection, column widths, etc.)
 
 ### Reactive State Management
 
-Catalog Services expose data через **Kotlin StateFlow**:
+Catalog Services expose data via **Kotlin StateFlow**:
 
 ```
 LgCatalogService
@@ -593,7 +593,7 @@ LgCatalogService
   └── tagSets: StateFlow<TagSetsList>
 ```
 
-UI подписывается через `scope.launch { flow.collect { ... } }` и обновляется на EDT.
+UI subscribes via `scope.launch { flow.collect { ... } }` and updates on EDT.
 
 ---
 
@@ -601,20 +601,20 @@ UI подписывается через `scope.launch { flow.collect { ... } }`
 
 ### Dispatchers Usage
 
-- **Dispatchers.Default** — CPU-bound операции (парсинг JSON, построение data structures)
+- **Dispatchers.Default** — CPU-bound operations (JSON parsing, building data structures)
 - **Dispatchers.IO** — CLI execution, file I/O
-- **Dispatchers.EDT** — все UI updates, write actions
+- **Dispatchers.EDT** — all UI updates, write actions
 
 ### Read/Write Actions
 
-- **readAction { }** — чтение PSI/VFS на background thread (если потребуется)
-- **writeAction { }** — модификация VFS/PSI (только на EDT)
+- **readAction { }** — reading PSI/VFS on background thread (if needed)
+- **writeAction { }** — modifying VFS/PSI (only on EDT)
 
-В рамках LG plugin **минимальное** использование PSI — в основном работа с file paths.
+Within LG plugin **minimal** PSI usage — mostly working with file paths.
 
 ### Service Scopes
 
-Project-level services получают injected `CoroutineScope`:
+Project-level services receive injected `CoroutineScope`:
 
 ```
 @Service(Service.Level.PROJECT)
@@ -624,15 +624,15 @@ class MyService(
 )
 ```
 
-Scope автоматически cancels при dispose проекта.
+Scope automatically cancels when project is disposed.
 
 ---
 
-## Обработка ошибок
+## Error Handling
 
 ### Typed Error Handling
 
-Определить sealed class для результатов CLI:
+Define sealed class for CLI results:
 
 #### `models/CliResult`
 ```
@@ -643,45 +643,45 @@ sealed class CliResult<out T>
   - NotFound(message: String)
 ```
 
-Services возвращают `CliResult<T>`, UI pattern-matching для обработки.
+Services return `CliResult<T>`, UI uses pattern-matching for handling.
 
 ### Error Notifications
 
-- **CLI errors** → Error notification с "Show Details" action
-- **Network errors** (AI providers) → Error notification с Retry и "Copy to Clipboard" fallback
-- **Validation errors** → inline validation в UI (через UI DSL validation или `ValidationInfo`)
+- **CLI errors** → Error notification with "Show Details" action
+- **Network errors** (AI providers) → Error notification with Retry and "Copy to Clipboard" fallback
+- **Validation errors** → inline validation in UI (via UI DSL validation or `ValidationInfo`)
 
 ### Graceful Degradation
 
-- Git недоступен → скрыть target branch selector
-- CLI не найден → показать notification с предложением настроить в Settings
-- AI provider недоступен → fallback на clipboard
+- Git unavailable → hide target branch selector
+- CLI not found → show notification suggesting to configure in Settings
+- AI provider unavailable → fallback to clipboard
 
 ---
 
-## Интеграция с IntelliJ Platform
+## IntelliJ Platform Integration
 
-### Extension Points (регистрация в plugin.xml)
+### Extension Points (registration in plugin.xml)
 
 ```xml
 <extensions defaultExtensionNs="com.intellij">
     <!-- Tool Window -->
-    <toolWindow 
+    <toolWindow
         id="Listing Generator"
         anchor="right"
         factoryClass="...LgToolWindowFactory"
         icon="icons.LgIcons.ToolWindow"/>
-    
+
     <!-- Settings -->
     <applicationConfigurable
         parentId="tools"
         instance="...LgSettingsConfigurable"/>
-    
+
     <!-- Notification Groups -->
-    <notificationGroup 
+    <notificationGroup
         id="LG Notifications"
         displayType="BALLOON"/>
-    <notificationGroup 
+    <notificationGroup
         id="LG Important"
         displayType="STICKY_BALLOON"/>
 </extensions>
@@ -700,7 +700,7 @@ Services возвращают `CliResult<T>`, UI pattern-matching для обр�
         <separator/>
         <action id="LgCreateConfig" class="..."/>
         <action id="LgRunDoctor" class="..."/>
-        
+
         <add-to-group group-id="ToolsMenu" anchor="last"/>
     </group>
 </actions>
@@ -735,7 +735,7 @@ Services возвращают `CliResult<T>`, UI pattern-matching для обр�
 ```xml
 <idea-plugin>
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Git-specific extensions если нужны -->
+        <!-- Git-specific extensions if needed -->
     </extensions>
 </idea-plugin>
 ```
@@ -746,20 +746,20 @@ Services возвращают `CliResult<T>`, UI pattern-matching для обр�
 
 ### CLI Response Models
 
-Kotlin data classes для typed парсинга JSON ответов CLI:
+Kotlin data classes for typed parsing of JSON responses from CLI:
 
 #### `models/ReportSchema`
-- Маппинг JSON schema из CLI
+- Mapping JSON schema from CLI
 - Properties: protocol, scope, target, tokenizerLib, encoder, ctxLimit, total, files, context
 - Nested data classes: `TotalsData`, `FileRow`, `ContextBlock`
 
 #### `models/DiagReport`
-- Маппинг диагностического отчёта
+- Mapping of diagnostic report
 - Properties: protocol, tool_version, root, config, cache, checks, env
 - Nested: `DiagConfig`, `DiagCache`, `DiagCheck`, `DiagEnv`
 
 #### `models/ModeSetsList`, `models/TagSetsList`
-- Маппинг для adaptive settings
+- Mapping for adaptive settings
 - Hierarchical structure: ModeSet → Mode[], TagSet → Tag[]
 
 ### UI State Models
@@ -779,15 +779,15 @@ data class ControlPanelState(
 )
 ```
 
-Синхронизирован с `LgPanelStateService.State`.
+Synchronized with `LgPanelStateService.State`.
 
 ---
 
-## Dependency Injection и Service Location
+## Dependency Injection and Service Location
 
-IntelliJ Platform **не использует** полноценный DI фреймворк.
+IntelliJ Platform **does not use** a full-featured DI framework.
 
-### Service Получение
+### Service Resolution
 
 ```
 // Application service
@@ -797,9 +797,9 @@ service<LgSettingsService>()
 project.service<LgCatalogService>()
 ```
 
-### Constructor Injection (ограниченный)
+### Constructor Injection (Limited)
 
-Только для Project/Module:
+Only for Project/Module:
 
 ```
 @Service(Service.Level.PROJECT)
@@ -808,20 +808,20 @@ class MyService(
     private val scope: CoroutineScope  // ✅ Injected (2024.1+)
 )
 
-// ❌ НЕ поддерживается
+// ❌ NOT SUPPORTED
 class MyService(
-    private val otherService: OtherService  // НЕ РАБОТАЕТ
+    private val otherService: OtherService  // DOES NOT WORK
 )
 ```
 
 ### Service Dependencies
 
-Services получают другие services **on-demand** (не в конструкторе):
+Services get other services **on-demand** (not in constructor):
 
 ```
 class LgGenerationService {
     fun generate() {
-        val cliService = project.service<LgCliService>()  // Здесь
+        val cliService = project.service<LgCliService>()  // Here
         cliService.execute(...)
     }
 }
@@ -879,7 +879,7 @@ Tool Window displayed
   ↓
 Project closed or Tool Window disposed
   ↓
-Disposable.dispose() на panel
+Disposable.dispose() on panel
   ↓
 Coroutines cancelled
   ↓
@@ -888,61 +888,61 @@ Subscriptions removed
 
 ---
 
-## Расширяемость
+## Extensibility
 
-### Добавление нового AI Provider
+### Adding a New AI Provider
 
-1. Создать класс в `services/ai/providers/` реализующий `AiProvider` interface
-2. Зарегистрировать в `AiIntegrationService.providers` registry
-3. Добавить в enum для Settings UI
-4. Никаких изменений в Actions или UI
+1. Create class in `services/ai/providers/` implementing `AiProvider` interface
+2. Register in `AiIntegrationService.providers` registry
+3. Add to enum for Settings UI
+4. No changes needed in Actions or UI
 
-### Добавление нового Action
+### Adding a New Action
 
-1. Создать класс в `actions/` наследующий `AnAction`
-2. Зарегистрировать в `plugin.xml`
-3. Опционально добавить в Action Group для toolbar
-4. Action использует существующие Services через service locator
+1. Create class in `actions/` inheriting from `AnAction`
+2. Register in `plugin.xml`
+3. Optionally add to Action Group for toolbar
+4. Action uses existing Services via service locator
 
-### Добавление новой вкладки в Tool Window
+### Adding a New Tab to Tool Window
 
-1. Создать panel class в `ui/toolwindow/`
-2. Добавить в `LgToolWindowFactory.createToolWindowContent()`
-3. Опционально создать dedicated state service для новой вкладки
+1. Create panel class in `ui/toolwindow/`
+2. Add to `LgToolWindowFactory.createToolWindowContent()`
+3. Optionally create dedicated state service for new tab
 
-### Добавление нового типа генерации
+### Adding a New Generation Type
 
-1. Создать dedicated generator service в `services/generation/`
-2. Создать Action для trigger
-3. Добавить UI controls в Control Panel (если нужно)
-4. Использовать существующие `CliExecutor` и `LgVirtualFileService`
+1. Create dedicated generator service in `services/generation/`
+2. Create Action for trigger
+3. Add UI controls to Control Panel (if needed)
+4. Use existing `CliExecutor` and `LgVirtualFileService`
 
 ---
 
-## Plugin Configuration (plugin.xml structure)
+## Plugin Configuration (plugin.xml Structure)
 
-### Основные секции
+### Main Sections
 
 ```xml
 <idea-plugin>
-    <!-- Базовая информация -->
+    <!-- Basic Information -->
     <id>lg.intellij</id>
     <name>Listing Generator</name>
     <version>1.0.0</version>
     <vendor email="..." url="...">Author</vendor>
-    
-    <!-- Совместимость -->
+
+    <!-- Compatibility -->
     <idea-version since-build="241" until-build="243.*"/>
-    
-    <!-- Зависимости -->
+
+    <!-- Dependencies -->
     <depends>com.intellij.modules.platform</depends>
     <depends optional="true" config-file="withGit.xml">
         Git4Idea
     </depends>
-    
-    <!-- Локализация -->
+
+    <!-- Localization -->
     <resource-bundle>messages.LgBundle</resource-bundle>
-    
+
     <!-- Extensions -->
     <extensions defaultExtensionNs="com.intellij">
         <!-- Services -->
@@ -950,12 +950,12 @@ Subscriptions removed
         <!-- Settings -->
         <!-- Notification Groups -->
     </extensions>
-    
+
     <!-- Actions -->
     <actions>
         <!-- Main Action Group -->
     </actions>
-    
+
     <!-- Listeners -->
     <applicationListeners>
         <!-- ... -->
@@ -974,7 +974,7 @@ Subscriptions removed
 - **CLI Integration:** mock process handlers, verify argument construction
 - **Services:** mock CLI responses, verify business logic
 - **State Management:** verify persistence serialization/deserialization
-- **Parsers:** verify JSON parsing для различных CLI outputs
+- **Parsers:** verify JSON parsing for various CLI outputs
 
 ### Integration Tests
 - **Tool Window:** verify content creation, tab management
@@ -982,9 +982,9 @@ Subscriptions removed
 - **Settings:** verify UI binding, apply/reset logic
 - **VFS operations:** verify file creation, listener triggers
 
-### UI Tests (опционально)
-- RemoteRobot для автоматизации UI interactions
-- Критичные user flows: generate listing, send to AI
+### UI Tests (Optional)
+- RemoteRobot for automating UI interactions
+- Critical user flows: generate listing, send to AI
 
 ---
 
@@ -992,15 +992,15 @@ Subscriptions removed
 
 ### Sensitive Data
 
-- **API Keys** (OpenAI) → хранение через `PasswordSafe` API (не в `PersistentStateComponent`)
-- **Task text** может содержать sensitive info → не логировать полностью, только metadata
+- **API Keys** (OpenAI) → storage via `PasswordSafe` API (not in `PersistentStateComponent`)
+- **Task text** may contain sensitive info → do not log fully, only metadata
 
 ### CLI Execution
 
-- **Path injection prevention:** валидация CLI path перед выполнением
-- **Argument escaping:** корректное экранирование через `GeneralCommandLine.withParameters()`
-- **Timeout enforcement:** все CLI вызовы с обязательным timeout
-- **Stderr capturing:** для информативных error messages без exposure sensitive paths
+- **Path injection prevention:** validate CLI path before execution
+- **Argument escaping:** proper escaping via `GeneralCommandLine.withParameters()`
+- **Timeout enforcement:** all CLI calls with mandatory timeout
+- **Stderr capturing:** for informative error messages without exposing sensitive paths
 
 ---
 
@@ -1029,9 +1029,9 @@ settings.display.name=Listing Generator
 settings.cli.path=CLI Path
 ```
 
-Поддержка русской локализации через `LgBundle_ru.properties`.
+Support for Russian localization via `LgBundle_ru.properties`.
 
-### Локализация в коде
+### Localization in Code
 
 ```
 LgBundle.message("action.generate.listing.text")
@@ -1042,31 +1042,31 @@ LgBundle.message("action.generate.listing.text")
 ## Performance Optimizations
 
 ### Lazy Loading
-- Services создаются on-demand при первом обращении
-- Catalog data загружается асинхронно при открытии Tool Window
-- Tree nodes для Included Files строятся ленивым образом
+- Services created on-demand on first access
+- Catalog data loaded asynchronously when Tool Window opens
+- Tree nodes for Included Files built lazily
 
 ### Caching
-- CLI resolver кэширует resolved path
-- Tokenizer catalog кэширует encoders list с TTL
-- Catalog service кэширует sections/contexts до invalidation
+- CLI resolver caches resolved path
+- Tokenizer catalog caches encoders list with TTL
+- Catalog service caches sections/contexts until invalidation
 
 ### Batching
-- VFS changes debounced (500ms) перед reload
-- Multiple CLI calls выполняются параллельно через `coroutineScope { }`
+- VFS changes debounced (500ms) before reload
+- Multiple CLI calls executed in parallel via `coroutineScope { }`
 
 ### Background Execution
-- Все CLI вызовы на `Dispatchers.IO`
-- UI updates строго на EDT через `withContext(Dispatchers.EDT)`
-- Progress reporting через IntelliJ Platform Progress API
+- All CLI calls on `Dispatchers.IO`
+- UI updates strictly on EDT via `withContext(Dispatchers.EDT)`
+- Progress reporting via IntelliJ Platform Progress API
 
 ---
 
 ## Migration Path (VS Code → IntelliJ)
 
-### Соответствие компонентов
+### Component Correspondence
 
-| VS Code Extension | IntelliJ Plugin | Реализация |
+| VS Code Extension | IntelliJ Plugin | Implementation |
 |-------------------|-----------------|------------|
 | Control Panel (webview) | `LgControlPanel` (Swing + UI DSL) | Tool Window tab |
 | Included Files Tree (webview tree) | `LgIncludedFilesPanel` (Tree) | Tool Window tab |
@@ -1077,40 +1077,40 @@ LgBundle.message("action.generate.listing.text")
 | Command registration | Actions + plugin.xml | Platform API |
 | Settings (VSCode config) | `Configurable` + UI DSL | Platform API |
 
-### Ключевые отличия
+### Key Differences
 
-1. **No Webviews:** вместо HTML/CSS/JS используются Swing components и Kotlin UI DSL
-2. **No Custom Protocol:** вместо `lg://` URI scheme используется `LightVirtualFile`
-3. **Platform Threading:** вместо ручного управления promises используются Kotlin Coroutines с platform-aware dispatchers
-4. **Platform State:** вместо VS Code state API используется `PersistentStateComponent`
+1. **No Webviews:** Swing components and Kotlin UI DSL instead of HTML/CSS/JS
+2. **No Custom Protocol:** `LightVirtualFile` instead of `lg://` URI scheme
+3. **Platform Threading:** Kotlin Coroutines with platform-aware dispatchers instead of manual promise management
+4. **Platform State:** `PersistentStateComponent` instead of VS Code state API
 
 ---
 
-## Зависимости (Gradle)
+## Dependencies (Gradle)
 
-### Основные
+### Main
 
 ```kotlin
 dependencies {
     intellijPlatform {
         // Base platform
         intellijIdeaCommunity("2024.1")
-        
+
         // Optional plugins
         bundledPlugin("Git4Idea")
-        
+
         // Tools
         pluginVerifier()
         testFramework(TestFrameworkType.Platform)
         instrumentationTools()
     }
-    
-    // Kotlin coroutines (bundled в платформе)
-    // JSON parsing (kotlinx.serialization или jackson)
+
+    // Kotlin coroutines (bundled in platform)
+    // JSON parsing (kotlinx.serialization or jackson)
 }
 ```
 
-### Опциональные зависимости
+### Optional Dependencies
 
-- **Git4Idea** — для Git integration (опционально)
-- Никаких внешних HTTP клиентов (используется Java 11+ `HttpClient` для OpenAI API)
+- **Git4Idea** — for Git integration (optional)
+- No external HTTP clients (Java 11+ `HttpClient` used for OpenAI API)

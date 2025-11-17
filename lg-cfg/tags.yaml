@@ -3,34 +3,34 @@ tag-sets:
     title: "Listing Generator IntelliJ Plugin"
     tags:
       core:
-        title: "Ядро"
+        title: "Core"
       ui:
-        title: "Компонентная база UI"
+        title: "UI Component Base"
       control:
-        title: "Контрольная панель"
+        title: "Control Panel"
       included-files:
-        title: "Included Files panel"
+        title: "Included Files Panel"
       generate:
-        title: "Генерация (для просмотра)"
+        title: "Generation (for Display)"
       catalog:
         title: "Catalog Services"
       cli:
-        title: "CLI executable"
+        title: "CLI Executable"
       stats:
-        title: "Диалог статистики"
+        title: "Statistics Dialog"
       tags-dialog:
-        title: "Диалог управления тегами"
+        title: "Tag Management Dialog"
       modes-panel:
-        title: "Панель режимов"
+        title: "Modes Panel"
       diag:
-        title: "Самодиагностика"
+        title: "Self-Diagnostics"
       starter:
-        title: "Стартовая конфигурация"
+        title: "Starter Configuration"
       send-to-ai:
-        title: "Отправка в AI"
+        title: "Send to AI"
 
   ai-providers:
-    title: "AI-провайдеры"
+    title: "AI Providers"
     tags:
       clipboard:
         title: "Clipboard"

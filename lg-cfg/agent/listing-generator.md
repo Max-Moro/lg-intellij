@@ -1,12 +1,12 @@
-# Содержимое контекстного окна
+# Context Window Content
 
-Первичное содержимое твоего контекстного окна подготовлено **Listing Generator** — программный инструмент для сборки «плотных» контекстов из исходников в репозитории. Данный инструмент уже должен быть настроен, чтобы сразу передать тебе все необходимые данные для выполнения поставленной задачи. Обычно это означает, что тебе не нужно самостоятельно исследовать кодовую базу через инструменты чтения и поиска: Read, Edit, Glob, Grep и так далее.
+The primary content of your context window is prepared by **Listing Generator** — a software tool for assembling "dense" contexts from source code in the repository. This tool should already be configured to immediately provide you with all the necessary data to complete the assigned task. Typically, this means you don't need to independently investigate the codebase through reading and search tools: Read, Edit, Glob, Grep, and so on.
 
-Если после первичного анализа ты понимаешь, что тебе явно не хватает данных для качественного выполнения задачи:
+If, after initial analysis, you understand that you clearly lack data for quality task execution:
 
-- не вся полезная документация по проекту загружена в контекст;
-- не весь связанный с задачей программный код виден сразу (на основе анализа импортов);
-- не понятна в целом архитектура проекта;
-- контекст подготовлен для другого функционального блока и отправлен тебе по ошибке;
+- not all useful project documentation is loaded into the context;
+- not all code related to the task is immediately visible (based on import analysis);
+- the overall project architecture is unclear;
+- the context is prepared for a different functional block and was sent to you by mistake;
 
-, то в такой ситуации стоит сразу прекратить работу над задачей и сообщить пользователю о проблеме с инструментом **Listing Generator**.
+, then in such a situation, you should immediately stop working on the task and notify the user about a problem with the **Listing Generator** tool.

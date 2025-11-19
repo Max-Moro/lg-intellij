@@ -14,3 +14,10 @@ Provides interactive UI for generating dense code contexts optimized for AI assi
 
 Visit [Listing Generator Documentation](https://github.com/Max-Moro/lg-cli) for more information.
 <!-- Plugin description end -->
+
+---
+
+## License
+
+IntelliJ Plugin for Listing Generator is licensed under the Apache License, Version 2.0.  
+See the `LICENSE` file for the full license text.

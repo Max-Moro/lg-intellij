@@ -6,6 +6,9 @@ src:
       - "/build.gradle.kts"
       - "/settings.gradle.kts"
       - "/src/main/"
+    when:
+      - condition: "NOT TAGSET:intellij-plugin:send-to-ai"
+        block: ["/src/main/kotlin/lg/intellij/services/ai/"]
     children:
       src/main:
         mode: allow

@@ -3,6 +3,7 @@ src:
   filters:
     mode: allow
     allow:
+      - "/gradle.properties"
       - "/build.gradle.kts"
       - "/settings.gradle.kts"
       - "/src/main/"

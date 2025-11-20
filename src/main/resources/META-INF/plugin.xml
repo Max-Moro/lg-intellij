@@ -5,49 +5,15 @@
     
     <!-- Plugin display name -->
     <name>Listing Generator</name>
-    
-    <!-- Plugin version (managed by Gradle) -->
-    <version>1.0.0</version>
-    
+
     <!-- Vendor information -->
     <vendor email="mmocentre@gmail.com" url="https://github.com/Max-Moro/lg-intellij">
         Max-Moro
     </vendor>
-    
-    <!-- Plugin description with HTML formatting -->
-    <description><![CDATA[
-        <p>IntelliJ Platform integration for the <b>Listing Generator CLI</b> tool.</p>
-        <br/>
-        <p>Provides interactive UI for generating dense code contexts optimized for AI assistants like ChatGPT, Copilot, Claude, and Gemini.</p>
-        <br/>
-        <h3>Features:</h3>
-        <ul>
-            <li>Visual configuration of sections and contexts from <code>lg-cfg/</code></li>
-            <li>Adaptive settings: modes, tags, and filters</li>
-            <li>Live statistics with token estimation</li>
-            <li>Direct integration with AI providers</li>
-            <li>Git branch comparison support</li>
-        </ul>
-        <br/>
-        <p>Visit <a href="https://github.com/Max-Moro/lg-cli">Listing Generator</a> for more information.</p>
-    ]]></description>
-    
-    <!-- Change notes for this version -->
-    <change-notes><![CDATA[
-        <h3>Version 1.0.0</h3>
-        <ul>
-            <li>Initial release</li>
-            <li>Basic Tool Window with Control Panel</li>
-            <li>Settings configuration page</li>
-        </ul>
-    ]]></change-notes>
-    
-    <!-- Compatibility with IDE versions -->
-    <idea-version since-build="241" until-build="243.*"/>
-    
+
     <!-- Platform dependency -->
     <depends>com.intellij.modules.platform</depends>
-    
+
     <!-- Optional Git integration -->
     <depends optional="true" config-file="withGit.xml">Git4Idea</depends>
     

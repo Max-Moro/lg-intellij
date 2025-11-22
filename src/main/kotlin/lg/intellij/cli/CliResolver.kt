@@ -1,11 +1,9 @@
 package lg.intellij.cli
 
-import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.util.SystemInfo
+import kotlinx.coroutines.runBlocking
 import lg.intellij.services.state.LgSettingsService
 import java.io.File
 
@@ -25,13 +23,9 @@ data class CliRunSpec(
 /**
  * Resolves the path to listing-generator CLI executable.
  *
- * Resolution strategies (in order):
- * 1. Explicit path from Settings (cliPath)
- * 2. System strategy - use configured Python interpreter with -m lg.cli
- * 3. Managed venv strategy - use venv-installed CLI (not implemented yet)
- * 4. Search in system PATH for "listing-generator"
- * 5. Try Python module with configured interpreter
- * 6. Fallback to auto-detected Python with -m lg.cli
+ * Supports two modes:
+ * 1. User Mode (default) - Auto-managed pipx installation with version pinning
+ * 2. Developer Mode - Manual Python interpreter for testing unreleased CLI
  *
  * Equivalent to CliResolver.ts from VS Code extension.
  */
@@ -71,133 +65,81 @@ class CliResolver {
         log.debug("Invalidating CLI spec cache")
         cachedSpec = null
     }
-    
+
     /**
      * Internal resolution logic.
      *
-     * Implements full resolution chain matching VS Code extension behavior.
+     * Implements two-mode resolution: User Mode (pipx) or Developer Mode (Python interpreter).
      */
     private fun resolveInternal(): CliRunSpec {
         val settings = service<LgSettingsService>()
+        val isDeveloperMode = settings.state.developerMode
 
-        // Strategy 1: Explicit path from Settings
-        val explicitPath = settings.state.cliPath?.trim() ?: ""
-        if (explicitPath.isNotEmpty()) {
-            if (isExecutable(explicitPath)) {
-                log.info("Using explicit CLI path from Settings: $explicitPath")
-                return CliRunSpec(cmd = explicitPath, args = emptyList())
-            } else {
-                log.warn("Configured CLI path not executable or not found: $explicitPath")
-            }
+        return if (isDeveloperMode) {
+            log.info("Developer Mode enabled")
+            resolveDeveloperMode(settings)
+        } else {
+            log.info("User Mode (pipx auto-install)")
+            resolveUserMode()
+        }
+    }
+
+    /**
+     * Resolves CLI in Developer Mode.
+     *
+     * Uses configured Python interpreter with -m lg.cli
+     *
+     * @param settings Settings service
+     * @return RunSpec for Python module execution
+     * @throws CliNotFoundException if Python interpreter not configured or not found
+     */
+    private fun resolveDeveloperMode(settings: LgSettingsService): CliRunSpec {
+        val pythonPath = settings.state.pythonInterpreter?.trim() ?: ""
+
+        if (pythonPath.isEmpty()) {
+            throw CliNotFoundException(
+                "Developer Mode requires Python interpreter.\n" +
+                "Configure it in Settings > Tools > Listing Generator."
+            )
         }
 
-        // Strategy 2: System strategy - use configured Python interpreter
-        if (settings.state.installStrategy == LgSettingsService.InstallStrategy.SYSTEM) {
-            val interpreter = settings.state.pythonInterpreter?.trim() ?: ""
-            if (interpreter.isNotEmpty() && isExecutable(interpreter)) {
-                log.info("Using system Python interpreter: $interpreter")
-                return CliRunSpec(cmd = interpreter, args = listOf("-m", "lg.cli"))
-            }
+        if (!File(pythonPath).exists()) {
+            throw CliNotFoundException("Python interpreter not found: $pythonPath")
         }
 
-        // Strategy 3: Search in PATH for "listing-generator"
-        val inPath = findInPath("listing-generator")
-        if (inPath != null) {
-            log.info("Found listing-generator in PATH: $inPath")
-            return CliRunSpec(cmd = inPath, args = emptyList())
-        }
+        log.debug("Using Python: $pythonPath")
 
-        // Strategy 4: Try Python module with configured interpreter
-        val configuredPython = settings.state.pythonInterpreter?.trim() ?: ""
-        if (configuredPython.isNotEmpty() && isExecutable(configuredPython)) {
-            log.info("Falling back to Python module with configured interpreter: $configuredPython")
-            return CliRunSpec(cmd = configuredPython, args = listOf("-m", "lg.cli"))
-        }
-
-        // Strategy 5: Auto-detect Python and use module
-        val detectedPython = findPython()
-        if (detectedPython != null) {
-            log.info("Falling back to Python module with auto-detected Python: $detectedPython")
-            return CliRunSpec(cmd = detectedPython, args = listOf("-m", "lg.cli"))
-        }
-
-        // Give up
-        throw CliNotFoundException(
-            "listing-generator CLI not found. Please configure CLI path or Python interpreter in Settings."
+        return CliRunSpec(
+            cmd = pythonPath,
+            args = listOf("-m", "lg.cli")
         )
     }
-    
+
     /**
-     * Checks if file exists and is executable.
+     * Resolves CLI in User Mode.
+     *
+     * Uses pipx to auto-install/upgrade CLI with version pinning.
+     *
+     * @return RunSpec for listing-generator command
+     * @throws CliNotFoundException if pipx is not available or installation fails
      */
-    private fun isExecutable(path: String): Boolean {
-        val file = File(path)
-        return file.exists() && file.canExecute()
-    }
-    
-    /**
-     * Searches for executable in system PATH.
-     * 
-     * @param command Executable name (e.g., "listing-generator")
-     * @return Absolute path if found, null otherwise
-     */
-    private fun findInPath(command: String): String? {
-        val pathVar = System.getenv("PATH") ?: return null
-        val separator = if (SystemInfo.isWindows) ";" else ":"
-        val extensions = if (SystemInfo.isWindows) listOf(".exe", ".cmd", ".bat", "") else listOf("")
-        
-        for (dir in pathVar.split(separator)) {
-            for (ext in extensions) {
-                val executable = File(dir, command + ext)
-                if (executable.exists() && executable.canExecute()) {
-                    return executable.absolutePath
-                }
-            }
+    private fun resolveUserMode(): CliRunSpec {
+        val installer = service<PipxInstaller>()
+
+        // Check if pipx is available (blocking call for simplicity)
+        val isPipxAvailable = runBlocking { installer.isPipxAvailable() }
+
+        if (!isPipxAvailable) {
+            throw CliNotFoundException(
+                "pipx not found. Install pipx (https://pypa.github.io/pipx/) or enable Developer Mode in Settings."
+            )
         }
-        
-        return null
-    }
-    
-    /**
-     * Auto-detects Python interpreter.
-     * 
-     * Tries common Python commands: python3, python, py (Windows).
-     * 
-     * @return Path to Python executable if found, null otherwise
-     */
-    private fun findPython(): String? {
-        val candidates = if (SystemInfo.isWindows) {
-            listOf("py", "python3", "python")
-        } else {
-            listOf("python3", "python")
-        }
-        
-        for (cmd in candidates) {
-            val python = findInPath(cmd)
-            if (python != null && isPythonValid(python)) {
-                return python
-            }
-        }
-        
-        return null
-    }
-    
-    /**
-     * Validates Python executable by running --version.
-     * 
-     * @param pythonPath Path to Python executable
-     * @return true if Python works, false otherwise
-     */
-    private fun isPythonValid(pythonPath: String): Boolean {
-        return try {
-            val commandLine = GeneralCommandLine(pythonPath, "--version")
-            val handler = CapturingProcessHandler(commandLine)
-            val result = handler.runProcess(4000) // 4 second timeout
-            
-            result.exitCode == 0
-        } catch (e: Exception) {
-            log.debug("Failed to validate Python at $pythonPath: ${e.message}")
-            false
-        }
+
+        // Ensure CLI is installed with correct version (blocking call)
+        val cliPath = runBlocking { installer.ensureCli() }
+
+        log.debug("Using pipx CLI: $cliPath")
+
+        return CliRunSpec(cmd = cliPath)
     }
 }

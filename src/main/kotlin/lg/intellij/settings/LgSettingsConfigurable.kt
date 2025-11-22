@@ -100,19 +100,13 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
     }
     
     override fun createPanel(): DialogPanel = panel {
-        
+
         group(LgBundle.message("settings.group.cli")) {
-            row(LgBundle.message("settings.cli.path.label")) {
-                @Suppress("UnstableApiUsage")
-                textFieldWithBrowseButton(
-                    FileChooserDescriptorFactory.singleFile()
-                        .withTitle(LgBundle.message("settings.cli.path.browse.title"))
-                ).bindText(
-                    getter = { settings.state.cliPath ?: "" },
-                    setter = { settings.state.cliPath = it }
-                ).comment(LgBundle.message("settings.cli.path.comment"))
-            }
-            
+            row {
+                checkBox(LgBundle.message("settings.developer.mode.label"))
+                    .bindSelected(settings.state::developerMode)
+            }.comment(LgBundle.message("settings.developer.mode.comment"))
+
             row(LgBundle.message("settings.python.interpreter.label")) {
                 @Suppress("UnstableApiUsage")
                 textFieldWithBrowseButton(
@@ -122,40 +116,30 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
                     getter = { settings.state.pythonInterpreter ?: "" },
                     setter = { settings.state.pythonInterpreter = it }
                 ).comment(LgBundle.message("settings.python.interpreter.comment"))
-            }
-            
-            row(LgBundle.message("settings.install.strategy.label")) {
-                comboBox(
-                    LgSettingsService.InstallStrategy.entries,
-                    SimpleListCellRenderer.create { label, value, _ ->
-                        label.text = LgBundle.message("settings.install.strategy.${value.name}")
-                    }
-                ).bindItem(settings.state::installStrategy.toNullableProperty())
-                .comment(LgBundle.message("settings.install.strategy.comment"))
-            }
+            }.visibleIf(settings.state::developerMode.toBinding())
         }
-        
+
         group(LgBundle.message("settings.group.ai")) {
             row(LgBundle.message("settings.ai.provider.label")) {
                 // Initialize with saved value or auto-detect
                 initialProvider = runBlocking {
                     aiService.resolveProvider(settings.state.aiProvider)
                 }
-                
+
                 providerCombo = ComboBox(arrayOf(initialProvider)).apply {
                     renderer = SimpleListCellRenderer.create { label, value, _ ->
                         label.text = aiService.getProviderName(value)
                     }
                     selectedItem = initialProvider
                 }
-                
+
                 cell(providerCombo!!)
             }.comment(LgBundle.message("settings.ai.provider.comment"))
-            
+
             // Start async detection after UI is created
             startProviderDetection()
         }
-        
+
         group(LgBundle.message("settings.group.editor")) {
             row {
                 checkBox(LgBundle.message("settings.open.editable.label"))

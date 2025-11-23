@@ -5,6 +5,7 @@ import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.util.SystemInfo
+import com.intellij.util.io.HttpRequests
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -124,7 +125,23 @@ class PipxInstaller {
                     shouldCheckForUpdates() -> {
                         // Compatible version, but check for patch updates periodically
                         log.info("Checking for patch updates...")
-                        upgrade()
+
+                        // Query PyPI for latest compatible version
+                        val latestVersion = getLatestCompatibleVersion()
+
+                        if (latestVersion != null) {
+                            if (isNewerVersion(latestVersion, installedVersion)) {
+                                log.info("New patch version available: $latestVersion (current: $installedVersion)")
+                                upgrade()
+                            } else {
+                                log.debug("Already on latest patch version: $installedVersion")
+                            }
+                        } else {
+                            // PyPI check failed - skip upgrade this time
+                            log.debug("Skipping upgrade check (PyPI unavailable or version check failed)")
+                        }
+
+                        // Always update timestamp to avoid repeated checks
                         lastUpdateCheck = System.currentTimeMillis()
                     }
 
@@ -182,6 +199,70 @@ class PipxInstaller {
         val elapsed = System.currentTimeMillis() - lastCheck
         val remaining = UPDATE_CHECK_INTERVAL_MS - elapsed
         return maxOf(0, remaining / (60 * 60 * 1000))
+    }
+
+    /**
+     * Fetches latest compatible version from PyPI.
+     *
+     * Queries PyPI JSON API to get the latest version within compatible range
+     * (same major.minor, any patch).
+     *
+     * @return Latest compatible version string (e.g., "0.9.3") or null if unavailable/error
+     */
+    private suspend fun getLatestCompatibleVersion(): String? = withContext(Dispatchers.IO) {
+        try {
+            val url = "https://pypi.org/pypi/${CliVersion.PYPI_PACKAGE}/json"
+            log.debug("Fetching latest version from PyPI: $url")
+
+            val json = HttpRequests.request(url)
+                .connectTimeout(5000)
+                .readTimeout(5000)
+                .readString()
+
+            // Extract version from JSON: {"info": {"version": "0.9.2"}}
+            // Using simple regex instead of full JSON parser for efficiency
+            val versionRegex = Regex(""""version"\s*:\s*"(\d+\.\d+\.\d+)"""")
+            val match = versionRegex.find(json)
+            val latestVersion = match?.groups?.get(1)?.value
+
+            if (latestVersion == null) {
+                log.warn("Failed to parse version from PyPI response")
+                return@withContext null
+            }
+
+            // Check if latest version is compatible (same major.minor)
+            if (!CliVersion.isVersionCompatible(latestVersion)) {
+                log.debug("Latest PyPI version $latestVersion is not compatible with ${CliVersion.REQUIRED_VERSION}")
+                return@withContext null
+            }
+
+            log.debug("Latest compatible version from PyPI: $latestVersion")
+            latestVersion
+        } catch (e: Exception) {
+            log.debug("Failed to fetch latest version from PyPI: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * Compares two version strings to determine if first is newer than second.
+     *
+     * @param latest First version string (e.g., "0.9.3")
+     * @param current Second version string (e.g., "0.9.2")
+     * @return true if latest > current, false otherwise
+     */
+    private fun isNewerVersion(latest: String, current: String): Boolean {
+        val (latestMajor, latestMinor, latestPatch) = CliVersion.parseVersion(latest)
+        val (currentMajor, currentMinor, currentPatch) = CliVersion.parseVersion(current)
+
+        return when {
+            latestMajor > currentMajor -> true
+            latestMajor < currentMajor -> false
+            latestMinor > currentMinor -> true
+            latestMinor < currentMinor -> false
+            latestPatch > currentPatch -> true
+            else -> false
+        }
     }
 
     /**

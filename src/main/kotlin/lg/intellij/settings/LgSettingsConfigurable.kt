@@ -8,6 +8,7 @@ import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.SimpleListCellRenderer
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.dsl.builder.*
 import kotlinx.coroutines.*
 import lg.intellij.LgBundle
@@ -100,10 +101,12 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
     }
     
     override fun createPanel(): DialogPanel = panel {
+        // Reference to developer mode checkbox for reactive visibility binding
+        lateinit var developerModeCheckBox: Cell<JBCheckBox>
 
         group(LgBundle.message("settings.group.cli")) {
             row {
-                checkBox(LgBundle.message("settings.developer.mode.label"))
+                developerModeCheckBox = checkBox(LgBundle.message("settings.developer.mode.label"))
                     .bindSelected(settings.state::developerMode)
             }.comment(LgBundle.message("settings.developer.mode.comment"))
 
@@ -116,7 +119,7 @@ class LgSettingsConfigurable : BoundConfigurable(LgBundle.message("settings.disp
                     getter = { settings.state.pythonInterpreter ?: "" },
                     setter = { settings.state.pythonInterpreter = it }
                 ).comment(LgBundle.message("settings.python.interpreter.comment"))
-            }.visibleIf(settings.state::developerMode.toBinding())
+            }.visibleIf(developerModeCheckBox.selected)
         }
 
         group(LgBundle.message("settings.group.ai")) {

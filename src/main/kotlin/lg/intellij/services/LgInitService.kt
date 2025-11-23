@@ -112,6 +112,11 @@ class LgInitService(private val project: Project) {
                         preset = preset,
                         error = result.message
                     )
+                    is CliResult.Unavailable -> InitResult(
+                        ok = false,
+                        preset = preset,
+                        error = result.message
+                    )
                 }
             } catch (e: Exception) {
                 LOG.error("Failed to initialize with preset: $preset", e)

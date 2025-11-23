@@ -85,6 +85,14 @@ object CliResultHandler {
                 errorReporting.reportCliNotFound(project, operationName)
                 null
             }
+
+            is CliResult.Unavailable -> {
+                // Silent failure - no user notification
+                // This happens when first CLI resolution failed and subsequent parallel calls
+                // encounter the cached fatal error
+                logger.debug("$operationName: CLI unavailable (silent failure after previous fatal error)")
+                null
+            }
         }
     }
     

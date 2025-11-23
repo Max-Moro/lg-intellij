@@ -29,7 +29,10 @@ class CliTimeoutException(
 
 /**
  * CLI executable not found in configured locations.
+ *
+ * @property silent If true, error should not trigger user notifications (subsequent failures after fatal error)
  */
 class CliNotFoundException(
-    message: String
+    message: String,
+    val silent: Boolean = false
 ) : CliException(message)

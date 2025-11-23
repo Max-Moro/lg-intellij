@@ -126,15 +126,6 @@ class CliResolver {
     private fun resolveUserMode(): CliRunSpec {
         val installer = service<PipxInstaller>()
 
-        // Check if pipx is available (blocking call for simplicity)
-        val isPipxAvailable = runBlocking { installer.isPipxAvailable() }
-
-        if (!isPipxAvailable) {
-            throw CliNotFoundException(
-                "pipx not found. Install pipx (https://pypa.github.io/pipx/) or enable Developer Mode in Settings."
-            )
-        }
-
         // Ensure CLI is installed with correct version (blocking call)
         val cliPath = runBlocking { installer.ensureCli() }
 

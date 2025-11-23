@@ -76,9 +76,7 @@ src:
             - "/services/catalog/TokenizerCatalogService.kt"
         - condition: "TAGSET:intellij-plugin:cli"
           allow:
-            - "/cli/CliResolver.kt"
-            - "/cli/CliException.kt"
-            - "/cli/CliResultHandler.kt"
+            - "/cli/"
             - "/listeners/LgSettingsChangeListener.kt"
             - "/services/LgInitService.kt"
         - condition: "TAGSET:intellij-plugin:stats"

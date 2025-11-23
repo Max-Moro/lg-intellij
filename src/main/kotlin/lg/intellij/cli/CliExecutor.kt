@@ -82,7 +82,12 @@ class CliExecutor(private val project: Project) {
             processOutput(output, commandLine.commandLineString)
             
         } catch (e: CliNotFoundException) {
-            CliResult.NotFound(e.message ?: "CLI not found")
+            // Check if this is a silent error (subsequent failure after fatal error)
+            if (e.silent) {
+                CliResult.Unavailable(e.message ?: "CLI unavailable")
+            } else {
+                CliResult.NotFound(e.message ?: "CLI not found")
+            }
         } catch (e: Exception) {
             log.error("CLI execution failed", e)
             CliResult.Failure(

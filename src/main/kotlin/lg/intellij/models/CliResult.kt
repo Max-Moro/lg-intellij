@@ -44,11 +44,22 @@ sealed class CliResult<out T> {
     
     /**
      * CLI executable not found.
-     * 
+     *
      * @property message Error description
      */
     data class NotFound(val message: String) : CliResult<Nothing>()
-    
+
+    /**
+     * CLI unavailable due to previous fatal error.
+     *
+     * Silent failure - should not trigger user notifications.
+     * Occurs when first attempt to install/resolve CLI failed,
+     * and subsequent parallel calls encounter the cached error.
+     *
+     * @property message Error description
+     */
+    data class Unavailable(val message: String) : CliResult<Nothing>()
+
     /**
      * Returns true if this result represents a successful execution.
      */
@@ -78,5 +89,6 @@ sealed class CliResult<out T> {
             "CLI execution timeout after ${timeoutMs}ms"
         )
         is NotFound -> throw CliNotFoundException(message)
+        is Unavailable -> throw CliNotFoundException(message, silent = true)
     }
 }

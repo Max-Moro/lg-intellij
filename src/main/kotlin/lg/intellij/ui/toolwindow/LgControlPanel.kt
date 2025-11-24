@@ -5,6 +5,7 @@ import com.intellij.ide.DataManager
 import com.intellij.ide.actions.ShowSettingsUtilImpl
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
@@ -352,34 +353,14 @@ class LgControlPanel(
                 // Send to AI button
                 add(JButton(LgBundle.message("control.btn.send.ai"), AllIcons.Actions.Execute).apply {
                     addActionListener {
-                        val action = LgSendToAiAction()
-                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
-                        val event = AnActionEvent.createEvent(
-                            action,
-                            dataContext,
-                            null,
-                            ActionPlaces.TOOLWINDOW_CONTENT,
-                            ActionUiKind.NONE,
-                            null
-                        )
-                        action.actionPerformed(event)
+                        LgSendToAiAction().performSafely(this@LgControlPanel)
                     }
                 })
                 
                 // Generate Context button
                 add(JButton(LgBundle.message("control.btn.generate.context"), AllIcons.Actions.ShowCode).apply {
                     addActionListener {
-                        val action = LgGenerateContextAction()
-                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
-                        val event = AnActionEvent.createEvent(
-                            action,
-                            dataContext,
-                            null,
-                            ActionPlaces.TOOLWINDOW_CONTENT,
-                            ActionUiKind.NONE,
-                            null
-                        )
-                        action.actionPerformed(event)
+                        LgGenerateContextAction().performSafely(this@LgControlPanel)
                     }
                 })
                 
@@ -388,17 +369,7 @@ class LgControlPanel(
                     override fun isDefaultButton(): Boolean = true
                 }.apply {
                     addActionListener {
-                        val action = LgShowContextStatsAction()
-                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
-                        val event = AnActionEvent.createEvent(
-                            action,
-                            dataContext,
-                            null,
-                            ActionPlaces.TOOLWINDOW_CONTENT,
-                            ActionUiKind.NONE,
-                            null
-                        )
-                        action.actionPerformed(event)
+                        LgShowContextStatsAction().performSafely(this@LgControlPanel)
                     }
                 })
             }
@@ -419,18 +390,8 @@ class LgControlPanel(
         row {
             tagsButton = JButton(LgBundle.message("control.btn.configure.tags"), AllIcons.General.Filter).apply {
                 addActionListener {
-                    val action = LgConfigureTagsAction()
-                    val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
-                    val event = AnActionEvent.createEvent(
-                        action,
-                        dataContext,
-                        null,
-                        ActionPlaces.TOOLWINDOW_CONTENT,
-                        ActionUiKind.NONE,
-                        null
-                    )
-                    action.actionPerformed(event)
-                    
+                    LgConfigureTagsAction().performSafely(this@LgControlPanel)
+
                     // Update button text after dialog closed
                     updateTagsButtonText()
                 }
@@ -456,51 +417,21 @@ class LgControlPanel(
                 // Show Included button
                 add(JButton(LgBundle.message("control.btn.show.included"), AllIcons.Actions.ShowAsTree).apply {
                     addActionListener {
-                        val action = LgShowIncludedFilesAction()
-                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
-                        val event = AnActionEvent.createEvent(
-                            action,
-                            dataContext,
-                            null,
-                            ActionPlaces.TOOLWINDOW_CONTENT,
-                            ActionUiKind.NONE,
-                            null
-                        )
-                        action.actionPerformed(event)
+                        LgShowIncludedFilesAction().performSafely(this@LgControlPanel)
                     }
                 })
 
                 // Generate Listing button
                 add(JButton(LgBundle.message("control.btn.generate.listing"), AllIcons.Actions.ShowCode).apply {
                     addActionListener {
-                        val action = LgGenerateListingAction()
-                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
-                        val event = AnActionEvent.createEvent(
-                            action,
-                            dataContext,
-                            null,
-                            ActionPlaces.TOOLWINDOW_CONTENT,
-                            ActionUiKind.NONE,
-                            null
-                        )
-                        action.actionPerformed(event)
+                        LgGenerateListingAction().performSafely(this@LgControlPanel)
                     }
                 })
                 
                 // Show Stats button
                 add(JButton(LgBundle.message("control.btn.show.stats"), AllIcons.Actions.ListFiles).apply {
                     addActionListener {
-                        val action = LgShowSectionStatsAction()
-                        val dataContext = DataManager.getInstance().getDataContext(this@LgControlPanel)
-                        val event = AnActionEvent.createEvent(
-                            action,
-                            dataContext,
-                            null,
-                            ActionPlaces.TOOLWINDOW_CONTENT,
-                            ActionUiKind.NONE,
-                            null
-                        )
-                        action.actionPerformed(event)
+                        LgShowSectionStatsAction().performSafely(this@LgControlPanel)
                     }
                 })
             }
@@ -629,7 +560,26 @@ class LgControlPanel(
         scope.cancel()
         LOG.debug("Control Panel disposed")
     }
-    
+
+    /**
+     * Helper function to properly execute actions using IntelliJ Platform API.
+     *
+     * Uses ActionUtil.performAction instead of direct actionPerformed() call
+     * to avoid override-only API violations.
+     */
+    private fun AnAction.performSafely(component: JComponent) {
+        val dataContext = DataManager.getInstance().getDataContext(component)
+        val event = AnActionEvent.createEvent(
+            this,
+            dataContext,
+            null,
+            ActionPlaces.TOOLWINDOW_CONTENT,
+            ActionUiKind.NONE,
+            null
+        )
+        ActionUtil.performAction(this, event)
+    }
+
     companion object {
         private val LOG = logger<LgControlPanel>()
     }

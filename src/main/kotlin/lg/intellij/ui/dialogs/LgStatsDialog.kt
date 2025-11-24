@@ -4,7 +4,9 @@ import com.intellij.icons.AllIcons
 import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionUiKind
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.ide.CopyPasteManager
@@ -25,6 +27,7 @@ import kotlinx.coroutines.*
 import lg.intellij.LgBundle
 import lg.intellij.actions.LgGenerateContextAction
 import lg.intellij.actions.LgGenerateListingAction
+import lg.intellij.actions.LgSendToAiAction
 import lg.intellij.models.ReportSchema
 import lg.intellij.models.Scope
 import lg.intellij.services.generation.LgStatsService
@@ -82,18 +85,7 @@ class LgStatsDialog(
 
         override fun doAction(e: ActionEvent) {
             // Trigger Send to AI action (will use current task text from panel state)
-            val action = lg.intellij.actions.LgSendToAiAction()
-            val dataContext = DataManager.getInstance().getDataContext(contentPanel)
-            val event = AnActionEvent.createEvent(
-                action,
-                dataContext,
-                null,
-                ActionPlaces.UNKNOWN,
-                ActionUiKind.NONE,
-                null
-            )
-            action.actionPerformed(event)
-
+            LgSendToAiAction().performSafely(contentPanel)
             close(OK_EXIT_CODE)
         }
     }
@@ -111,18 +103,7 @@ class LgStatsDialog(
                 LgGenerateListingAction()
             }
 
-            // Trigger action with proper data context
-            val dataContext = DataManager.getInstance().getDataContext(contentPanel)
-            val event = AnActionEvent.createEvent(
-                action,
-                dataContext,
-                null,
-                ActionPlaces.UNKNOWN,
-                ActionUiKind.NONE,
-                null
-            )
-            action.actionPerformed(event)
-
+            action.performSafely(contentPanel)
             close(OK_EXIT_CODE)
         }
     }
@@ -658,5 +639,24 @@ class LgStatsDialog(
     companion object {
         private val LOG = logger<LgStatsDialog>()
     }
+}
+
+/**
+ * Helper function to properly execute actions using IntelliJ Platform API.
+ *
+ * Uses ActionUtil.performAction instead of direct actionPerformed() call
+ * to avoid override-only API violations.
+ */
+private fun AnAction.performSafely(component: JComponent) {
+    val dataContext = DataManager.getInstance().getDataContext(component)
+    val event = AnActionEvent.createEvent(
+        this,
+        dataContext,
+        null,
+        ActionPlaces.UNKNOWN,
+        ActionUiKind.NONE,
+        null
+    )
+    ActionUtil.performAction(this, event)
 }
 

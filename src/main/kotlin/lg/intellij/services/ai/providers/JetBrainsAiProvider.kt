@@ -140,7 +140,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         
         // ChatOrigin.AIAssistantTool is a sealed class object
         val aiAssistantToolClass = Class.forName(
-            "com.intellij.ml.llm.core.chat.session.ChatOrigin\$AIAssistantTool",
+            $$"com.intellij.ml.llm.core.chat.session.ChatOrigin$AIAssistantTool",
             true,
             classLoader
         )

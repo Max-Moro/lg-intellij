@@ -926,7 +926,7 @@ Subscriptions removed
 ```xml
 <idea-plugin>
     <!-- Basic Information -->
-    <id>lg.intellij</id>
+    <id>maxmoro.lg</id>
     <name>Listing Generator</name>
     <version>1.0.0</version>
     <vendor email="..." url="...">Author</vendor>

@@ -123,7 +123,7 @@ class LgSendToAiAction : AnAction(
                             NotificationAction.createSimple("Open settings") {
                                 com.intellij.ide.actions.ShowSettingsUtilImpl.showSettingsDialog(
                                     project,
-                                    "lg.intellij.settings",
+                                    "maxmoro.lg.settings",
                                     null
                                 )
                                 notification.expire()

@@ -608,7 +608,7 @@ class LgControlPanel(
     }
     
     private fun openSettings() {
-        ShowSettingsUtilImpl.showSettingsDialog(project, "lg.intellij.settings", null)
+        ShowSettingsUtilImpl.showSettingsDialog(project, "maxmoro.lg.settings", null)
     }
     
     /**

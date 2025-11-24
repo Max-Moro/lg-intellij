@@ -78,7 +78,7 @@ class LgErrorReportingService {
                 override fun actionPerformed(e: AnActionEvent, notification: Notification) {
                     com.intellij.ide.actions.ShowSettingsUtilImpl.showSettingsDialog(
                         e.project,
-                        "lg.intellij.settings",
+                        "maxmoro.lg.settings",
                         null
                     )
                     notification.expire()

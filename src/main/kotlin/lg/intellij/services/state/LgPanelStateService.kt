@@ -29,7 +29,7 @@ import lg.intellij.models.TagSetsListSchema
     storages = [Storage(StoragePathMacros.WORKSPACE_FILE)],
     category = SettingsCategory.TOOLS
 )
-class LgPanelStateService() : SimplePersistentStateComponent<LgPanelStateService.State>(State()) {
+class LgPanelStateService : SimplePersistentStateComponent<LgPanelStateService.State>(State()) {
     
     private val _taskTextFlow = MutableStateFlow(state.taskText ?: "")
     

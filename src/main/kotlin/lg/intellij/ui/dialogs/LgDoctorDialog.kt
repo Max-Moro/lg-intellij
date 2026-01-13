@@ -525,7 +525,7 @@ class LgDoctorDialog(
         migrationsPanel.removeAll()
         
         val applied = report.config.applied
-        if (applied == null || applied.isEmpty()) {
+        if (applied.isNullOrEmpty()) {
             migrationsPanel.add(
                 JBLabel("No migrations applied"),
                 BorderLayout.CENTER

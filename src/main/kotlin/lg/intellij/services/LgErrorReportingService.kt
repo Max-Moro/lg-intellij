@@ -62,16 +62,21 @@ class LgErrorReportingService {
     
     /**
      * Reports CLI not found error.
+     *
+     * @param project Project context (can be null for app-level errors)
+     * @param operation Human-readable operation name (e.g., "Loading sections")
+     * @param message Specific error message from CliNotFoundException
      */
     fun reportCliNotFound(
         project: Project?,
-        operation: String
+        operation: String,
+        message: String
     ) {
         NotificationGroupManager.getInstance()
             .getNotificationGroup("LG Important")
             .createNotification(
                 "$operation Failed",
-                "Listing Generator CLI not found. Please configure CLI path in Settings.",
+                message,
                 NotificationType.ERROR
             )
             .addAction(object : NotificationAction("Open settings") {

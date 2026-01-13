@@ -81,8 +81,8 @@ object CliResultHandler {
             }
             
             is CliResult.NotFound -> {
-                logger.warn("$operationName: CLI not found")
-                errorReporting.reportCliNotFound(project, operationName)
+                logger.warn("$operationName: CLI not found - ${result.message}")
+                errorReporting.reportCliNotFound(project, operationName, result.message)
                 null
             }
 

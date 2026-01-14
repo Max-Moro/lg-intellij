@@ -1,12 +1,12 @@
 package lg.intellij.services.ai.providers.claudecli
 
-import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.terminal.ui.TerminalWidget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import lg.intellij.cli.ExecutableDetector
 import lg.intellij.models.AiInteractionMode
 import lg.intellij.models.ClaudeIntegrationMethod
 import lg.intellij.models.CliExecutionContext
@@ -39,12 +39,11 @@ class ClaudeCliProvider : BaseCliProvider() {
     }
 
     override suspend fun isAvailable(): Boolean {
-        // Check if 'claude' command is available in PATH
+        // Use ExecutableDetector with fallback to common user paths
+        // This correctly handles shell environment on all platforms (including Linux GUI apps)
         return try {
-            val cmd = if (System.getProperty("os.name").lowercase().contains("win")) "where" else "which"
-            val commandLine = ClaudeCommon.createCommandLine(cmd, "claude")
-            val result = ExecUtil.execAndGetOutput(commandLine, 4000)
-            result.exitCode == 0
+            val claudeExecutable = ExecutableDetector.findExecutable("claude")
+            claudeExecutable != null
         } catch (e: Exception) {
             log.debug("Claude CLI detection failed", e)
             false

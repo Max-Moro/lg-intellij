@@ -268,17 +268,15 @@ class PipxInstaller {
     /**
      * Checks if pipx is available on the system.
      *
+     * Uses ExecutableDetector with fallback to common user paths.
+     * This correctly handles shell environment on all platforms (including Linux GUI apps).
+     *
      * @return true if pipx command is found, false otherwise
      */
     suspend fun isPipxAvailable(): Boolean = withContext(Dispatchers.IO) {
         try {
-            val commandLine = GeneralCommandLine("pipx", "--version")
-                .withCharset(StandardCharsets.UTF_8)
-
-            val handler = CapturingProcessHandler(commandLine)
-            val result = handler.runProcess(4000) // 4 second timeout
-
-            result.exitCode == 0
+            val pipxExecutable = ExecutableDetector.findExecutable("pipx")
+            pipxExecutable != null
         } catch (e: Exception) {
             log.debug("pipx availability check failed: ${e.message}")
             false
@@ -390,34 +388,26 @@ class PipxInstaller {
      * Gets path to installed CLI binary.
      *
      * Tries multiple strategies:
-     * 1. Use which/where command (works if PATH includes pipx bin dir)
-     * 2. Query pipx for PIPX_BIN_DIR and check there (works for GUI apps without shell PATH)
+     * 1. Use ExecutableDetector with fallback to common user paths (works on all platforms)
+     * 2. Query pipx for PIPX_BIN_DIR and check there (fallback for edge cases)
      *
      * @return Path to listing-generator binary or null if not found
      */
     private suspend fun getCliPath(): String? = withContext(Dispatchers.IO) {
-        // Strategy 1: Try which/where (works if PATH is correctly configured)
+        // Strategy 1: Use ExecutableDetector with fallback to common user paths
+        // This correctly handles shell environment on all platforms (including Linux GUI apps)
         try {
-            val cmd = if (SystemInfo.isWindows) "where" else "which"
-            val commandLine = GeneralCommandLine(cmd, "listing-generator")
-                .withCharset(StandardCharsets.UTF_8)
-
-            val handler = CapturingProcessHandler(commandLine)
-            val result = handler.runProcess(4000)
-
-            if (result.exitCode == 0) {
-                val path = result.stdout.trim().lines().firstOrNull()
-                if (path != null && File(path).exists()) {
-                    log.debug("Found CLI via $cmd: $path")
-                    return@withContext path
-                }
+            val cliExecutable = ExecutableDetector.findExecutable("listing-generator")
+            if (cliExecutable != null) {
+                log.debug("Found CLI via ExecutableDetector: ${cliExecutable.absolutePath}")
+                return@withContext cliExecutable.absolutePath
             }
         } catch (e: Exception) {
-            log.debug("which/where failed: ${e.message}")
+            log.debug("ExecutableDetector search failed: ${e.message}")
         }
 
-        // Strategy 2: Query pipx for bin directory
-        // This is needed for GUI apps (like IntelliJ) that don't inherit shell PATH
+        // Strategy 2: Query pipx for bin directory (fallback)
+        // This is needed for edge cases where PATH might not be properly configured
         try {
             val pipxBinDir = getPipxBinDir()
             if (pipxBinDir != null) {

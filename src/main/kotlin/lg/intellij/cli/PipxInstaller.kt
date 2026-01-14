@@ -292,6 +292,7 @@ class PipxInstaller {
      */
     suspend fun install() = withContext(Dispatchers.IO) {
         val versionConstraint = CliVersion.getVersionConstraint()
+        // No quotes needed - GeneralCommandLine passes args directly to process without shell
         val packageSpec = "${CliVersion.PYPI_PACKAGE}$versionConstraint"
 
         log.info("Installing $packageSpec")
@@ -388,27 +389,80 @@ class PipxInstaller {
     /**
      * Gets path to installed CLI binary.
      *
+     * Tries multiple strategies:
+     * 1. Use which/where command (works if PATH includes pipx bin dir)
+     * 2. Query pipx for PIPX_BIN_DIR and check there (works for GUI apps without shell PATH)
+     *
      * @return Path to listing-generator binary or null if not found
      */
     private suspend fun getCliPath(): String? = withContext(Dispatchers.IO) {
+        // Strategy 1: Try which/where (works if PATH is correctly configured)
         try {
             val cmd = if (SystemInfo.isWindows) "where" else "which"
             val commandLine = GeneralCommandLine(cmd, "listing-generator")
                 .withCharset(StandardCharsets.UTF_8)
 
             val handler = CapturingProcessHandler(commandLine)
-            val result = handler.runProcess(4000) // 4 second timeout
+            val result = handler.runProcess(4000)
 
-            if (result.exitCode != 0) {
-                return@withContext null
-            }
-
-            // Return first line (path to binary)
-            result.stdout.trim().lines().firstOrNull()?.let { path ->
-                if (File(path).exists()) path else null
+            if (result.exitCode == 0) {
+                val path = result.stdout.trim().lines().firstOrNull()
+                if (path != null && File(path).exists()) {
+                    log.debug("Found CLI via $cmd: $path")
+                    return@withContext path
+                }
             }
         } catch (e: Exception) {
-            log.debug("Failed to get CLI path: ${e.message}")
+            log.debug("which/where failed: ${e.message}")
+        }
+
+        // Strategy 2: Query pipx for bin directory
+        // This is needed for GUI apps (like IntelliJ) that don't inherit shell PATH
+        try {
+            val pipxBinDir = getPipxBinDir()
+            if (pipxBinDir != null) {
+                val binaryName = if (SystemInfo.isWindows) "listing-generator.exe" else "listing-generator"
+                val cliPath = File(pipxBinDir, binaryName)
+                if (cliPath.exists() && cliPath.canExecute()) {
+                    log.debug("Found CLI in PIPX_BIN_DIR: ${cliPath.absolutePath}")
+                    return@withContext cliPath.absolutePath
+                }
+            }
+        } catch (e: Exception) {
+            log.debug("PIPX_BIN_DIR lookup failed: ${e.message}")
+        }
+
+        log.debug("CLI binary not found via any strategy")
+        null
+    }
+
+    /**
+     * Gets PIPX_BIN_DIR from pipx environment.
+     *
+     * @return Path to pipx bin directory or null if unavailable
+     */
+    private fun getPipxBinDir(): String? {
+        return try {
+            val commandLine = GeneralCommandLine("pipx", "environment", "--value", "PIPX_BIN_DIR")
+                .withCharset(StandardCharsets.UTF_8)
+
+            val handler = CapturingProcessHandler(commandLine)
+            val result = handler.runProcess(4000)
+
+            if (result.exitCode == 0) {
+                val binDir = result.stdout.trim()
+                if (binDir.isNotEmpty()) {
+                    log.debug("PIPX_BIN_DIR: $binDir")
+                    binDir
+                } else {
+                    null
+                }
+            } else {
+                log.debug("pipx environment failed with exit code ${result.exitCode}")
+                null
+            }
+        } catch (e: Exception) {
+            log.debug("Failed to get PIPX_BIN_DIR: ${e.message}")
             null
         }
     }

@@ -32,17 +32,15 @@ class LgStatsService(private val project: Project) {
     
     /**
      * Fetches statistics for the specified target.
-     * 
+     *
+     * All parameters (tokenization, modes, tags, taskText) are taken from LgPanelStateService.
+     *
      * @param target Target specifier (e.g., "sec:all", "ctx:template-name")
-     * @param taskText Optional task description for --task parameter
      * @return Parsed statistics report or null if stats collection failed (user already notified)
      */
-    suspend fun getStats(target: String, taskText: String? = null): ReportSchema? {
+    suspend fun getStats(target: String): ReportSchema? {
         return withContext(Dispatchers.IO) {
-            val params = CliArgsBuilder.fromPanelState(panelState).copy(
-                taskText = taskText // Override task text if provided
-            )
-            
+            val params = CliArgsBuilder.fromPanelState(panelState)
             val (args, stdinData) = CliArgsBuilder.buildReportArgs(target, params)
             
             LOG.debug("Fetching stats for '$target' with args: $args")

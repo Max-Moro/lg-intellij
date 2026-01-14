@@ -383,13 +383,9 @@ class LgStatsDialog(
             
             override fun run(indicator: ProgressIndicator) {
                 indicator.isIndeterminate = true
-                
-                val taskText = panelState.state.taskText
+
                 newStats = runBlocking {
-                    statsService.getStats(
-                        target,
-                        taskText = taskText?.ifBlank { null }
-                    )
+                    statsService.getStats(target)
                 }
             }
             

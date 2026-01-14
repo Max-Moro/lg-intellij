@@ -56,21 +56,22 @@ object ClaudeCommon {
     }
 
     /**
-     * Encode project path for Claude Code format
+     * Encode project path for Claude Code format.
+     *
+     * Claude Code replaces path separators, colons, dots, and underscores with dashes.
+     * The leading dash from Unix absolute paths is preserved.
+     *
      * Examples:
      * - F:\workspace\project → F--workspace-project
-     * - /home/user/project → home-user-project
+     * - /home/user/project → -home-user-project
+     * - F:\workspace\2026.01.02__Local_Project → F--workspace-2026-01-02--Local-Project
      */
     fun encodeProjectPath(projectPath: Path): String {
         val normalized = projectPath.normalize().toString()
-        var encoded = normalized.replace(Regex("[/\\\\]"), "-")
 
-        if (encoded.startsWith("-")) {
-            encoded = encoded.substring(1)
-        }
-
-        encoded = encoded.replace(":", "-")
-        return encoded
+        // Replace path separators, colons, dots, and underscores with dashes
+        // Note: leading dash from Unix paths is intentionally preserved
+        return normalized.replace(Regex("[/\\\\:._]"), "-")
     }
 
     /**

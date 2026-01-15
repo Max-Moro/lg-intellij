@@ -4,8 +4,16 @@
 
 ## [Unreleased]
 
-### Added
+### Fixed
+- CLI path resolution on Linux GUI apps (launched without shell PATH)
+- Claude Code integration path encoding
 
+### Changed
+- Compatible with CLI ^0.10.0 — see [CLI changelog](https://github.com/Max-Moro/lg-cli/blob/main/CHANGELOG.md)
+
+## [0.9.0] - 2025-11-25
+
+### Added
 - Control Panel with section/context selection
 - Adaptive settings (modes, tags, task text)
 - Included Files panel with tree view

@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-01-15
+
+### Fixed
+- CLI version check on Linux GUI apps now uses ExecutableDetector (fixes repeated install attempts on Ubuntu)
+
 ## [0.10.0] - 2026-01-15
 
 ### Fixed

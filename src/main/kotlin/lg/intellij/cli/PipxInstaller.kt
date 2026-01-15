@@ -360,11 +360,20 @@ class PipxInstaller {
     /**
      * Checks installed CLI version.
      *
+     * Uses ExecutableDetector to find CLI binary (handles Linux GUI apps where ~/.local/bin is not in PATH).
+     *
      * @return Version string (e.g., "0.9.0") or null if not installed
      */
     suspend fun getInstalledVersion(): String? = withContext(Dispatchers.IO) {
         try {
-            val commandLine = GeneralCommandLine("listing-generator", "--version")
+            // Use ExecutableDetector to find CLI (handles Linux GUI apps)
+            val cliExecutable = ExecutableDetector.findExecutable("listing-generator")
+            if (cliExecutable == null) {
+                log.debug("CLI executable not found via ExecutableDetector")
+                return@withContext null
+            }
+
+            val commandLine = GeneralCommandLine(cliExecutable.absolutePath, "--version")
                 .withCharset(StandardCharsets.UTF_8)
 
             val handler = CapturingProcessHandler(commandLine)

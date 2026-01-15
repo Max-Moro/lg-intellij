@@ -269,7 +269,8 @@ jobs:
 
           # Use Gradle changelog plugin to patch CHANGELOG.md
           # This moves [Unreleased] content to [VERSION] - DATE
-          ./gradlew patchChangelog --release-version="$VERSION"
+          # Note: plugin uses project.version from gradle.properties automatically
+          ./gradlew patchChangelog
 
           echo "Updated CHANGELOG.md for version $VERSION"
 

@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-01-15
+
 ### Fixed
 - CLI path resolution on Linux GUI apps (launched without shell PATH)
 - Claude Code integration path encoding

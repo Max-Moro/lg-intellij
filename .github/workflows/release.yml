@@ -130,7 +130,7 @@ jobs:
           RELEASE_NOTE="./build/tmp/release_note.txt"
 
           # Use Gradle changelog plugin to extract section for current version
-          ./gradlew getChangelog --version="$VERSION" --no-header --quiet --console=plain --output-file=$RELEASE_NOTE
+          ./gradlew getChangelog --project-version="$VERSION" --no-header --quiet --console=plain --output-file=$RELEASE_NOTE
 
           # Check if file exists and is not empty
           if [ ! -f "$RELEASE_NOTE" ] || [ ! -s "$RELEASE_NOTE" ]; then

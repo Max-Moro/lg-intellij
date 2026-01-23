@@ -316,7 +316,7 @@ class LgControlPanel(
         val settings = lg.intellij.services.state.LgSettingsService.getInstance()
         val providerId = settings.state.aiProvider
         // Show for CLI-based providers
-        val cliProviders = listOf("claude.cli")
+        val cliProviders = listOf("claude.cli", "codex.cli")
         return providerId in cliProviders
     }
     

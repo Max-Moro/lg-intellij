@@ -12,6 +12,8 @@ import lg.intellij.models.ClaudeIntegrationMethod
 import lg.intellij.models.ClaudeMethodDescriptor
 import lg.intellij.models.ClaudeModel
 import lg.intellij.models.ClaudeModelDescriptor
+import lg.intellij.models.CodexReasoningEffort
+import lg.intellij.models.CodexReasoningEffortDescriptor
 import lg.intellij.models.ShellDescriptor
 import lg.intellij.models.ShellType
 import lg.intellij.services.state.LgPanelStateService
@@ -25,12 +27,13 @@ import javax.swing.event.DocumentListener
 /**
  * CLI Provider Settings panel for Control Panel.
  *
- * Shown when any CLI-based provider is selected (e.g., claude.cli).
+ * Shown when any CLI-based provider is selected (e.g., claude.cli, codex.cli).
  * Provides configuration for:
  * - Scope (relative workspace subdirectory) - for all CLI providers
  * - Shell type (bash/zsh/powershell/cmd) - for all CLI providers
  * - Claude model (haiku/sonnet/opus) - only for claude.cli
  * - Integration method (memory-file/session) - only for claude.cli
+ * - Reasoning effort (minimal/low/medium/high/xhigh) - only for codex.cli
  */
 @Suppress("unused") // Instantiated dynamically in LgControlPanel.createContentUI
 class LgCliSettingsPanel(
@@ -52,6 +55,11 @@ class LgCliSettingsPanel(
             if (isClaudeProvider()) {
                 createClaudeSettingsRow()
             }
+
+            // Codex-specific settings only for codex.cli provider
+            if (isCodexProvider()) {
+                createCodexSettingsRow()
+            }
         }
     }
 
@@ -61,6 +69,14 @@ class LgCliSettingsPanel(
     private fun isClaudeProvider(): Boolean {
         val settings = LgSettingsService.getInstance()
         return settings.state.aiProvider == "claude.cli"
+    }
+
+    /**
+     * Check if current AI provider is Codex CLI.
+     */
+    private fun isCodexProvider(): Boolean {
+        val settings = LgSettingsService.getInstance()
+        return settings.state.aiProvider == "codex.cli"
     }
 
     private fun Panel.createBasicSettingsRow() {
@@ -141,6 +157,31 @@ class LgCliSettingsPanel(
                     LgLabeledComponent.create(
                     LgBundle.message("control.claude.method.label"),
                     methodCombo
+                ))
+            }
+
+            cell(flowPanel).align(AlignX.FILL)
+        }
+    }
+
+    private fun Panel.createCodexSettingsRow() {
+        row {
+            val flowPanel = LgWrappingPanel(hgap = 16).apply {
+                // Reasoning Effort ComboBox
+                val effortDescriptors = CodexReasoningEffort.getAvailableEfforts()
+                val effortCombo = ComboBox(effortDescriptors.toTypedArray()).apply {
+                    selectedItem = effortDescriptors.find { it.id == stateService.state.codexReasoningEffort }
+                    addActionListener {
+                        val selected = selectedItem as? CodexReasoningEffortDescriptor
+                        if (selected != null) {
+                            stateService.state.codexReasoningEffort = selected.id
+                        }
+                    }
+                }
+                add(
+                    LgLabeledComponent.create(
+                    LgBundle.message("control.codex.reasoning.label"),
+                    effortCombo
                 ))
             }
 

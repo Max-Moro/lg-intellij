@@ -16,5 +16,8 @@ data class CliExecutionContext(
     val mode: AiInteractionMode,
 
     /** Claude model (optional, only for Claude CLI provider) */
-    val claudeModel: ClaudeModel? = null
+    val claudeModel: ClaudeModel? = null,
+
+    /** Codex reasoning effort (optional, only for Codex CLI provider) */
+    val codexReasoningEffort: CodexReasoningEffort? = null
 )

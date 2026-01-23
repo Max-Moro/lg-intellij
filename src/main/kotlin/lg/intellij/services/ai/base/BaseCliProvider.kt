@@ -54,7 +54,8 @@ abstract class BaseCliProvider : AiProvider {
             scope = state.cliScope ?: "",
             shell = state.cliShell,
             mode = mode,
-            claudeModel = state.claudeModel
+            claudeModel = state.claudeModel,
+            codexReasoningEffort = state.codexReasoningEffort
         )
     }
 

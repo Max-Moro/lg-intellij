@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import lg.intellij.models.AiInteractionMode
 import lg.intellij.models.ClaudeIntegrationMethod
 import lg.intellij.models.ClaudeModel
+import lg.intellij.models.CodexReasoningEffort
 import lg.intellij.models.ModeSetsListSchema
 import lg.intellij.models.ShellType
 import lg.intellij.models.TagSetsListSchema
@@ -99,6 +100,9 @@ class LgPanelStateService : SimplePersistentStateComponent<LgPanelStateService.S
 
         /** Claude integration method */
         var claudeIntegrationMethod by enum(ClaudeIntegrationMethod.SESSION)
+
+        /** Codex reasoning effort level */
+        var codexReasoningEffort by enum(CodexReasoningEffort.MEDIUM)
     }
 
     /**

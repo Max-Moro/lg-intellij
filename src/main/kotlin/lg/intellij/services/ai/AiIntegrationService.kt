@@ -10,6 +10,7 @@ import lg.intellij.services.ai.providers.GitHubCopilotProvider
 import lg.intellij.services.ai.providers.JetBrainsAiProvider
 import lg.intellij.services.ai.providers.JunieProvider
 import lg.intellij.services.ai.providers.claudecli.ClaudeCliProvider
+import lg.intellij.services.ai.providers.codexcli.CodexCliProvider
 
 /**
  * Central service for managing AI providers.
@@ -39,6 +40,7 @@ class AiIntegrationService {
         registerProvider(GitHubCopilotProvider())
         registerProvider(JunieProvider())
         registerProvider(ClaudeCliProvider())
+        registerProvider(CodexCliProvider())
 
         log.info("AI Integration Service initialized with ${providers.size} providers")
     }

@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Added
+- OpenAI Codex CLI integration with session-based execution and reasoning effort configuration
+
 ## [0.10.1] - 2026-01-15
 
 ### Fixed

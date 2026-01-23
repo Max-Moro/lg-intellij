@@ -21,8 +21,10 @@ No grouping, no prioritization, no extra analysis. The script already provides o
 Execute the qodana-inspect skill:
 
 ```bash
-bash .claude/skills/qodana-inspect/scripts/run-qodana.sh --linter qodana-jvm-community
+bash -c 'source .claude/skills/qodana-inspect/scripts/run-qodana.sh --linter qodana-jvm-community'
 ```
+
+> **Note:** Using `source` instead of direct `bash script.sh` due to Claude Code bug on Windows (issues #18856, #19525).
 
 The script will:
 - Run Qodana analysis
@@ -130,6 +132,26 @@ Add `@Suppress` annotation when the "problem" is intentional:
 
 Always add a brief comment explaining why.
 
+### ⚠️ CRITICAL: What to Fix vs What to Escalate
+
+**FIX YOURSELF (simple mechanical fixes):**
+- Unused imports → Delete the import line
+- Unused private functions/properties with no references → Remove them
+- CanBeParameter → Remove `val`/`var` from constructor
+- PrivatePropertyName (e.g., `LOG` → `log`) → Rename
+- RemoveRedundantQualifierName → Remove qualifier
+- DialogTitleCapitalization → Fix casing
+- Simple @Suppress additions for intentional violations
+
+**ESCALATE IMMEDIATELY (do NOT attempt to fix):**
+- **DuplicatedCode** — requires architectural decisions about code reuse
+- **Unused public/protected members** — may be part of API contract
+- **Complex refactoring** — when fix affects multiple files or changes architecture
+- **Unused classes/interfaces** — may be extension points or part of design
+- **Any inspection where you're unsure** — better to escalate than break code
+
+When escalating, list the file, inspection type, and why it requires human review.
+
 ### Special Cases
 
 **Sealed classes with @Serializable:**
@@ -160,7 +182,7 @@ This is a known Claude Code issue on Windows that produces misleading error mess
 After fixing all files, run inspection again to verify:
 
 ```bash
-bash .claude/skills/qodana-inspect/scripts/run-qodana.sh --linter qodana-jvm-community
+bash -c 'source .claude/skills/qodana-inspect/scripts/run-qodana.sh --linter qodana-jvm-community'
 ```
 
 **Important notes:**

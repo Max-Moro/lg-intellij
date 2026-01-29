@@ -1,6 +1,17 @@
 package lg.intellij.services.ai
 
 /**
+ * Information about provider-supported mode.
+ * Used for generating ai-interaction.sec.yaml
+ */
+data class ProviderModeInfo(
+    /** Mode identifier (ask, agent, plan) */
+    val modeId: String,
+    /** Value for runs field in YAML */
+    val runs: String
+)
+
+/**
  * Interface for AI providers.
  *
  * Each provider represents a way to send generated content
@@ -21,9 +32,10 @@ interface AiProvider {
      * Sends content to the AI system.
      *
      * @param content Generated content to send
+     * @param runs Provider-specific run configuration string (opaque, interpreted by provider)
      * @throws AiProviderException if sending failed
      */
-    suspend fun send(content: String)
+    suspend fun send(content: String, runs: String)
 
     /**
      * Checks provider availability in the current environment.
@@ -48,6 +60,14 @@ interface AiProvider {
      * - Claude CLI: 50
      */
     val priority: Int
+
+    /**
+     * Returns list of modes supported by this provider.
+     * Used for generating ai-interaction.sec.yaml
+     *
+     * @return List of supported modes with their runs values
+     */
+    fun getSupportedModes(): List<ProviderModeInfo>
 }
 
 /**
@@ -57,4 +77,3 @@ class AiProviderException(
     message: String,
     cause: Throwable? = null
 ) : Exception(message, cause)
-

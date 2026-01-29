@@ -11,13 +11,34 @@ import com.intellij.openapi.project.ProjectManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import lg.intellij.models.AiInteractionMode
-import lg.intellij.models.CliExecutionContext
+import lg.intellij.models.ShellType
 import lg.intellij.services.ai.AiProvider
 import lg.intellij.services.ai.AiProviderException
+import lg.intellij.services.ai.ProviderModeInfo
 import lg.intellij.services.state.LgPanelStateService
 import com.intellij.terminal.ui.TerminalWidget
 import org.jetbrains.plugins.terminal.TerminalToolWindowManager
+
+/**
+ * CLI execution context with scope and shell configuration.
+ * Note: mode is no longer stored here - runs string is passed directly.
+ */
+data class CliExecutionContext(
+    /** Workspace scope (subdirectory) for CLI execution */
+    val scope: String,
+
+    /** Terminal shell type */
+    val shell: ShellType,
+
+    /** Provider-specific runs string (opaque, interpreted by provider) */
+    val runs: String,
+
+    /** Claude model (optional, only for Claude CLI provider) */
+    val claudeModel: lg.intellij.models.ClaudeModel? = null,
+
+    /** Codex reasoning effort (optional, only for Codex CLI provider) */
+    val codexReasoningEffort: lg.intellij.models.CodexReasoningEffort? = null
+)
 
 /**
  * Base class for CLI-based AI providers.
@@ -43,17 +64,17 @@ abstract class BaseCliProvider : AiProvider {
      * Get CLI execution context from panel state.
      *
      * @param project Project context
-     * @param mode AI interaction mode
-     * @return CLI execution context with scope/shell/mode
+     * @param runs Provider-specific runs string
+     * @return CLI execution context with scope/shell/runs
      */
-    protected fun getCliBaseContext(project: Project, mode: AiInteractionMode): CliExecutionContext {
+    protected fun getCliBaseContext(project: Project, runs: String): CliExecutionContext {
         val stateService = project.service<LgPanelStateService>()
         val state = stateService.state
 
         return CliExecutionContext(
             scope = state.cliScope ?: "",
             shell = state.cliShell,
-            mode = mode,
+            runs = runs,
             claudeModel = state.claudeModel,
             codexReasoningEffort = state.codexReasoningEffort
         )
@@ -146,15 +167,12 @@ abstract class BaseCliProvider : AiProvider {
      * changes directory if scope provided, and
      * calls executeInTerminal for command execution.
      */
-    override suspend fun send(content: String) {
+    override suspend fun send(content: String, runs: String) {
         val project = getCurrentProject()
             ?: throw AiProviderException("No project context available")
 
-        val stateService = project.service<LgPanelStateService>()
-        val mode = stateService.getAiInteractionMode()
-
         // Get CLI execution context
-        val ctx = getCliBaseContext(project, mode)
+        val ctx = getCliBaseContext(project, runs)
 
         // Create terminal and get isNew flag
         val result = ensureTerminal(project, ctx) ?: return
@@ -219,5 +237,6 @@ abstract class BaseCliProvider : AiProvider {
         val widget: TerminalWidget,
         val isNew: Boolean
     )
-}
 
+    abstract override fun getSupportedModes(): List<ProviderModeInfo>
+}

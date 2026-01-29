@@ -121,10 +121,17 @@ object ClaudeCommon {
     }
 
     /**
-     * Build Claude command with cleanup lock-file
+     * Build Claude command with cleanup lock-file.
+     *
+     * @param runs CLI arguments passed as-is (opaque string from mode configuration)
+     * @param shell Shell type for cleanup command syntax
+     * @param lockFile Lock file to remove on exit
+     * @param model Optional model override
+     * @param sessionId Session ID for resume (-r flag)
+     * @param activationPrompt Prompt to send after launch
      */
     fun buildClaudeCommand(
-        permissionMode: String,
+        runs: String,
         shell: ShellType,
         lockFile: String,
         model: String?,
@@ -133,7 +140,9 @@ object ClaudeCommon {
     ): String {
         val modelArg = if (model != null) " --model $model" else ""
 
-        var claudeCmd = "claude --permission-mode $permissionMode$modelArg"
+        // runs is passed as-is (opaque string from mode configuration)
+        val runsArg = if (runs.isNotBlank()) " $runs" else ""
+        var claudeCmd = "claude$runsArg$modelArg"
 
         if (sessionId != null) {
             claudeCmd += " -r \"$sessionId\""

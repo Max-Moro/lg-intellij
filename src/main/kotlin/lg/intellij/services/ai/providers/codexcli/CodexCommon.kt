@@ -4,7 +4,6 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.project.Project
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import lg.intellij.models.CodexReasoningEffort
 import lg.intellij.models.ShellType
 import java.io.File
 import java.nio.file.Path
@@ -130,22 +129,24 @@ object CodexCommon {
     private const val ACTIVATION_PROMPT = "Let's continue"
 
     /**
-     * Build Codex CLI launch command with lock file cleanup
+     * Build Codex CLI launch command with lock file cleanup.
+     *
+     * @param runs CLI arguments passed as-is (opaque string from mode configuration)
+     * @param sessionId Session ID for resume
+     * @param shell Shell type for cleanup command syntax
+     * @param lockFile Lock file to remove on exit
      */
     fun buildCodexCommand(
+        runs: String,
         sessionId: String,
         shell: ShellType,
-        lockFile: String,
-        reasoningEffort: CodexReasoningEffort?
+        lockFile: String
     ): String {
-        // Build reasoning effort config override if not default
-        val configArg = if (reasoningEffort != null && reasoningEffort != CodexReasoningEffort.MEDIUM) {
-            val effortValue = reasoningEffort.name.lowercase()
-            " --config \"model_reasoning_effort=\\\"$effortValue\\\"\""
-        } else ""
+        // runs is passed as-is (opaque string from mode configuration)
+        val runsArg = if (runs.isNotBlank()) " $runs" else ""
 
         // Add activation prompt to start agent immediately
-        val codexCmd = "codex resume \"$sessionId\"$configArg \"$ACTIVATION_PROMPT\""
+        val codexCmd = "codex$runsArg resume \"$sessionId\" \"$ACTIVATION_PROMPT\""
 
         // Add cleanup depending on shell
         return when (shell) {

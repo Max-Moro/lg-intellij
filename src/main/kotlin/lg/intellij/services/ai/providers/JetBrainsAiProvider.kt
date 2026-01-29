@@ -5,7 +5,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lg.intellij.models.AiInteractionMode
+import lg.intellij.services.ai.ProviderModeInfo
 import lg.intellij.services.ai.base.BaseExtensionProvider
 
 /**
@@ -22,9 +22,9 @@ import lg.intellij.services.ai.base.BaseExtensionProvider
  * Priority: 90 (highest among all providers)
  */
 class JetBrainsAiProvider : BaseExtensionProvider() {
-    
+
     private val log = logger<JetBrainsAiProvider>()
-    
+
     override val id = "jetbrains.ai"
     override val name = "JetBrains AI Assistant"
     override val priority = 90
@@ -34,9 +34,9 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
     override suspend fun sendToExtension(
         project: Project,
         content: String,
-        mode: AiInteractionMode
+        runs: String
     ) {
-        log.info("Sending content to JetBrains AI Assistant in ${mode.name} mode")
+        log.info("Sending content to JetBrains AI Assistant (runs: $runs)")
 
         // 1. Get or create a chat session
         val chatSession = getOrCreateChatSession(project)
@@ -46,18 +46,18 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             focusChatSession(project, chatSession)
         }
 
-        // 3. Send message with mode
-        sendMessage(chatSession, content, mode)
+        // 3. Send message with mode from runs (opaque string = NewChatMode class name)
+        sendMessage(chatSession, content, runs)
 
         log.info("Successfully sent to JetBrains AI")
     }
-    
+
     /**
      * Switches focus to the specified chat session.
      */
     private fun focusChatSession(project: Project, chatSession: Any) {
         val classLoader = this::class.java.classLoader
-        
+
         // Get FocusedChatSessionHost
         val focusedHostClass = Class.forName(
             "com.intellij.ml.llm.core.chat.session.FocusedChatSessionHost",
@@ -66,14 +66,14 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         )
         @Suppress("IncorrectServiceRetrieving")
         val focusedHost = project.getService(focusedHostClass)
-        
+
         // Call focusChatSession(chatSession)
         val focusMethod = focusedHostClass.getMethod("focusChatSession", chatSession::class.java.interfaces[0])
         focusMethod.invoke(focusedHost, chatSession)
-        
+
         log.debug("Focused chat session")
     }
-    
+
     /**
      * Gets the current active chat or creates a new one via reflection.
      *
@@ -81,26 +81,26 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
      */
     private suspend fun getOrCreateChatSession(project: Project, createNew: Boolean = true): Any {
         val classLoader = this::class.java.classLoader
-        
+
         // If a new session is needed — create it immediately
         if (createNew) {
             log.debug("Creating new chat session (createNew=true)")
             return createNewChatSession(project, classLoader)
         }
-        
+
         // Load classes via reflection
         val focusedHostClass = Class.forName(
             "com.intellij.ml.llm.core.chat.session.FocusedChatSessionHost",
             true,
             classLoader
         )
-        
+
         // Try to get focused chat
         @Suppress("IncorrectServiceRetrieving")
         val focusedHost = project.getService(focusedHostClass)
         val getFocusedMethod = focusedHostClass.getMethod("getFocusedChatSession")
         val focusedSession = getFocusedMethod.invoke(focusedHost)
-        
+
         if (focusedSession != null) {
             val sessionClass = Class.forName(
                 "com.intellij.ml.llm.core.chat.session.ChatSession",
@@ -112,12 +112,12 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             log.debug("Using existing chat session: $uid")
             return focusedSession
         }
-        
+
         // Create new chat session
         log.debug("Creating new chat session (no focused session found)")
         return createNewChatSession(project, classLoader)
     }
-    
+
     /**
      * Creates a new chat session via reflection.
      */
@@ -127,20 +127,20 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             true,
             classLoader
         )
-        
-        @Suppress( "IncorrectServiceRetrieving")
+
+        @Suppress("IncorrectServiceRetrieving")
         val chatHost = project.getService(chatHostClass)
-        
+
         // Create ChatCreationContext
         val contextClass = Class.forName(
             "com.intellij.ml.llm.core.chat.session.ChatCreationContext",
             true,
             classLoader
         )
-        
+
         // ChatOrigin.AIAssistantTool is a sealed class object
         val aiAssistantToolClass = Class.forName(
-            $$"com.intellij.ml.llm.core.chat.session.ChatOrigin$AIAssistantTool",
+            "com.intellij.ml.llm.core.chat.session.ChatOrigin\$AIAssistantTool",
             true,
             classLoader
         )
@@ -156,10 +156,10 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             classLoader
         )
         val newChatAction = sourceActionClass.enumConstants.first { it.toString() == "NEW_CHAT" }
-        
+
         // Find constructor with 5 params (not the synthetic one with DefaultConstructorMarker)
         val contextConstructor = contextClass.constructors.first { it.parameterCount == 5 }
-        
+
         // Get PrivacySafeTaskContext.Companion.getEmpty()
         val taskContextClass = Class.forName(
             "com.intellij.ml.llm.grazie.adapters.tasksFacade.PrivacySafeTaskContext",
@@ -170,7 +170,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         val companion = companionField.get(null)
         val getEmptyMethod = companion::class.java.getMethod("getEmpty")
         val emptyTaskContext = getEmptyMethod.invoke(companion)
-        
+
         val context = contextConstructor.newInstance(
             aiAssistantOrigin,
             newChatAction,
@@ -178,14 +178,14 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             emptyList<Any>(),  // List<ChatContextItem> - empty list (no files from context)
             emptyTaskContext   // PrivacySafeTaskContext (not nullable!)
         )
-        
+
         // Create ChatRetrievalSession
         val chatRetrievalSessionClass = Class.forName(
             "com.intellij.ml.llm.core.chat.context.ChatRetrievalSession",
             true,
             classLoader
         )
-        
+
         // Get ContextStorageImpl
         val contextStorageImplClass = Class.forName(
             "com.intellij.ml.llm.core.chat.session.impl.ContextStorageImpl",
@@ -193,12 +193,12 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             classLoader
         )
         val contextStorage = contextStorageImplClass.getDeclaredConstructor().newInstance()
-        
+
         // Create CoroutineScope for retrieval session
         val supervisorScope = kotlinx.coroutines.CoroutineScope(
             kotlinx.coroutines.SupervisorJob() + Dispatchers.Default
         )
-        
+
         // Create ChatRetrievalSession(project, coroutineScope, contextStorage, chat = null)
         val retrievalSessionConstructor = chatRetrievalSessionClass.constructors.first { it.parameterCount == 4 }
         val retrievalSession = retrievalSessionConstructor.newInstance(
@@ -207,14 +207,14 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             contextStorage,
             null  // chat (nullable)
         )
-        
+
         // Call createChatSession (suspend function) - use kotlinx.coroutines
         return withContext(Dispatchers.Default) {
             // createChatSession is suspend function - call via suspendCoroutine
             kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
                 try {
                     // Find method with 3 params: (ChatCreationContext, InteractiveRetrievalSession, Continuation)
-                    val createMethod = chatHostClass.declaredMethods.first { 
+                    val createMethod = chatHostClass.declaredMethods.first {
                         it.name == "createChatSession" && it.parameterCount == 3
                     }
                     createMethod.invoke(chatHost, context, retrievalSession, continuation)
@@ -224,87 +224,38 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
             }
         }
     }
-    
+
     /**
      * Sends a message to the chat via reflection.
      *
-     * Mode mapping:
-     * - ASK → Chat
-     * - AGENT → Quick Edit
+     * runs is treated as opaque string containing NewChatMode inner class name.
+     * If runs is not empty, attempts to find and set the corresponding mode.
+     *
+     * Example runs values:
+     * - "CodeGeneration" → NewChatMode.CodeGeneration (Quick Edit)
+     * - "Chat" → NewChatMode.Chat (default chat)
+     * - "" (empty) → uses default mode
+     * - "SomeNewMode" → attempts NewChatMode.SomeNewMode (forward compatible)
      */
     private suspend fun sendMessage(
         chatSession: Any,
         content: String,
-        mode: AiInteractionMode
+        runs: String
     ) {
         val classLoader = this::class.java.classLoader
-        
+
         val chatSessionInterface = Class.forName(
             "com.intellij.ml.llm.core.chat.session.ChatSession",
             true,
             classLoader
         )
-        
-        if (mode == AiInteractionMode.AGENT) {
-            // Set CODE_GENERATION mode (Quick Edit) via getChatMode().setChatMode()
-            try {
-                // Get CurrentChatSessionMode via getChatMode() from ChatSessionVm
-                val chatSessionVmClass = Class.forName(
-                    "com.intellij.ml.llm.core.chat.session.ChatSessionVm",
-                    true,
-                    classLoader
-                )
-                
-                val getChatModeMethod = chatSessionVmClass.declaredMethods.first {
-                    it.name == "getChatMode" && it.parameterCount == 0
-                }
-                
-                val currentChatMode = getChatModeMethod.invoke(chatSession)
-                
-                // Get NewChatMode.CodeGeneration.INSTANCE
-                val newChatModeClass = Class.forName(
-                    "com.intellij.ml.llm.core.chat.ui.chat.input.chatModeSelector.NewChatMode",
-                    true,
-                    classLoader
-                )
-                val codeGenerationClass = newChatModeClass.declaredClasses.first {
-                    it.simpleName == "CodeGeneration"
-                }
-                val instanceField = codeGenerationClass.getField("INSTANCE")
-                val codeGenerationMode = instanceField.get(null)
-                
-                // Call setChatMode (suspend function) with proper coroutine context
-                // This ensures the chat session is in CODE_GENERATION mode before sending
-                withContext(Dispatchers.Default) {
-                    kotlinx.coroutines.suspendCancellableCoroutine<Any> { continuation ->
-                        try {
-                            val setChatModeMethod = currentChatMode::class.java.declaredMethods.first {
-                                it.name == "setChatMode" && it.parameterCount == 2
-                            }
-                            
-                            // Call suspend function via reflection
-                            val result = setChatModeMethod.invoke(currentChatMode, codeGenerationMode, continuation)
-                            
-                            // Check if function completed immediately (not suspended)
-                            // If it returns COROUTINE_SUSPENDED, continuation will be called automatically
-                            if (result !== kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED) {
-                                continuation.resumeWith(Result.success(result))
-                            }
-                        } catch (e: Exception) {
-                            log.error("Failed to set Quick Edit mode", e)
-                            continuation.resumeWith(Result.failure(e))
-                        }
-                    }
-                }
-                
-                log.debug("Switched to Quick Edit mode")
-                
-            } catch (e: Exception) {
-                log.error("Failed to configure Quick Edit mode", e)
-                // Continue with default mode
-            }
+
+        // If runs specifies a mode, try to set it
+        val modeName = runs.trim()
+        if (modeName.isNotBlank()) {
+            trySetChatMode(chatSession, classLoader, modeName)
         }
-        
+
         // Create PSString via ConstantsKt.getPrivacyConst()
         val constantsKtClass = Class.forName(
             "com.intellij.ml.llm.privacy.trustedStringBuilders.ConstantsKt",
@@ -313,19 +264,97 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
         )
         val getPrivacyConstMethod = constantsKtClass.getMethod("getPrivacyConst", String::class.java)
         val psString = getPrivacyConstMethod.invoke(null, content)
-        
+
         // Use sendRequest(PSString) which automatically determines ChatKind based on session mode
         val sendRequestMethod = chatSessionInterface.declaredMethods.first {
-            it.name == "sendRequest" && 
+            it.name == "sendRequest" &&
             it.parameterCount == 1 &&
             it.parameterTypes[0].name.contains("PSString")
         }
-        
+
         sendRequestMethod.invoke(chatSession, psString)
-        
+
         // Log
         val getUidMethod = chatSessionInterface.getMethod("getUid")
         val uid = getUidMethod.invoke(chatSession)
-        log.info("Message sent to chat session: $uid in ${mode.name} mode")
+        log.info("Message sent to chat session: $uid (mode: ${modeName.ifBlank { "default" }})")
+    }
+
+    /**
+     * Attempts to set chat mode by NewChatMode inner class name.
+     * Silently continues with default mode if the specified mode is not found.
+     */
+    private suspend fun trySetChatMode(
+        chatSession: Any,
+        classLoader: ClassLoader,
+        modeName: String
+    ) {
+        try {
+            // Get CurrentChatSessionMode via getChatMode() from ChatSessionVm
+            val chatSessionVmClass = Class.forName(
+                "com.intellij.ml.llm.core.chat.session.ChatSessionVm",
+                true,
+                classLoader
+            )
+
+            val getChatModeMethod = chatSessionVmClass.declaredMethods.first {
+                it.name == "getChatMode" && it.parameterCount == 0
+            }
+
+            val currentChatMode = getChatModeMethod.invoke(chatSession)
+
+            // Get NewChatMode class and find inner class by name
+            val newChatModeClass = Class.forName(
+                "com.intellij.ml.llm.core.chat.ui.chat.input.chatModeSelector.NewChatMode",
+                true,
+                classLoader
+            )
+
+            val modeClass = newChatModeClass.declaredClasses.firstOrNull {
+                it.simpleName == modeName
+            }
+
+            if (modeClass == null) {
+                log.debug("NewChatMode.$modeName not found (may be new API), using default mode")
+                return
+            }
+
+            val instanceField = modeClass.getField("INSTANCE")
+            val modeInstance = instanceField.get(null)
+
+            // Call setChatMode (suspend function)
+            withContext(Dispatchers.Default) {
+                kotlinx.coroutines.suspendCancellableCoroutine<Any> { continuation ->
+                    try {
+                        val setChatModeMethod = currentChatMode::class.java.declaredMethods.first {
+                            it.name == "setChatMode" && it.parameterCount == 2
+                        }
+
+                        val result = setChatModeMethod.invoke(currentChatMode, modeInstance, continuation)
+
+                        if (result !== kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED) {
+                            continuation.resumeWith(Result.success(result))
+                        }
+                    } catch (e: Exception) {
+                        log.warn("Failed to set mode $modeName: ${e.message}")
+                        continuation.resumeWith(Result.failure(e))
+                    }
+                }
+            }
+
+            log.debug("Switched to $modeName mode")
+
+        } catch (e: Exception) {
+            log.debug("Failed to configure mode $modeName: ${e.message}, using default mode")
+            // Continue with default mode
+        }
+    }
+
+    override fun getSupportedModes(): List<ProviderModeInfo> {
+        // runs contains NewChatMode inner class name (empty = default chat mode)
+        return listOf(
+            ProviderModeInfo("ask", ""),
+            ProviderModeInfo("agent", "CodeGeneration")
+        )
     }
 }

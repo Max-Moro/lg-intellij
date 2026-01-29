@@ -14,16 +14,20 @@ import kotlin.io.path.createDirectories
 import kotlin.io.path.writeText
 
 /**
- * Codex session creation parameters
+ * Codex session creation parameters.
+ * Note: sandboxMode and approvalPolicy use defaults - actual values
+ * are controlled via CLI args (runs) which are passed as opaque string.
  */
 data class CodexSessionParams(
     val content: String,
     val cwd: Path,
     val shell: ShellType,
-    val reasoningEffort: CodexReasoningEffort,
-    val approvalPolicy: String = "on-request",
-    val sandboxMode: String // "read-only" or "workspace-write"
+    val reasoningEffort: CodexReasoningEffort
 )
+
+// Default values for session file (actual behavior controlled by CLI args)
+private const val DEFAULT_APPROVAL_POLICY = "on-request"
+private const val DEFAULT_SANDBOX_MODE = "workspace-write"
 
 /**
  * Creates Codex CLI sessions.
@@ -72,10 +76,10 @@ object CodexSession {
         // 6. Get CLI version
         val cliVersion = getCodexVersion()
 
-        // 7. Build JSONL records
+        // 7. Build JSONL records (using defaults - actual behavior controlled by CLI args)
         val records = listOf(
             buildSessionMeta(sessionId, isoTimestamp, params.cwd.toString(), cliVersion),
-            buildDeveloperMessage(isoTimestamp, params.approvalPolicy, params.sandboxMode),
+            buildDeveloperMessage(isoTimestamp, DEFAULT_APPROVAL_POLICY, DEFAULT_SANDBOX_MODE),
             buildEnvironmentContext(isoTimestamp, params.cwd.toString(), params.shell),
             buildUserMessage(isoTimestamp, params.content),
             buildUserMessageEvent(isoTimestamp, params.content),
@@ -207,11 +211,12 @@ object CodexSession {
         put("type", "turn_context")
         putJsonObject("payload") {
             put("cwd", params.cwd.toString())
-            put("approval_policy", params.approvalPolicy)
+            put("approval_policy", DEFAULT_APPROVAL_POLICY)
             putJsonObject("sandbox_policy") {
-                put("type", params.sandboxMode)
+                put("type", DEFAULT_SANDBOX_MODE)
             }
             put("effort", params.reasoningEffort.name.lowercase())
+            // Note: actual sandbox/approval behavior controlled by CLI args (runs)
         }
     }
 }

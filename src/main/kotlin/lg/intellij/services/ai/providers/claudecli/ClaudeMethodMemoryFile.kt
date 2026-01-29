@@ -5,7 +5,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.terminal.ui.TerminalWidget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lg.intellij.models.CliExecutionContext
+import lg.intellij.services.ai.base.CliExecutionContext
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.writeText
@@ -36,24 +36,18 @@ object ClaudeMethodMemoryFile {
     /**
      * Execute Memory File method: write CLAUDE.local.md and launch Claude Code.
      *
-     * This is the main entry point for Memory File integration method.
-     * Performs:
-     * 1. Write content to CLAUDE.local.md
-     * 2. Build Claude command with cleanup
-     * 3. Execute command in terminal
+     * ctx.runs is passed as-is to CLI (opaque string from mode configuration)
      *
      * @param workingDirectory Working directory path
      * @param content Content to send
      * @param widget Terminal widget
-     * @param ctx CLI execution context
-     * @param permissionMode Claude permission mode (plan/acceptEdits)
+     * @param ctx CLI execution context (runs passed as-is)
      */
     suspend fun execute(
         workingDirectory: Path,
         content: String,
         widget: TerminalWidget,
-        ctx: CliExecutionContext,
-        permissionMode: String
+        ctx: CliExecutionContext
     ) {
         log.debug("Using memory-file method")
 
@@ -61,9 +55,9 @@ object ClaudeMethodMemoryFile {
         val memoryFilePath = writeMemoryFile(workingDirectory, content)
         log.debug("Memory file written: $memoryFilePath")
 
-        // Build command with cleanup
+        // Build command with cleanup - runs is passed as-is (opaque string)
         val claudeCommand = ClaudeCommon.buildClaudeCommand(
-            permissionMode = permissionMode,
+            runs = ctx.runs,
             shell = ctx.shell,
             lockFile = CLAUDE_LOCAL_FILE,
             model = ctx.claudeModel?.name?.lowercase(),

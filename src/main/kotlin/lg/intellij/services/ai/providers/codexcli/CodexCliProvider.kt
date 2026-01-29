@@ -6,14 +6,14 @@ import com.intellij.terminal.ui.TerminalWidget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lg.intellij.cli.ExecutableDetector
-import lg.intellij.models.AiInteractionMode
-import lg.intellij.models.CliExecutionContext
 import lg.intellij.models.CodexReasoningEffort
+import lg.intellij.services.ai.ProviderModeInfo
 import lg.intellij.services.ai.base.BaseCliProvider
+import lg.intellij.services.ai.base.CliExecutionContext
 import kotlin.io.path.exists
 
 /**
- * OpenAI Codex CLI Provider.
+ * OpenAI Codex CLI Provider
  *
  * Integrates with Codex CLI via session-based method:
  * 1. Creates a session file in ~/.codex/sessions/
@@ -41,10 +41,7 @@ class CodexCliProvider : BaseCliProvider() {
         ctx: CliExecutionContext
     ): BusyState {
         val workingDirectory = CodexCommon.getWorkingDirectory(project, ctx.scope)
-        val lockFilePath = CodexCommon.resolveFile(
-            workingDirectory,
-            CodexCommon.CODEX_SESSION_LOCK_FILE
-        )
+        val lockFilePath = CodexCommon.resolveFile(workingDirectory, CodexCommon.CODEX_SESSION_LOCK_FILE)
 
         return if (lockFilePath.exists()) {
             BusyState(
@@ -64,36 +61,23 @@ class CodexCliProvider : BaseCliProvider() {
     ) {
         val workingDirectory = CodexCommon.getWorkingDirectory(project, ctx.scope)
 
-        // Get reasoning effort from context (or default)
         val reasoningEffort = ctx.codexReasoningEffort ?: CodexReasoningEffort.MEDIUM
 
-        // Determine sandbox mode from AI interaction mode
-        val sandboxMode = when (ctx.mode) {
-            AiInteractionMode.ASK -> "read-only"
-            AiInteractionMode.AGENT -> "workspace-write"
-        }
+        log.debug("Creating session with reasoning effort: $reasoningEffort")
 
-        log.debug("Creating Codex session with reasoning effort: $reasoningEffort")
-
-        // Create session
+        // Create session (uses defaults - actual behavior controlled by CLI args)
         val sessionId = CodexSession.createSession(
             CodexSessionParams(
                 content = content,
                 cwd = workingDirectory,
                 shell = ctx.shell,
-                reasoningEffort = reasoningEffort,
-                sandboxMode = sandboxMode
+                reasoningEffort = reasoningEffort
             )
         )
 
         log.debug("Session created: $sessionId")
 
-        // Create lock file
-        val lockFilePath = CodexCommon.resolveFile(
-            workingDirectory,
-            CodexCommon.CODEX_SESSION_LOCK_FILE
-        )
-
+        val lockFilePath = CodexCommon.resolveFile(workingDirectory, CodexCommon.CODEX_SESSION_LOCK_FILE)
         try {
             lockFilePath.toFile().writeText("")
             log.debug("Lock file created: ${CodexCommon.CODEX_SESSION_LOCK_FILE}")
@@ -101,19 +85,25 @@ class CodexCliProvider : BaseCliProvider() {
             log.warn("Failed to create lock file: ${e.message}")
         }
 
-        // Build and execute command
+        // ctx.runs is passed as-is (opaque string from mode configuration)
         val codexCommand = CodexCommon.buildCodexCommand(
+            runs = ctx.runs,
             sessionId = sessionId,
             shell = ctx.shell,
-            lockFile = CodexCommon.CODEX_SESSION_LOCK_FILE,
-            reasoningEffort = reasoningEffort
+            lockFile = CodexCommon.CODEX_SESSION_LOCK_FILE
         )
 
         log.debug("Sending command: $codexCommand")
 
-        // Execute in terminal (must be on EDT)
         withContext(Dispatchers.EDT) {
             widget.sendCommandToExecute(codexCommand)
         }
+    }
+
+    override fun getSupportedModes(): List<ProviderModeInfo> {
+        return listOf(
+            ProviderModeInfo("ask", "--sandbox read-only --ask-for-approval on-request"),
+            ProviderModeInfo("agent", "--sandbox workspace-write --ask-for-approval on-request")
+        )
     }
 }

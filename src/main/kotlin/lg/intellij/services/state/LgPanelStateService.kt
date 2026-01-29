@@ -6,7 +6,6 @@ import com.intellij.openapi.project.Project
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import lg.intellij.models.AiInteractionMode
 import lg.intellij.models.ClaudeIntegrationMethod
 import lg.intellij.models.ClaudeModel
 import lg.intellij.models.CodexReasoningEffort

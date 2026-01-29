@@ -65,6 +65,25 @@ class AiIntegrationService {
     }
 
     /**
+     * Get all supported modes from all providers.
+     * Used for generating ai-interaction.sec.yaml
+     *
+     * @return Map of modeId to Map of providerId to runs string
+     */
+    fun getAllSupportedModes(): Map<String, Map<String, String>> {
+        val allModes = mutableMapOf<String, MutableMap<String, String>>()
+
+        for ((providerId, provider) in providers) {
+            val supportedModes = provider.getSupportedModes()
+            for ((modeId, runs) in supportedModes) {
+                allModes.getOrPut(modeId) { mutableMapOf() }[providerId] = runs
+            }
+        }
+
+        return allModes
+    }
+
+    /**
      * Detects available providers in the current environment.
      *
      * Checks all registered providers and returns
@@ -135,15 +154,16 @@ class AiIntegrationService {
      *
      * @param providerId Provider ID
      * @param content Content to send
+     * @param runs Provider-specific runs configuration string
      * @throws AiProviderException if provider not found or sending failed
      */
-    suspend fun sendTo(providerId: String, content: String) = withContext(Dispatchers.IO) {
+    suspend fun sendTo(providerId: String, content: String, runs: String) = withContext(Dispatchers.IO) {
         val provider = providers[providerId]
             ?: throw AiProviderException("Provider not found: $providerId")
 
-        log.info("Sending content to provider: $providerId")
+        log.info("Sending content to provider: $providerId (runs: ${runs.ifBlank { "(empty)" }})")
 
-        provider.send(content)
+        provider.send(content, runs)
         log.info("Successfully sent content to $providerId")
     }
 
@@ -154,4 +174,3 @@ class AiIntegrationService {
         fun getInstance(): AiIntegrationService = service()
     }
 }
-

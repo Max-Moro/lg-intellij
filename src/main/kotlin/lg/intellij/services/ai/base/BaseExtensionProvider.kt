@@ -2,7 +2,6 @@ package lg.intellij.services.ai.base
 
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.Project
@@ -10,10 +9,9 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lg.intellij.models.AiInteractionMode
 import lg.intellij.services.ai.AiProvider
 import lg.intellij.services.ai.AiProviderException
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.services.ai.ProviderModeInfo
 
 /**
  * Base class for Extension-based AI providers.
@@ -28,9 +26,9 @@ import lg.intellij.services.state.LgPanelStateService
  * - Plugin absence error handling
  */
 abstract class BaseExtensionProvider : AiProvider {
-    
+
     private val log = logger<BaseExtensionProvider>()
-    
+
     /**
      * ID of the plugin with which this provider integrates.
      * For example, "com.intellij.ml.llm" for JetBrains AI.
@@ -55,14 +53,14 @@ abstract class BaseExtensionProvider : AiProvider {
             false
         }
     }
-    
+
     /**
      * Sends content through the plugin.
      *
-     * Checks plugin availability, activates tool window, determines interaction mode
+     * Checks plugin availability, activates tool window,
      * and delegates to sendToExtension.
      */
-    override suspend fun send(content: String) {
+    override suspend fun send(content: String, runs: String) {
         if (!isAvailable()) {
             throw AiProviderException(
                 "$name is not available. Please install and enable the plugin: $pluginId"
@@ -74,14 +72,10 @@ abstract class BaseExtensionProvider : AiProvider {
         // Activate tool window
         openToolWindow(project)
 
-        // Get AI interaction mode from panel state
-        val panelState = project.service<LgPanelStateService>()
-        val mode = panelState.getAiInteractionMode()
-
-        // Send content with mode
-        sendToExtension(project, content, mode)
+        // Send content with runs
+        sendToExtension(project, content, runs)
     }
-    
+
     /**
      * Gets the current active project.
      */
@@ -112,12 +106,13 @@ abstract class BaseExtensionProvider : AiProvider {
      *
      * @param project Current project
      * @param content Content to send
-     * @param mode AI interaction mode (Ask or Agent)
+     * @param runs Provider-specific run configuration (interpreted by provider)
      */
     protected abstract suspend fun sendToExtension(
         project: Project,
         content: String,
-        mode: AiInteractionMode
+        runs: String
     )
-}
 
+    abstract override fun getSupportedModes(): List<ProviderModeInfo>
+}

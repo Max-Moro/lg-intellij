@@ -4,6 +4,7 @@ import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.ide.CopyPasteManager
 import lg.intellij.services.ai.AiProvider
+import lg.intellij.services.ai.ProviderModeInfo
 import java.awt.datatransfer.StringSelection
 
 /**
@@ -12,20 +13,20 @@ import java.awt.datatransfer.StringSelection
  * Always available, used as fallback if other providers are unavailable.
  */
 class ClipboardProvider : AiProvider {
-    
+
     override val id = "clipboard"
     override val name = "Clipboard"
     override val priority = 10 // Low priority (fallback)
-    
+
     /**
      * Clipboard is always available.
      */
     override suspend fun isAvailable(): Boolean = true
-    
+
     /**
      * Copies content to clipboard and shows a notification.
      */
-    override suspend fun send(content: String) {
+    override suspend fun send(content: String, runs: String) {
         // Copy to clipboard
         CopyPasteManager.getInstance().setContents(StringSelection(content))
 
@@ -39,5 +40,9 @@ class ClipboardProvider : AiProvider {
             )
             .notify(null) // null = application-level notification
     }
-}
 
+    override fun getSupportedModes(): List<ProviderModeInfo> {
+        // Clipboard is universal - compatible with all modes, doesn't generate runs
+        return emptyList()
+    }
+}

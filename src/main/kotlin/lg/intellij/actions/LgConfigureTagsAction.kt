@@ -21,30 +21,29 @@ class LgConfigureTagsAction : AnAction() {
     
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        
+
         val catalogService = project.service<LgCatalogService>()
         val panelState = project.service<LgPanelStateService>()
-        
+
+        // Get current context for context-dependent tags
+        val ctx = panelState.state.selectedTemplate ?: ""
+
         // Get current tag-sets and selected tags
         val tagSetsData = catalogService.tagSets.value
-        val currentSelectedTags = panelState.state.tags.mapValues { it.value.toSet() }
-        
+        val currentSelectedTags = panelState.getCurrentTags(ctx)
+
         // Open dialog
         val dialog = LgTagsDialog(
             project = project,
             tagSetsData = tagSetsData,
             initialSelectedTags = currentSelectedTags
         )
-        
+
         if (dialog.showAndGet()) {
-            // User clicked OK — save selected tags
+            // User clicked OK — save selected tags using context-dependent storage
             val newSelectedTags = dialog.getSelectedTags()
-            
-            panelState.state.tags.clear()
-            newSelectedTags.forEach { (tagSetId, tagIds) ->
-                panelState.state.tags[tagSetId] = tagIds.toMutableSet()
-            }
-            
+            panelState.setCurrentTags(ctx, newSelectedTags)
+
             val totalTags = newSelectedTags.values.sumOf { it.size }
             log.info("Tags updated: $totalTags tags selected across ${newSelectedTags.size} tag-sets")
         }

@@ -105,6 +105,11 @@ class LgModeSetsPanel(
             }
             wrappingPanel.add(emptyLabel)
         } else {
+            // Get current context and provider for context-dependent state
+            val ctx = stateService.state.selectedTemplate ?: ""
+            val provider = stateService.state.providerId ?: ""
+            val currentModes = stateService.getCurrentModes(ctx, provider).toMutableMap()
+
             // Create labeled ComboBox for each mode-set
             for (modeSet in currentModeSets) {
                 val combo = ComboBox(modeSet.modes.map { it.id }.toTypedArray()).apply {
@@ -118,21 +123,25 @@ class LgModeSetsPanel(
                     }
 
                     // Restore saved value or default to first mode
-                    val savedMode = stateService.state.modes[modeSet.id]
+                    val savedMode = currentModes[modeSet.id]
                     val defaultMode = modeSet.modes.firstOrNull()?.id
 
                     if (savedMode != null && savedMode in modeSet.modes.map { it.id }) {
                         selectedItem = savedMode
                     } else if (defaultMode != null) {
                         selectedItem = defaultMode
-                        stateService.state.modes[modeSet.id] = defaultMode
+                        currentModes[modeSet.id] = defaultMode
+                        stateService.setCurrentModes(ctx, provider, currentModes)
                     }
 
                     // Listen to changes
                     addActionListener {
                         val selectedMode = selectedItem as? String
                         if (selectedMode != null) {
-                            stateService.state.modes[modeSet.id] = selectedMode
+                            // Update modes map with new selection
+                            val updatedModes = stateService.getCurrentModes(ctx, provider).toMutableMap()
+                            updatedModes[modeSet.id] = selectedMode
+                            stateService.setCurrentModes(ctx, provider, updatedModes)
                             LOG.debug("Mode changed: ${modeSet.id} -> $selectedMode")
 
                             // Update target branch visibility
@@ -283,7 +292,10 @@ class LgModeSetsPanel(
      * Checks for "review" mode in current selections.
      */
     private fun hasReviewMode(): Boolean {
-        return stateService.state.modes.values.any { it == "review" }
+        val ctx = stateService.state.selectedTemplate ?: ""
+        val provider = stateService.state.providerId ?: ""
+        val modes = stateService.getCurrentModes(ctx, provider)
+        return modes.values.any { it == "review" }
     }
 
     override fun dispose() {

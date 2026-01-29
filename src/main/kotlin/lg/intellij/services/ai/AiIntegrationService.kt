@@ -65,6 +65,25 @@ class AiIntegrationService {
     }
 
     /**
+     * Returns list of all registered providers for UI display.
+     * Sorted by priority (descending).
+     */
+    fun getRegisteredProviders(): List<ProviderInfo> {
+        return providers.values
+            .map { ProviderInfo(it.id, it.name, it.priority) }
+            .sortedByDescending { it.priority }
+    }
+
+    /**
+     * Provider information for UI display.
+     */
+    data class ProviderInfo(
+        val id: String,
+        val name: String,
+        val priority: Int
+    )
+
+    /**
      * Get all supported modes from all providers.
      * Used for generating ai-interaction.sec.yaml
      *

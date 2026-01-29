@@ -13,6 +13,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.Panel
@@ -24,6 +25,7 @@ import lg.intellij.LgBundle
 import lg.intellij.actions.*
 import lg.intellij.models.TagSet
 import lg.intellij.models.TagSetsListSchema
+import lg.intellij.services.ai.AiIntegrationService
 import lg.intellij.services.catalog.LgCatalogService
 import lg.intellij.services.catalog.TokenizerCatalogService
 import lg.intellij.services.state.LgPanelStateService
@@ -61,6 +63,7 @@ class LgControlPanel(
 
     // UI component references for dynamic updates
     private lateinit var taskTextField: LgTaskTextField.TaskFieldWrapper
+    private lateinit var providerCombo: ComboBox<AiIntegrationService.ProviderInfo>
     private lateinit var templateCombo: ComboBox<String>
     private lateinit var sectionCombo: ComboBox<String>
     private lateinit var libraryCombo: ComboBox<String>
@@ -160,6 +163,16 @@ class LgControlPanel(
                 }
             }
         }
+
+        // Providers (initial load)
+        scope.launch {
+            val aiService = AiIntegrationService.getInstance()
+            val providers = aiService.getRegisteredProviders()
+
+            withContext(Dispatchers.EDT) {
+                updateProvidersUI(providers)
+            }
+        }
     }
 
     /**
@@ -256,6 +269,74 @@ class LgControlPanel(
         }
     }
 
+    private fun updateProvidersUI(providers: List<AiIntegrationService.ProviderInfo>) {
+        if (!::providerCombo.isInitialized) return
+
+        val savedProviderId = stateService.state.providerId
+
+        providerCombo.removeAllItems()
+        providers.forEach { providerCombo.addItem(it) }
+
+        // Restore selection from state or auto-detect
+        val savedProvider = providers.find { it.id == savedProviderId }
+        if (savedProvider != null) {
+            providerCombo.selectedItem = savedProvider
+        } else if (providers.isNotEmpty()) {
+            // Auto-detect best provider
+            scope.launch {
+                val aiService = AiIntegrationService.getInstance()
+                val bestProviderId = aiService.detectBestProvider()
+
+                withContext(Dispatchers.EDT) {
+                    val bestProvider = providers.find { it.id == bestProviderId }
+                    if (bestProvider != null) {
+                        providerCombo.selectedItem = bestProvider
+                        stateService.state.providerId = bestProviderId
+                    } else if (providers.isNotEmpty()) {
+                        providerCombo.selectedIndex = 0
+                        stateService.state.providerId = providers[0].id
+                    }
+                }
+            }
+        }
+    }
+
+    private fun onProviderChanged(providerId: String) {
+        // Save to state
+        stateService.state.providerId = providerId
+
+        scope.launch {
+            // Reload contexts (filtered by provider)
+            catalogService.loadContexts(providerId)
+
+            // Reload mode-sets for current context
+            val currentCtx = stateService.state.selectedTemplate
+            if (!currentCtx.isNullOrBlank()) {
+                catalogService.loadModeSets(currentCtx, providerId)
+            }
+
+            // Update CLI settings visibility
+            withContext(Dispatchers.EDT) {
+                cliSettingsGroup?.isVisible = shouldShowCliSettings()
+            }
+        }
+    }
+
+    private fun onContextChanged(template: String) {
+        // Save to state
+        stateService.state.selectedTemplate = template
+
+        scope.launch {
+            val providerId = stateService.state.providerId ?: ""
+
+            // Reload mode-sets and tag-sets
+            if (providerId.isNotBlank()) {
+                catalogService.loadModeSets(template, providerId)
+            }
+            catalogService.loadTagSets(template)
+        }
+    }
+
     // =============== UI Creation ===============
     
     private fun createScrollableContent(): JComponent {
@@ -313,9 +394,7 @@ class LgControlPanel(
     }
 
     private fun shouldShowCliSettings(): Boolean {
-        val settings = lg.intellij.services.state.LgSettingsService.getInstance()
-        val providerId = settings.state.aiProvider
-        // Show for CLI-based providers
+        val providerId = stateService.state.providerId
         val cliProviders = listOf("claude.cli", "codex.cli")
         return providerId in cliProviders
     }
@@ -339,12 +418,26 @@ class LgControlPanel(
         // Template selector + buttons
         row {
             val flowPanel = LgWrappingPanel().apply {
+                // Provider ComboBox
+                providerCombo = ComboBox<AiIntegrationService.ProviderInfo>().apply {
+                    renderer = SimpleListCellRenderer.create { label, value, _ ->
+                        label.text = value?.name ?: ""
+                    }
+                    addActionListener {
+                        val selected = selectedItem as? AiIntegrationService.ProviderInfo
+                        if (selected != null) {
+                            onProviderChanged(selected.id)
+                        }
+                    }
+                }
+                add(LgLabeledComponent.create(LgBundle.message("control.provider.label"), providerCombo))
+
                 // Template ComboBox
                 templateCombo = ComboBox<String>().apply {
                     addActionListener {
                         val selected = selectedItem as? String
                         if (selected != null) {
-                            stateService.state.selectedTemplate = selected
+                            onContextChanged(selected)
                         }
                     }
                 }
@@ -548,7 +641,9 @@ class LgControlPanel(
     private fun updateTagsButtonText() {
         if (!::tagsButton.isInitialized) return
 
-        val selectedCount = stateService.state.tags.values.sumOf { it.size }
+        val ctx = stateService.state.selectedTemplate ?: ""
+        val currentTags = stateService.getCurrentTags(ctx)
+        val selectedCount = currentTags.values.sumOf { it.size }
         if (selectedCount > 0) {
             tagsButton.text = LgBundle.message("control.btn.configure.tags.with.count", selectedCount)
         } else {

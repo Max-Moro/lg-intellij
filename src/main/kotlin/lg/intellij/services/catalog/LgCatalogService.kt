@@ -160,10 +160,10 @@ class LgCatalogService(private val project: Project) {
     }
     
     /**
-     * Loads contexts list from CLI.
+     * Loads contexts list from CLI with optional provider filter.
      * @param provider Optional provider ID to filter contexts
      */
-    private suspend fun loadContexts(provider: String? = null) {
+    suspend fun loadContexts(provider: String? = null) {
         val args = mutableListOf("list", "contexts")
         if (!provider.isNullOrBlank()) {
             args.add("--provider")
@@ -194,7 +194,7 @@ class LgCatalogService(private val project: Project) {
      * @param context Context name
      * @param provider Provider ID
      */
-    private suspend fun loadModeSets(context: String, provider: String) {
+    suspend fun loadModeSets(context: String, provider: String) {
         val result = cliExecutor.execute(
             args = listOf("list", "mode-sets", "--context", context, "--provider", provider),
             timeoutMs = 30_000
@@ -217,7 +217,7 @@ class LgCatalogService(private val project: Project) {
      * Loads tag-sets from CLI for specific context.
      * @param context Context name
      */
-    private suspend fun loadTagSets(context: String) {
+    suspend fun loadTagSets(context: String) {
         val result = cliExecutor.execute(
             args = listOf("list", "tag-sets", "--context", context),
             timeoutMs = 30_000

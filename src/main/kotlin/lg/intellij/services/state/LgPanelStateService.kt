@@ -77,12 +77,6 @@ class LgPanelStateService : SimplePersistentStateComponent<LgPanelStateService.S
         /** Context limit in tokens */
         var ctxLimit by property(128000)
 
-        /** Selected modes: modeSetId -> modeId */
-        var modes by map<String, String>()
-
-        /** Active tags: tagSetId -> Set<tagId> */
-        var tags by map<String, MutableSet<String>>()
-
         /** Task description text */
         var taskText by string("")
 
@@ -103,56 +97,120 @@ class LgPanelStateService : SimplePersistentStateComponent<LgPanelStateService.S
 
         /** Codex reasoning effort level */
         var codexReasoningEffort by enum(CodexReasoningEffort.MEDIUM)
+
+        /** Selected AI provider (moved from Settings) */
+        var providerId by string("")
+
+        /** Context-dependent modes storage */
+        /** Structure: modesByContextProvider[contextName][providerId][modeSetId] = modeId */
+        var modesByContextProvider by map<String, MutableMap<String, MutableMap<String, String>>>()
+
+        /** Context-dependent tags storage */
+        /** Structure: tagsByContext[contextName][tagSetId] = Set<tagId> */
+        var tagsByContext by map<String, MutableMap<String, MutableSet<String>>>()
     }
 
     /**
-     * Returns AI interaction mode based on current modes selection.
-     *
-     * Logic:
-     * - If "ai-interaction" mode set is present → return its value
-     * - Otherwise → default to AGENT
-     *
-     * @return Typed AI interaction mode
+     * Gets modes for specific context and provider.
+     * Returns empty map if no modes saved for this combination.
      */
-    fun getAiInteractionMode(): AiInteractionMode {
-        val aiInteractionMode = state.modes["ai-interaction"]
-        return when (aiInteractionMode) {
-            "ask" -> AiInteractionMode.ASK
-            "agent" -> AiInteractionMode.AGENT
-            else -> AiInteractionMode.AGENT // Default to AGENT
-        }
+    fun getCurrentModes(ctx: String, provider: String): Map<String, String> {
+        return state.modesByContextProvider[ctx]?.get(provider) ?: emptyMap()
     }
 
     /**
-     * Actualizes state by removing obsolete modes and tags.
+     * Sets modes for specific context and provider.
+     */
+    fun setCurrentModes(ctx: String, provider: String, modes: Map<String, String>) {
+        val contextModes = state.modesByContextProvider.getOrPut(ctx) { mutableMapOf() }
+        contextModes[provider] = modes.toMutableMap()
+    }
+
+    /**
+     * Gets tags for specific context.
+     * Returns empty map if no tags saved for this context.
+     */
+    fun getCurrentTags(ctx: String): Map<String, Set<String>> {
+        return state.tagsByContext[ctx]?.mapValues { it.value.toSet() } ?: emptyMap()
+    }
+
+    /**
+     * Sets tags for specific context.
+     */
+    fun setCurrentTags(ctx: String, tags: Map<String, Set<String>>) {
+        state.tagsByContext[ctx] = tags.mapValues { it.value.toMutableSet() }.toMutableMap()
+    }
+
+    /**
+     * Gets the 'runs' string from the integration mode-set for current selection.
      *
+     * @param ctx Current context name
+     * @param provider Current provider ID
+     * @param modeSets Mode sets from CLI
+     * @return runs string or null if not found
+     */
+    fun getIntegrationModeRuns(
+        ctx: String,
+        provider: String,
+        modeSets: ModeSetsListSchema?
+    ): String? {
+        if (modeSets == null) return null
+
+        // Find integration mode-set
+        val integrationSet = modeSets.modeSets.find { it.integration == true }
+            ?: return null
+
+        // Get selected mode for this mode-set
+        val currentModes = getCurrentModes(ctx, provider)
+        val selectedModeId = currentModes[integrationSet.id]
+
+        if (selectedModeId == null) {
+            // No mode selected, try first mode
+            val firstMode = integrationSet.modes.firstOrNull()
+            return firstMode?.runs?.get(provider)
+        }
+
+        // Find the mode and get runs for provider
+        val mode = integrationSet.modes.find { it.id == selectedModeId }
+        return mode?.runs?.get(provider)
+    }
+
+    /**
+     * Actualizes state by removing obsolete modes and tags for specific context/provider.
+     *
+     * @param ctx Current context name
+     * @param provider Current provider ID
      * @param modeSets Current mode-sets from CLI
      * @param tagSets Current tag-sets from CLI
      * @return true if state was changed
      */
     fun actualizeState(
+        ctx: String,
+        provider: String,
         modeSets: ModeSetsListSchema?,
         tagSets: TagSetsListSchema?
     ): Boolean {
         var changed = false
 
-        // Actualize modes
+        // Actualize modes for current (ctx, provider)
         if (modeSets != null) {
-            val (validatedModes, modesChanged) = actualizeModes(state.modes, modeSets)
+            val currentModes = getCurrentModes(ctx, provider)
+            val (validatedModes, modesChanged) = actualizeModes(currentModes, modeSets)
             if (modesChanged) {
-                state.modes = validatedModes.toMutableMap()
+                setCurrentModes(ctx, provider, validatedModes)
                 changed = true
-                LOG.info("Actualized modes: removed obsolete entries")
+                LOG.info("Actualized modes for context '$ctx', provider '$provider': removed obsolete entries")
             }
         }
 
-        // Actualize tags
+        // Actualize tags for current context
         if (tagSets != null) {
-            val (validatedTags, tagsChanged) = actualizeTags(state.tags, tagSets)
+            val currentTags = getCurrentTags(ctx)
+            val (validatedTags, tagsChanged) = actualizeTags(currentTags.mapValues { it.value.toMutableSet() }, tagSets)
             if (tagsChanged) {
-                state.tags = validatedTags.mapValues { it.value.toMutableSet() }.toMutableMap()
+                setCurrentTags(ctx, validatedTags.mapValues { it.value.toSet() })
                 changed = true
-                LOG.info("Actualized tags: removed obsolete entries")
+                LOG.info("Actualized tags for context '$ctx': removed obsolete entries")
             }
         }
 
@@ -199,6 +257,7 @@ class LgPanelStateService : SimplePersistentStateComponent<LgPanelStateService.S
 
         return validatedTags to changed
     }
+
 
     companion object {
         private val LOG = logger<LgPanelStateService>()

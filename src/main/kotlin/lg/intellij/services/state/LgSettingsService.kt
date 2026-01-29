@@ -31,9 +31,6 @@ class LgSettingsService : SimplePersistentStateComponent<LgSettingsService.State
         /** Path to Python interpreter (Developer Mode only) */
         var pythonInterpreter by string("")
 
-        /** AI provider ID for "Send to AI" action (empty = auto-detect best) */
-        var aiProvider by string("")
-
         /** Open generated files as editable (instead of read-only) */
         var openAsEditable by property(false)
     }

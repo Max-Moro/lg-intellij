@@ -133,6 +133,7 @@ src:
             - "/settings/LgSettingsConfigurable.kt"
             - "/ui/toolwindow/LgControlPanel.kt"
             - "/models/AiInteractionMode.kt"
+            - "/actions/LgUpdateAiModesAction.kt"
         - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:claude-code-cli"
           allow:
             - "/models/ClaudeIntegrationMethod.kt"

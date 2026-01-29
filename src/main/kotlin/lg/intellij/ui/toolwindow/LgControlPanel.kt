@@ -603,6 +603,7 @@ class LgControlPanel(
             // Config Management
             add(LgCreateStarterConfigAction())
             add(LgOpenConfigAction())
+            add(LgUpdateAiModesAction())
 
             addSeparator()
 
@@ -625,7 +626,7 @@ class LgControlPanel(
             // View Mode Toggle
             add(LgToggleTreeViewModeAction())
         }
-        
+
         val toolbar = ActionManager.getInstance().createActionToolbar("LgControlPanel", actionGroup, true)
         toolbar.targetComponent = this
         return toolbar.component

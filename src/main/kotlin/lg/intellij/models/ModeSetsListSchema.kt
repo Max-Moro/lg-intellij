@@ -7,9 +7,11 @@ package lg.intellij.models
 
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
 
 /**
- * Response schema for 'lg list mode-sets' command
+ * Response schema for 'list mode-sets' command
  */
 @Serializable
 data class ModeSetsListSchema (
@@ -23,6 +25,11 @@ data class ModeSet (
      * Unique identifier of the mode set
      */
     val id: String,
+
+    /**
+     * True if this mode-set is an integration type (has runs)
+     */
+    val integration: Boolean? = null,
 
     val modes: List<Mode>,
 
@@ -45,9 +52,9 @@ data class Mode (
     val id: String,
 
     /**
-     * Additional options specific to this mode
+     * Provider-specific run commands mapping provider_id to command string
      */
-    val options: JsonObject? = null,
+    val runs: Map<String, String>? = null,
 
     /**
      * Array of tags activated by this mode

@@ -6,9 +6,12 @@
 package lg.intellij.models
 
 import kotlinx.serialization.*
+import kotlinx.serialization.json.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
 
 /**
- * Response schema for 'lg list tag-sets' command
+ * Response schema for 'list tag-sets' command
  */
 @Serializable
 data class TagSetsListSchema (

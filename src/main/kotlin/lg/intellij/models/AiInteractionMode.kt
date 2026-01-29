@@ -8,7 +8,12 @@ package lg.intellij.models
  * - agent: Mode with tools and agent capabilities
  *
  * Used to unify behavior of Extension AI providers.
+ *
+ * @deprecated This enum will be removed in a future version.
+ * AI providers should use `runs` string from mode configuration instead.
+ * See: ModeSet.modes[].runs in ModeSetsListSchema.kt
  */
+@Deprecated("Use runs from ModeSet configuration instead", level = DeprecationLevel.WARNING)
 enum class AiInteractionMode {
     /**
      * "Ask" mode — basic question-answer.

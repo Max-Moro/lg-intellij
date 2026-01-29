@@ -49,12 +49,12 @@ src:
             - "/settings/LgSettingsConfigurable.kt"
             - "/toolWindow/LgToolWindowFactory.kt"
             - "/utils/LgStubNotifications.kt"
+            - "/services/state/LgPanelStateService.kt"
         - condition: "TAGSET:intellij-plugin:ui"
           allow: ["/ui/components/"]
         - condition: "TAGSET:intellij-plugin:control"
           allow:
             - "/ui/toolwindow/LgControlPanel.kt"
-            - "/services/state/LgPanelStateService.kt"
             - "/services/state/LgWorkspaceStateService.kt"
             - "/ui/components/LgWrappingPanel.kt"
             - "/ui/components/LgTaskTextField.kt"
@@ -84,7 +84,6 @@ src:
             - "**Stats**"
             - "/generation/CliArgsBuilder.kt"
             - "/models/ReportSchema.kt"
-            - "/services/state/LgPanelStateService.kt"
             - "/ui/components/LgTaskTextField.kt"
             - "/ui/components/LgGroupedTable.kt"
             - "/utils/LgFormatUtils.kt"
@@ -110,7 +109,6 @@ src:
             - "/ui/components/LgWrappingPanel.kt"
             - "/models/ModeSetsListSchema.kt"
             - "/services/catalog/LgCatalogService.kt"
-            - "/services/state/LgPanelStateService.kt"
             - "/services/generation/CliArgsBuilder.kt"
             - "/services/git/LgGitService.kt"
         - condition: "TAGSET:intellij-plugin:diag"
@@ -142,7 +140,6 @@ src:
             - "/models/ShellType.kt"
             - "/models/CliExecutionContext.kt"
             - "/ui/toolwindow/LgCliSettingsPanel.kt"
-            - "/services/state/LgPanelStateService.kt"
 
       src/main/kotlin/lg/intellij/services/ai:
         mode: block

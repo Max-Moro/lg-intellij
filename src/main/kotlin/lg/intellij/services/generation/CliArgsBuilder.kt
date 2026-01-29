@@ -20,7 +20,8 @@ object CliArgsBuilder {
         val modes: Map<String, String>,
         val tags: Map<String, Set<String>>,
         val taskText: String?,
-        val targetBranch: String?
+        val targetBranch: String?,
+        val providerId: String?
     )
 
     /**
@@ -67,6 +68,12 @@ object CliArgsBuilder {
             args.add(params.targetBranch.trim())
         }
 
+        // Provider (for template conditions)
+        if (!params.providerId.isNullOrBlank()) {
+            args.add("--provider")
+            args.add(params.providerId.trim())
+        }
+
         // Task text (via stdin)
         var stdinData: String? = null
         if (!params.taskText.isNullOrBlank()) {
@@ -104,14 +111,18 @@ object CliArgsBuilder {
      * @return Generation parameters
      */
     fun fromPanelState(state: LgPanelStateService): GenerationParams {
+        val ctx = state.state.selectedTemplate ?: ""
+        val provider = state.state.providerId ?: ""
+
         return GenerationParams(
             tokenizerLib = state.state.tokenizerLib!!,
             encoder = state.state.encoder!!,
             ctxLimit = state.state.ctxLimit,
-            modes = state.state.modes.toMap(),
-            tags = state.state.tags.mapValues { it.value.toSet() },
+            modes = state.getCurrentModes(ctx, provider),
+            tags = state.getCurrentTags(ctx).mapValues { it.value.toSet() },
             taskText = state.state.taskText?.takeIf { it.isNotBlank() },
-            targetBranch = state.state.targetBranch?.takeIf { it.isNotBlank() }
+            targetBranch = state.state.targetBranch?.takeIf { it.isNotBlank() },
+            providerId = provider.takeIf { it.isNotBlank() }
         )
     }
 }

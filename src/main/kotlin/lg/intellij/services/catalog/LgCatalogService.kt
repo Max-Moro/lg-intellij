@@ -78,18 +78,28 @@ class LgCatalogService(private val project: Project) {
         _isLoading.value = true
 
         try {
+            // Get current context and provider from state for context-dependent loading
+            val panelState = project.service<LgPanelStateService>()
+            val currentContext = panelState.state.selectedTemplate ?: ""
+            val currentProvider = panelState.state.providerId ?: ""
+
             withContext(Dispatchers.IO) {
                 // Parallel loading of all independent catalog data
                 coroutineScope {
                     launch { loadSections() }
-                    launch { loadContexts() }
-                    launch { loadModeSets() }
-                    launch { loadTagSets() }
+                    launch { loadContexts(currentProvider.takeIf { it.isNotBlank() }) }
                     launch { loadBranches() }
+                    // Mode-sets and tag-sets require context
+                    if (currentContext.isNotBlank()) {
+                        launch { loadModeSets(currentContext, currentProvider) }
+                        launch { loadTagSets(currentContext) }
+                    }
                 }
 
                 // Actualize panel state after loading catalogs
-                actualizeState()
+                if (currentContext.isNotBlank()) {
+                    actualizeState(currentContext, currentProvider)
+                }
             }
             LOG.info("Catalog data loaded successfully")
         } catch (e: Exception) {
@@ -151,10 +161,17 @@ class LgCatalogService(private val project: Project) {
     
     /**
      * Loads contexts list from CLI.
+     * @param provider Optional provider ID to filter contexts
      */
-    private suspend fun loadContexts() {
+    private suspend fun loadContexts(provider: String? = null) {
+        val args = mutableListOf("list", "contexts")
+        if (!provider.isNullOrBlank()) {
+            args.add("--provider")
+            args.add(provider)
+        }
+
         val result = cliExecutor.execute(
-            args = listOf("list", "contexts"),
+            args = args,
             timeoutMs = 30_000
         )
 
@@ -173,11 +190,13 @@ class LgCatalogService(private val project: Project) {
     }
     
     /**
-     * Loads mode-sets from CLI.
+     * Loads mode-sets from CLI for specific context and provider.
+     * @param context Context name
+     * @param provider Provider ID
      */
-    private suspend fun loadModeSets() {
+    private suspend fun loadModeSets(context: String, provider: String) {
         val result = cliExecutor.execute(
-            args = listOf("list", "mode-sets"),
+            args = listOf("list", "mode-sets", "--context", context, "--provider", provider),
             timeoutMs = 30_000
         )
 
@@ -187,7 +206,7 @@ class LgCatalogService(private val project: Project) {
             logger = LOG
         ) { success ->
             val schema = json.decodeFromString<ModeSetsListSchema>(success.data)
-            LOG.debug("Loaded ${schema.modeSets.size} mode-sets")
+            LOG.debug("Loaded ${schema.modeSets.size} mode-sets for context '$context', provider '$provider'")
             schema
         }
 
@@ -195,11 +214,12 @@ class LgCatalogService(private val project: Project) {
     }
     
     /**
-     * Loads tag-sets from CLI.
+     * Loads tag-sets from CLI for specific context.
+     * @param context Context name
      */
-    private suspend fun loadTagSets() {
+    private suspend fun loadTagSets(context: String) {
         val result = cliExecutor.execute(
-            args = listOf("list", "tag-sets"),
+            args = listOf("list", "tag-sets", "--context", context),
             timeoutMs = 30_000
         )
 
@@ -209,7 +229,7 @@ class LgCatalogService(private val project: Project) {
             logger = LOG
         ) { success ->
             val schema = json.decodeFromString<TagSetsListSchema>(success.data)
-            LOG.debug("Loaded ${schema.tagSets.size} tag-sets")
+            LOG.debug("Loaded ${schema.tagSets.size} tag-sets for context '$context'")
             schema
         }
 
@@ -235,14 +255,16 @@ class LgCatalogService(private val project: Project) {
 
     /**
      * Actualizes LgPanelStateService by removing obsolete modes and tags.
+     * @param context Current context name
+     * @param provider Current provider ID
      */
-    private suspend fun actualizeState() {
+    private suspend fun actualizeState(context: String, provider: String) {
         withContext(Dispatchers.EDT) {
             val panelState = project.service<LgPanelStateService>()
             val modeSets = _modeSets.value
             val tagSets = _tagSets.value
 
-            val changed = panelState.actualizeState(modeSets, tagSets)
+            val changed = panelState.actualizeState(context, provider, modeSets, tagSets)
 
             if (changed) {
                 LOG.info("Panel state actualized: obsolete modes/tags removed")

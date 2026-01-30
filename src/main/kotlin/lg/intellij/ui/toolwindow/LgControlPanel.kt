@@ -202,33 +202,43 @@ class LgControlPanel(
     
     private fun updateSectionsUI(sections: List<String>) {
         if (!::sectionCombo.isInitialized) return
-        
+
         val savedSection = stateService.state.selectedSection
-        
+
         sectionCombo.removeAllItems()
         sections.forEach { sectionCombo.addItem(it) }
-        
-        // Restore selection from state
+
+        // Restore selection from state or reset to first available
         if (!savedSection.isNullOrBlank() && savedSection in sections) {
             sectionCombo.selectedItem = savedSection
         } else if (sections.isNotEmpty()) {
             sectionCombo.selectedIndex = 0
+            // Update state with new section
+            stateService.state.selectedSection = sections[0]
+        } else {
+            // No sections available - clear state
+            stateService.state.selectedSection = ""
         }
     }
     
     private fun updateContextsUI(contexts: List<String>) {
         if (!::templateCombo.isInitialized) return
-        
+
         val savedTemplate = stateService.state.selectedTemplate
-        
+
         templateCombo.removeAllItems()
         contexts.forEach { templateCombo.addItem(it) }
-        
-        // Restore selection from state
+
+        // Restore selection from state or reset to first available
         if (!savedTemplate.isNullOrBlank() && savedTemplate in contexts) {
             templateCombo.selectedItem = savedTemplate
         } else if (contexts.isNotEmpty()) {
             templateCombo.selectedIndex = 0
+            // IMPORTANT: Update state with new template (triggers onContextChanged via listener)
+            stateService.state.selectedTemplate = contexts[0]
+        } else {
+            // No contexts available - clear state
+            stateService.state.selectedTemplate = ""
         }
     }
 
@@ -277,24 +287,31 @@ class LgControlPanel(
         providerCombo.removeAllItems()
         providers.forEach { providerCombo.addItem(it) }
 
-        // Restore selection from state or auto-detect
+        // Restore selection from state or set default
         val savedProvider = providers.find { it.id == savedProviderId }
         if (savedProvider != null) {
             providerCombo.selectedItem = savedProvider
         } else if (providers.isNotEmpty()) {
-            // Auto-detect best provider
+            // IMPORTANT: Set first provider SYNCHRONOUSLY to avoid race conditions
+            // This ensures providerId is never empty during subsequent operations
+            providerCombo.selectedIndex = 0
+            stateService.state.providerId = providers[0].id
+
+            // Then asynchronously detect best provider and update if different
             scope.launch {
                 val aiService = AiIntegrationService.getInstance()
                 val bestProviderId = aiService.detectBestProvider()
 
-                withContext(Dispatchers.EDT) {
-                    val bestProvider = providers.find { it.id == bestProviderId }
-                    if (bestProvider != null) {
-                        providerCombo.selectedItem = bestProvider
-                        stateService.state.providerId = bestProviderId
-                    } else if (providers.isNotEmpty()) {
-                        providerCombo.selectedIndex = 0
-                        stateService.state.providerId = providers[0].id
+                // Only update if detected provider is different from current
+                if (bestProviderId != providers[0].id) {
+                    withContext(Dispatchers.EDT) {
+                        val bestProvider = providers.find { it.id == bestProviderId }
+                        if (bestProvider != null) {
+                            providerCombo.selectedItem = bestProvider
+                            stateService.state.providerId = bestProviderId
+                            // Trigger provider change to reload contexts/modes
+                            onProviderChanged(bestProviderId)
+                        }
                     }
                 }
             }
@@ -309,10 +326,32 @@ class LgControlPanel(
             // Reload contexts (filtered by provider)
             catalogService.loadContexts(providerId)
 
-            // Reload mode-sets for current context
-            val currentCtx = stateService.state.selectedTemplate
-            if (!currentCtx.isNullOrBlank()) {
+            // Validate current context against new list
+            val contexts = catalogService.contexts.value
+            var currentCtx = stateService.state.selectedTemplate ?: ""
+
+            // If current context is not in new list, reset to first available
+            if (currentCtx.isNotBlank() && currentCtx !in contexts) {
+                currentCtx = contexts.firstOrNull() ?: ""
+                withContext(Dispatchers.EDT) {
+                    stateService.state.selectedTemplate = currentCtx
+                    if (::templateCombo.isInitialized && contexts.isNotEmpty()) {
+                        templateCombo.selectedItem = currentCtx
+                    }
+                }
+            }
+
+            // Reload mode-sets and tag-sets for current context
+            if (currentCtx.isNotBlank()) {
                 catalogService.loadModeSets(currentCtx, providerId)
+                catalogService.loadTagSets(currentCtx)
+
+                // Actualize state to clean up obsolete modes/tags
+                val modeSets = catalogService.modeSets.value
+                val tagSets = catalogService.tagSets.value
+                withContext(Dispatchers.EDT) {
+                    stateService.actualizeState(currentCtx, providerId, modeSets, tagSets)
+                }
             }
 
             // Update CLI settings visibility
@@ -334,6 +373,15 @@ class LgControlPanel(
                 catalogService.loadModeSets(template, providerId)
             }
             catalogService.loadTagSets(template)
+
+            // Actualize state to clean up obsolete modes/tags
+            if (template.isNotBlank() && providerId.isNotBlank()) {
+                val modeSets = catalogService.modeSets.value
+                val tagSets = catalogService.tagSets.value
+                withContext(Dispatchers.EDT) {
+                    stateService.actualizeState(template, providerId, modeSets, tagSets)
+                }
+            }
         }
     }
 

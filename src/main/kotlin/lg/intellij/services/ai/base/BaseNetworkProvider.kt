@@ -96,7 +96,7 @@ abstract class BaseNetworkProvider : AiProvider {
      *
      * Retrieves token and delegates to sendToApi.
      */
-    override suspend fun send(content: String) {
+    override suspend fun send(content: String, runs: String) {
         val token = getApiToken()
 
         sendToApi(content, token)

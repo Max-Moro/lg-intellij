@@ -164,10 +164,10 @@ class LgControlPanel(
             }
         }
 
-        // Providers (initial load)
+        // Providers (initial load - detect available only)
         scope.launch {
             val aiService = AiIntegrationService.getInstance()
-            val providers = aiService.getRegisteredProviders()
+            val providers = aiService.detectAvailableProvidersInfo()
 
             withContext(Dispatchers.EDT) {
                 updateProvidersUI(providers)

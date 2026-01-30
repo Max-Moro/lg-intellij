@@ -75,6 +75,34 @@ class AiIntegrationService {
     }
 
     /**
+     * Detects available providers and returns ProviderInfo list for UI display.
+     * Checks each provider's isAvailable() and returns only available ones.
+     * Sorted by priority (descending).
+     */
+    suspend fun detectAvailableProvidersInfo(): List<ProviderInfo> = withContext(Dispatchers.IO) {
+        val available = mutableListOf<ProviderInfo>()
+
+        for ((id, provider) in providers) {
+            try {
+                if (provider.isAvailable()) {
+                    available.add(ProviderInfo(id, provider.name, provider.priority))
+                    log.debug("Provider '$id' is available (priority: ${provider.priority})")
+                } else {
+                    log.debug("Provider '$id' is not available")
+                }
+            } catch (e: Exception) {
+                log.warn("Failed to check availability of provider '$id'", e)
+            }
+        }
+
+        // Sort by priority (descending)
+        available.sortByDescending { it.priority }
+
+        log.info("Detected ${available.size} available providers: ${available.map { it.id }}")
+        available
+    }
+
+    /**
      * Provider information for UI display.
      */
     data class ProviderInfo(

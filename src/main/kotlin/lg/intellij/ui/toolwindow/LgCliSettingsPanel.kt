@@ -27,13 +27,13 @@ import javax.swing.event.DocumentListener
 /**
  * CLI Provider Settings panel for Control Panel.
  *
- * Shown when any CLI-based provider is selected (e.g., claude.cli, codex.cli).
+ * Shown when any CLI-based provider is selected (e.g., com.anthropic.claude.cli, com.openai.codex.cli).
  * Provides configuration for:
  * - Scope (relative workspace subdirectory) - for all CLI providers
  * - Shell type (bash/zsh/powershell/cmd) - for all CLI providers
- * - Claude model (haiku/sonnet/opus) - only for claude.cli
- * - Integration method (memory-file/session) - only for claude.cli
- * - Reasoning effort (minimal/low/medium/high/xhigh) - only for codex.cli
+ * - Claude model (haiku/sonnet/opus) - only for com.anthropic.claude.cli
+ * - Integration method (memory-file/session) - only for com.anthropic.claude.cli
+ * - Reasoning effort (minimal/low/medium/high/xhigh) - only for com.openai.codex.cli
  */
 @Suppress("unused") // Instantiated dynamically in LgControlPanel.createContentUI
 class LgCliSettingsPanel(
@@ -67,16 +67,14 @@ class LgCliSettingsPanel(
      * Check if current AI provider is Claude CLI.
      */
     private fun isClaudeProvider(): Boolean {
-        val settings = LgSettingsService.getInstance()
-        return settings.state.aiProvider == "claude.cli"
+        return stateService.state.providerId == "com.anthropic.claude.cli"
     }
 
     /**
      * Check if current AI provider is Codex CLI.
      */
     private fun isCodexProvider(): Boolean {
-        val settings = LgSettingsService.getInstance()
-        return settings.state.aiProvider == "codex.cli"
+        return stateService.state.providerId == "com.openai.codex.cli"
     }
 
     private fun Panel.createBasicSettingsRow() {

@@ -395,8 +395,7 @@ class LgControlPanel(
 
     private fun shouldShowCliSettings(): Boolean {
         val providerId = stateService.state.providerId
-        val cliProviders = listOf("claude.cli", "codex.cli")
-        return providerId in cliProviders
+        return providerId?.endsWith(".cli") == true
     }
     
     private fun Panel.createAiContextsSection() {

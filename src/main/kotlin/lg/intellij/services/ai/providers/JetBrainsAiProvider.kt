@@ -25,7 +25,7 @@ class JetBrainsAiProvider : BaseExtensionProvider() {
 
     private val log = logger<JetBrainsAiProvider>()
 
-    override val id = "jetbrains.ai"
+    override val id = "com.jetbrains.ai.ext"
     override val name = "JetBrains AI Assistant"
     override val priority = 90
     override val pluginId = "com.intellij.ml.llm"

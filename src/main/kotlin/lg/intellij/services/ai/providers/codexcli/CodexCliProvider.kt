@@ -21,7 +21,7 @@ import kotlin.io.path.exists
  */
 class CodexCliProvider : BaseCliProvider() {
 
-    override val id = "codex.cli"
+    override val id = "com.openai.codex.cli"
     override val name = "Codex CLI"
     override val priority = 45
 

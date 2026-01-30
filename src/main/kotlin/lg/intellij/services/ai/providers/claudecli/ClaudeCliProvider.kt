@@ -25,7 +25,7 @@ import kotlin.io.path.exists
  */
 class ClaudeCliProvider : BaseCliProvider() {
 
-    override val id = "claude.cli"
+    override val id = "com.anthropic.claude.cli"
     override val name = "Claude CLI"
     override val priority = 50
 

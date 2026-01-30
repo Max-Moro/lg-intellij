@@ -24,7 +24,7 @@ class JunieProvider : BaseExtensionProvider() {
 
     private val log = logger<JunieProvider>()
 
-    override val id = "jetbrains.junie"
+    override val id = "org.jetbrains.junie.ext"
     override val name = "Junie (JetBrains AI Agent)"
     override val priority = 70
     override val pluginId = "org.jetbrains.junie"

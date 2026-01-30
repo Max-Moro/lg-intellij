@@ -447,6 +447,19 @@ class LgControlPanel(
     }
     
     private fun Panel.createAiContextsSection() {
+        // Context selector row
+        row {
+            templateCombo = ComboBox<String>().apply {
+                addActionListener {
+                    val selected = selectedItem as? String
+                    if (selected != null) {
+                        onContextChanged(selected)
+                    }
+                }
+            }
+            cell(templateCombo).align(AlignX.FILL)
+        }
+
         // Task text input
         row {
             taskTextField = LgTaskTextField.create(
@@ -454,18 +467,18 @@ class LgControlPanel(
                 initialText = stateService.state.taskText ?: "",
                 placeholder = LgBundle.message("control.task.placeholder")
             )
-            
+
             taskTextField.editorField.addChangeListener { newText ->
                 stateService.updateTaskText(newText)
             }
-            
+
             cell(taskTextField).align(AlignX.FILL)
         }
-        
-        // Template selector + buttons
+
+        // Provider selector + buttons
         row {
             val flowPanel = LgWrappingPanel().apply {
-                // Provider ComboBox
+                // Provider ComboBox (without label)
                 providerCombo = ComboBox<AiIntegrationService.ProviderInfo>().apply {
                     renderer = SimpleListCellRenderer.create { label, value, _ ->
                         label.text = value?.name ?: ""
@@ -477,33 +490,22 @@ class LgControlPanel(
                         }
                     }
                 }
-                add(LgLabeledComponent.create(LgBundle.message("control.provider.label"), providerCombo))
+                add(providerCombo)
 
-                // Template ComboBox
-                templateCombo = ComboBox<String>().apply {
-                    addActionListener {
-                        val selected = selectedItem as? String
-                        if (selected != null) {
-                            onContextChanged(selected)
-                        }
-                    }
-                }
-                add(templateCombo)
-                
                 // Send to AI button
                 add(JButton(LgBundle.message("control.btn.send.ai"), AllIcons.Actions.Execute).apply {
                     addActionListener {
                         LgSendToAiAction().performSafely(this@LgControlPanel)
                     }
                 })
-                
+
                 // Generate Context button
                 add(JButton(LgBundle.message("control.btn.generate.context"), AllIcons.Actions.ShowCode).apply {
                     addActionListener {
                         LgGenerateContextAction().performSafely(this@LgControlPanel)
                     }
                 })
-                
+
                 // Show Context Stats button
                 add(object : JButton(LgBundle.message("control.btn.show.context.stats"), AllIcons.Actions.ListFiles) {
                     override fun isDefaultButton(): Boolean = true
@@ -513,7 +515,7 @@ class LgControlPanel(
                     }
                 })
             }
-            
+
             cell(flowPanel).align(AlignX.FILL)
         }.resizableRow()
     }

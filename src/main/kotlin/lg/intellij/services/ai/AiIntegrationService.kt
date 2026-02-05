@@ -10,7 +10,9 @@ import lg.intellij.services.ai.providers.GitHubCopilotProvider
 import lg.intellij.services.ai.providers.JetBrainsAiProvider
 import lg.intellij.services.ai.providers.JunieProvider
 import lg.intellij.services.ai.providers.claudecli.ClaudeCliProvider
+import lg.intellij.services.ai.providers.claudecli.claudeCliSettings
 import lg.intellij.services.ai.providers.codexcli.CodexCliProvider
+import lg.intellij.services.ai.providers.codexcli.codexCliSettings
 
 /**
  * Central service for managing AI providers.
@@ -33,6 +35,11 @@ class AiIntegrationService {
      */
     private val providers = mutableMapOf<String, AiProvider>()
 
+    /**
+     * Registered provider settings modules: providerId -> module.
+     */
+    private val settingsModules = mutableMapOf<String, ProviderSettingsModule>()
+
     init {
         // Register built-in providers
         registerProvider(ClipboardProvider())
@@ -42,7 +49,11 @@ class AiIntegrationService {
         registerProvider(ClaudeCliProvider())
         registerProvider(CodexCliProvider())
 
-        log.info("AI Integration Service initialized with ${providers.size} providers")
+        // Register provider settings modules
+        registerSettingsModule(claudeCliSettings)
+        registerSettingsModule(codexCliSettings)
+
+        log.info("AI Integration Service initialized with ${providers.size} providers, ${settingsModules.size} settings modules")
     }
 
     /**
@@ -212,6 +223,41 @@ class AiIntegrationService {
 
         provider.send(content, runs)
         log.info("Successfully sent content to $providerId")
+    }
+
+    // ========== Provider Settings Modules ==========
+
+    /**
+     * Registers a provider settings module.
+     *
+     * Settings modules allow providers to define their own
+     * UI contributions (fields, commands) without modifying
+     * the central Control Panel code.
+     *
+     * @param module Settings module to register
+     */
+    fun registerSettingsModule(module: ProviderSettingsModule) {
+        settingsModules[module.providerId] = module
+        log.debug("Registered provider settings module: ${module.providerId}")
+    }
+
+    /**
+     * Returns settings module for a specific provider.
+     *
+     * @param providerId Provider ID
+     * @return Settings module or null if not registered
+     */
+    fun getSettingsModule(providerId: String): ProviderSettingsModule? {
+        return settingsModules[providerId]
+    }
+
+    /**
+     * Returns all registered settings modules.
+     *
+     * Used by the Control Panel to render dynamic provider settings.
+     */
+    fun getAllSettingsModules(): List<ProviderSettingsModule> {
+        return settingsModules.values.toList()
     }
 
     companion object {

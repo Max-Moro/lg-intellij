@@ -10,6 +10,8 @@
 package lg.intellij.statepce.domains
 
 import com.intellij.openapi.project.Project
+import lg.intellij.services.ai.providers.claudecli.registerClaudeCliSettingsRules
+import lg.intellij.services.ai.providers.codexcli.registerCodexCliSettingsRules
 
 /**
  * Register all domain rules.
@@ -25,4 +27,8 @@ fun registerAllDomainRules(project: Project) {
     registerSectionRules(project)
     registerAdaptiveRules(project)
     registerTokenizationRules(project)
+
+    // Provider settings rules (no project dependency)
+    registerClaudeCliSettingsRules()
+    registerCodexCliSettingsRules()
 }

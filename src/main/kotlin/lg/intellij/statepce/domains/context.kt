@@ -43,21 +43,6 @@ data class ContextsLoadedPayload(val contexts: List<String>)
 val ContextsLoaded = command("context/LOADED").payload<ContextsLoadedPayload>()
 
 // ============================================
-// Temporary Command Stubs
-// Will be moved to respective domains in step 11.
-// ============================================
-
-// Adaptive domain (step 11)
-data class ModeSetsLoadedPayload(val modeSets: ModeSetsListSchema?)
-val ModeSetsLoaded = command("adaptive/MODE_SETS_LOADED").payload<ModeSetsLoadedPayload>()
-
-data class TagSetsLoadedPayload(val tagSets: TagSetsListSchema?)
-val TagSetsLoaded = command("adaptive/TAG_SETS_LOADED").payload<TagSetsLoadedPayload>()
-
-data class BranchesLoadedPayload(val branches: List<String>)
-val BranchesLoaded = command("adaptive/BRANCHES_LOADED").payload<BranchesLoadedPayload>()
-
-// ============================================
 // Rule Registration
 // ============================================
 

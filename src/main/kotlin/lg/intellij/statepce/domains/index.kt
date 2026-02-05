@@ -23,6 +23,6 @@ fun registerAllDomainRules(project: Project) {
     registerProviderRules(project)
     registerContextRules(project)
     registerSectionRules(project)
-    // registerAdaptiveRules(project)      // Step 11
+    registerAdaptiveRules(project)
     // registerTokenizationRules(project)  // Step 12
 }

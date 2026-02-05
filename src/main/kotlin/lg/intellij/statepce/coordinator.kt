@@ -1,8 +1,10 @@
 package lg.intellij.statepce
 
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.project.Project
 import lg.intellij.stateengine.CoordinatorLogger
 import lg.intellij.stateengine.StateCoordinator
+import lg.intellij.statepce.domains.registerAllDomainRules
 
 /**
  * LG Extension State Coordinator Setup
@@ -37,15 +39,16 @@ private val lgLogger = object : CoordinatorLogger {
 
 /**
  * Create a StateCoordinator configured for LG Extension.
- * Automatically registers all domain rules.
+ * Registers all domain rules and configures the coordinator.
  *
  * @param store PCEStateStore instance
+ * @param project Project for service access in domain rules
  * @return Configured coordinator ready for dispatching commands
  */
-fun createPCECoordinator(store: PCEStateStore): PCEStateCoordinator {
-    // Domain rule modules register via side-effect at class loading time.
-    // By the time getAllRules() is called, all rule() invocations
-    // in domain modules have already executed.
+fun createPCECoordinator(store: PCEStateStore, project: Project): PCEStateCoordinator {
+    // Register domain rules (each domain captures project for async operations)
+    registerAllDomainRules(project)
+
     val coordinator = StateCoordinator(store, lgLogger)
     coordinator.setRules(getAllRules())
     return coordinator

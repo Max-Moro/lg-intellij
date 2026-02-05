@@ -7,7 +7,8 @@
  * - types.kt: PCEState, PersistentState, ConfigurationState, EnvironmentState, ProviderInfo, EncoderEntry
  * - store.kt: PCEStateStore, LGRuleResult, lgResult(), emptyLgResult()
  * - rule.kt: rule (factory), getAllRules()
- * - coordinator.kt: PCEStateCoordinator (typealias), createPCECoordinator()
+ * - coordinator.kt: PCEStateCoordinator (typealias), createPCECoordinator(project)
+ * - domains/: Business rule modules (lifecycle, provider, context, section, adaptive, tokenization)
  *
  * Usage:
  * ```

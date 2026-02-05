@@ -7,8 +7,8 @@ import com.intellij.openapi.diagnostic.logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import lg.intellij.bootstrap.getCoordinator
-import lg.intellij.bootstrap.getStore
+import lg.intellij.statepce.LgCoordinatorService
+import lg.intellij.statepce.PCEStateStore
 import lg.intellij.statepce.domains.SetTags
 import lg.intellij.statepce.domains.SetTagsPayload
 import lg.intellij.ui.dialogs.LgTagsDialog
@@ -27,7 +27,7 @@ class LgConfigureTagsAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
 
-        val store = getStore(project)
+        val store = PCEStateStore.getInstance(project)
         val state = store.getBusinessState()
 
         // Get current context for context-dependent tags
@@ -49,7 +49,7 @@ class LgConfigureTagsAction : AnAction() {
             val newSelectedTags = dialog.getSelectedTags()
 
             scope.launch {
-                val coordinator = getCoordinator(project)
+                val coordinator = LgCoordinatorService.getInstance(project).coordinator
                 coordinator.dispatch(
                     SetTags.create(SetTagsPayload(newSelectedTags))
                 )

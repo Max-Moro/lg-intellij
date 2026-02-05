@@ -8,7 +8,7 @@ import com.intellij.openapi.externalSystem.service.ui.completion.TextCompletionI
 import com.intellij.openapi.externalSystem.service.ui.completion.collector.TextCompletionCollector
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.ModificationTracker
-import lg.intellij.bootstrap.getStore
+import lg.intellij.statepce.PCEStateStore
 
 /**
  * Text field with auto-completion for encoder selection.
@@ -65,7 +65,7 @@ class LgEncoderCompletionField(
      */
     private fun loadEncoderSuggestions(): List<TextCompletionInfo> {
         return try {
-            val state = getStore(myProject).getBusinessState()
+            val state = PCEStateStore.getInstance(myProject).getBusinessState()
             val encoders = state.configuration.encoders
 
             LOG.debug("Loaded ${encoders.size} encoder suggestions for library '$currentLibrary'")

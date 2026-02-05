@@ -6,7 +6,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import kotlinx.coroutines.*
-import lg.intellij.bootstrap.getCoordinator
+import lg.intellij.statepce.LgCoordinatorService
 import lg.intellij.services.LgInitService
 import lg.intellij.statepce.domains.Refresh
 
@@ -65,14 +65,11 @@ class LgConfigFileListener(private val project: Project) : BulkFileListener {
             delay(DEBOUNCE_DELAY_MS)
 
             try {
-                val coordinator = getCoordinator(project)
+                val coordinator = LgCoordinatorService.getInstance(project).coordinator
                 coordinator.dispatch(Refresh.create())
                 LOG.info("Dispatched Refresh after lg-cfg/ changes")
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: IllegalStateException) {
-                // Coordinator not yet bootstrapped - ignore
-                LOG.debug("Coordinator not ready, skipping refresh")
             } catch (e: Exception) {
                 LOG.error("Failed to dispatch refresh after file changes", e)
             }

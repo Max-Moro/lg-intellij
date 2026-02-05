@@ -22,8 +22,7 @@ import com.intellij.util.ui.JBUI
 import kotlinx.coroutines.*
 import lg.intellij.LgBundle
 import lg.intellij.actions.*
-import lg.intellij.bootstrap.bootstrapCoordinator
-import lg.intellij.bootstrap.getStore
+import lg.intellij.statepce.LgCoordinatorService
 import lg.intellij.models.ClaudeIntegrationMethod
 import lg.intellij.models.ClaudeModel
 import lg.intellij.models.CodexReasoningEffort
@@ -73,8 +72,8 @@ class LgControlPanel(
     true    // borderless = true
 ), Disposable {
 
-    private val coordinator: PCEStateCoordinator = bootstrapCoordinator(project)
-    private val store: PCEStateStore = getStore(project)
+    private val coordinator: PCEStateCoordinator = LgCoordinatorService.getInstance(project).coordinator
+    private val store: PCEStateStore = PCEStateStore.getInstance(project)
 
     // Coroutine scope (cancelled on dispose)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

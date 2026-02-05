@@ -10,7 +10,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
-import lg.intellij.bootstrap.getCoordinator
+import lg.intellij.statepce.LgCoordinatorService
 import lg.intellij.statepce.domains.Refresh
 
 /**
@@ -46,7 +46,7 @@ class LgRefreshCatalogsAction : AnAction(
 
                 try {
                     runBlocking {
-                        val coordinator = getCoordinator(project)
+                        val coordinator = LgCoordinatorService.getInstance(project).coordinator
                         coordinator.dispatch(Refresh.create())
                     }
 

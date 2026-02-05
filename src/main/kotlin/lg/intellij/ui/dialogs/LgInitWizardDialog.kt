@@ -18,7 +18,7 @@ import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.JBUI
 import kotlinx.coroutines.*
 import lg.intellij.LgBundle
-import lg.intellij.bootstrap.getCoordinator
+import lg.intellij.statepce.LgCoordinatorService
 import lg.intellij.models.InitResult
 import lg.intellij.services.LgInitService
 import lg.intellij.statepce.domains.Refresh
@@ -239,7 +239,7 @@ class LgInitWizardDialog(
     private fun refreshCatalogs() {
         ApplicationManager.getApplication().invokeLater({
             CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
-                val coordinator = getCoordinator(project)
+                val coordinator = LgCoordinatorService.getInstance(project).coordinator
                 coordinator.dispatch(Refresh.create())
             }
         }, ModalityState.nonModal())

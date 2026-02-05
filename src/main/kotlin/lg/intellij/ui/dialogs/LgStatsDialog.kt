@@ -28,7 +28,7 @@ import lg.intellij.LgBundle
 import lg.intellij.actions.LgGenerateContextAction
 import lg.intellij.actions.LgGenerateListingAction
 import lg.intellij.actions.LgSendToAiAction
-import lg.intellij.bootstrap.getCoordinator
+import lg.intellij.statepce.LgCoordinatorService
 import lg.intellij.models.ReportSchema
 import lg.intellij.models.Scope
 import lg.intellij.services.generation.LgStatsService
@@ -190,7 +190,7 @@ class LgStatsDialog(
                     wrapper.editorField.addChangeListener { newText ->
                         // Update shared state via coordinator dispatch
                         scope.launch {
-                            getCoordinator(project).dispatch(
+                            LgCoordinatorService.getInstance(project).coordinator.dispatch(
                                 SetTask.create(SetTaskPayload(newText))
                             )
                         }

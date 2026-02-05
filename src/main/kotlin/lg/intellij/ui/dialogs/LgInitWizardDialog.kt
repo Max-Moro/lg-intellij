@@ -18,9 +18,10 @@ import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.JBUI
 import kotlinx.coroutines.*
 import lg.intellij.LgBundle
+import lg.intellij.bootstrap.getCoordinator
 import lg.intellij.models.InitResult
 import lg.intellij.services.LgInitService
-import lg.intellij.services.catalog.LgCatalogService
+import lg.intellij.statepce.domains.Refresh
 import java.nio.file.Path
 import javax.swing.JComponent
 import kotlin.io.path.div
@@ -236,12 +237,10 @@ class LgInitWizardDialog(
      * Refreshes catalog data after successful initialization.
      */
     private fun refreshCatalogs() {
-        val catalogService = project.service<LgCatalogService>()
-        
-        // Launch in service's own scope (not dialog's scope which may be cancelled)
         ApplicationManager.getApplication().invokeLater({
             CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
-                catalogService.loadAll()
+                val coordinator = getCoordinator(project)
+                coordinator.dispatch(Refresh.create())
             }
         }, ModalityState.nonModal())
     }

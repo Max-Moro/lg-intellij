@@ -8,21 +8,16 @@ import com.intellij.openapi.externalSystem.service.ui.completion.TextCompletionI
 import com.intellij.openapi.externalSystem.service.ui.completion.collector.TextCompletionCollector
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.ModificationTracker
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import lg.intellij.services.catalog.TokenizerCatalogService
+import lg.intellij.bootstrap.getStore
 
 /**
  * Text field with auto-completion for encoder selection.
- * 
+ *
  * Features:
- * - Shows suggestions from TokenizerCatalogService
+ * - Shows suggestions from PCEStateStore configuration
  * - Supports custom encoder values (user can type anything)
- * - Indicates cached encoders with badge icon
  * - Auto-reloads suggestions when tokenizer library changes
- * - Async completion collection
- * 
+ *
  * Usage:
  * ```kotlin
  * val encoderField = LgEncoderCompletionField(project, parentDisposable)
@@ -34,9 +29,7 @@ class LgEncoderCompletionField(
     private val myProject: Project,
     parentDisposable: Disposable
 ) : TextCompletionField<TextCompletionInfo>(myProject) {
-    
-    private val tokenizerService = TokenizerCatalogService.getInstance()
-    
+
     // Current tokenizer library
     private var currentLibrary: String = "tiktoken"
     
@@ -68,24 +61,19 @@ class LgEncoderCompletionField(
     }
     
     /**
-     * Loads encoder suggestions from TokenizerCatalogService.
+     * Loads encoder suggestions from state.
      */
-    private suspend fun loadEncoderSuggestions(): List<TextCompletionInfo> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val encoders = tokenizerService.getEncoders(currentLibrary, myProject)
-                
-                LOG.debug("Loaded ${encoders.size} encoders for library '$currentLibrary'")
-                
-                // Convert encoder names to TextCompletionInfo
-                encoders.map { TextCompletionInfo(it) }
-                
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                LOG.warn("Failed to load encoders for library '$currentLibrary'", e)
-                emptyList()
-            }
+    private fun loadEncoderSuggestions(): List<TextCompletionInfo> {
+        return try {
+            val state = getStore(myProject).getBusinessState()
+            val encoders = state.configuration.encoders
+
+            LOG.debug("Loaded ${encoders.size} encoder suggestions for library '$currentLibrary'")
+
+            encoders.map { TextCompletionInfo(it.name) }
+        } catch (e: Exception) {
+            LOG.warn("Failed to load encoder suggestions", e)
+            emptyList()
         }
     }
     

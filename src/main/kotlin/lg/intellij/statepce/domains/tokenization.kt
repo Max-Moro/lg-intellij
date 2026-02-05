@@ -13,8 +13,11 @@
  */
 package lg.intellij.statepce.domains
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import lg.intellij.services.catalog.TokenizerCatalogService
+import kotlinx.serialization.json.Json
+import lg.intellij.cli.CliExecutor
+import lg.intellij.models.EncodersListSchema
 import lg.intellij.stateengine.AsyncOperation
 import lg.intellij.stateengine.BaseCommand
 import lg.intellij.stateengine.RuleConfig
@@ -67,6 +70,15 @@ private fun selectBestEncoder(lib: String, availableEncoders: List<String>): Str
 }
 
 // ============================================
+// CLI Access
+// ============================================
+
+private val json = Json {
+    ignoreUnknownKeys = true
+    isLenient = true
+}
+
+// ============================================
 // Commands
 // ============================================
 
@@ -112,9 +124,17 @@ fun registerTokenizationRules(project: Project) {
                     mutations = mapOf("tokenizerLib" to newLib),
                     asyncOps = listOf(object : AsyncOperation {
                         override suspend fun execute(): BaseCommand {
-                            val tokenizerService = TokenizerCatalogService.getInstance()
-                            val encoderNames = tokenizerService.getEncoders(newLib, project)
-                            val encoders = encoderNames.map { EncoderEntry(name = it) }
+                            val cliExecutor = project.service<CliExecutor>()
+                            val encoders = try {
+                                val stdout = cliExecutor.execute(
+                                    args = listOf("list", "encoders", "--lib", newLib),
+                                    timeoutMs = 20_000
+                                ).getOrThrow()
+                                json.decodeFromString<EncodersListSchema>(stdout).encoders
+                                    .map { EncoderEntry(name = it) }
+                            } catch (_: Exception) {
+                                emptyList()
+                            }
                             return EncodersLoaded.create(EncodersLoadedPayload(encoders))
                         }
                     })
@@ -138,9 +158,17 @@ fun registerTokenizationRules(project: Project) {
                 mutations = mapOf("tokenizerLib" to lib),
                 asyncOps = listOf(object : AsyncOperation {
                     override suspend fun execute(): BaseCommand {
-                        val tokenizerService = TokenizerCatalogService.getInstance()
-                        val encoderNames = tokenizerService.getEncoders(lib, project)
-                        val encoders = encoderNames.map { EncoderEntry(name = it) }
+                        val cliExecutor = project.service<CliExecutor>()
+                        val encoders = try {
+                            val stdout = cliExecutor.execute(
+                                args = listOf("list", "encoders", "--lib", lib),
+                                timeoutMs = 20_000
+                            ).getOrThrow()
+                            json.decodeFromString<EncodersListSchema>(stdout).encoders
+                                .map { EncoderEntry(name = it) }
+                        } catch (_: Exception) {
+                            emptyList()
+                        }
                         return EncodersLoaded.create(EncodersLoadedPayload(encoders))
                     }
                 })

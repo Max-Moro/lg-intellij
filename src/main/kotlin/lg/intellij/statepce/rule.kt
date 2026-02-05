@@ -9,8 +9,6 @@ import lg.intellij.stateengine.createRuleFactory
  *
  * Uses createRuleFactory from state-engine with LG-specific types.
  * All domain rules register themselves via this factory.
- *
- * Ported from VS Code Extension's state-lg/rule.ts
  */
 
 // Registry for LG rules (module-level singleton)

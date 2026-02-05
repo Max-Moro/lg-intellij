@@ -9,8 +9,6 @@
  *
  * When provider changes, dependent catalogs (contexts, mode-sets) are reloaded
  * because they may vary by provider.
- *
- * Ported from VS Code Extension's state-lg/domains/provider.ts
  */
 package lg.intellij.statepce.domains
 

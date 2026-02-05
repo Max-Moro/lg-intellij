@@ -5,8 +5,6 @@ package lg.intellij.stateengine
  *
  * Provides factories for defining commands and rules with type safety.
  * Registry is isolated per instance, not global.
- *
- * Ported from VS Code Extension's state-engine/command.ts
  */
 
 // ============================================

@@ -6,8 +6,6 @@
  *
  * Commands:
  * - provider.codex-cli/SELECT_REASONING — update reasoning effort
- *
- * Ported from VS Code Extension's services/ai/providers/codex-cli/settings.ts
  */
 package lg.intellij.services.ai.providers.codexcli
 

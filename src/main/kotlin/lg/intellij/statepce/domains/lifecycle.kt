@@ -14,8 +14,6 @@
  * - contexts: if providerId exists
  * - mode-sets: if providerId AND template exist
  * - tag-sets: if template exists
- *
- * Ported from VS Code Extension's state-lg/domains/lifecycle.ts
  */
 package lg.intellij.statepce.domains
 

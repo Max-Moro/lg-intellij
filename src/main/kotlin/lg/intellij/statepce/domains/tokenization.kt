@@ -10,8 +10,6 @@
  *
  * Manages tokenizer library, encoder, and context limit settings.
  * Handles preferred encoder selection per library.
- *
- * Ported from VS Code Extension's state-lg/domains/tokenization.ts
  */
 package lg.intellij.statepce.domains
 

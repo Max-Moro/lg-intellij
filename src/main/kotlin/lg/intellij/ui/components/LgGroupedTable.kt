@@ -21,8 +21,6 @@ import javax.swing.table.AbstractTableModel
 /**
  * Grouped table component with filtering, sorting, and hierarchical grouping.
  *
- * Inspired by VS Code Extension grouped-table component.
- *
  * Features:
  * - Hierarchical grouping by path segments (1..N levels or ∞ for flat)
  * - Filtering by path or extension

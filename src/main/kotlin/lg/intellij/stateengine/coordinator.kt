@@ -7,8 +7,6 @@ import kotlinx.coroutines.*
  *
  * Orchestrates command processing through business rules.
  * Generic over state type for reusability.
- *
- * Ported from VS Code Extension's state-engine/coordinator.ts
  */
 
 // ============================================

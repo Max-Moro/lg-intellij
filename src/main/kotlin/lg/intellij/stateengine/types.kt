@@ -5,8 +5,6 @@ package lg.intellij.stateengine
  *
  * Generic types for command-driven state management with async operations.
  * Framework-agnostic, can be reused in other projects.
- *
- * Ported from VS Code Extension's state-engine/types.ts
  */
 
 // ============================================

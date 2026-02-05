@@ -7,8 +7,6 @@
  *
  * Sections carry their own mode-sets and tag-sets (via SectionInfo),
  * allowing per-section adaptive settings in future.
- *
- * Ported from VS Code Extension's state-lg/domains/section.ts
  */
 package lg.intellij.statepce.domains
 

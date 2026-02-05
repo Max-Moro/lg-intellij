@@ -9,8 +9,6 @@
  * 2. Module defines stateDefaults and buildContribution()
  * 3. Module registers rules for its commands via rule() factory
  * 4. UI renders contributions dynamically from ProviderSettingsContribution
- *
- * Ported from VS Code Extension's services/ai/types.ts + viewmodel/types.ts
  */
 package lg.intellij.services.ai
 

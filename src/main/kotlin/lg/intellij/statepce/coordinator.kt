@@ -11,8 +11,6 @@ import lg.intellij.statepce.domains.registerAllDomainRules
  *
  * Provides factory and types for using StateCoordinator with LG state.
  * The factory automatically registers all domain rules.
- *
- * Ported from VS Code Extension's state-lg/coordinator.ts
  */
 
 /**

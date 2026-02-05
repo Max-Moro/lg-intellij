@@ -8,8 +8,6 @@
  *
  * When context changes, all dependent catalogs are reloaded from CLI.
  * If review mode is active for the new context, branches are also loaded.
- *
- * Ported from VS Code Extension's state-lg/domains/context.ts
  */
 package lg.intellij.statepce.domains
 

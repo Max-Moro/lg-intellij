@@ -13,8 +13,6 @@
  * - Manages nested structures (modesByContextProvider, tagsByContext)
  * - Handles deep copy for immutable updates of nested maps
  * - Conditionally loads branches when entering review mode
- *
- * Ported from VS Code Extension's state-lg/domains/adaptive.ts
  */
 package lg.intellij.statepce.domains
 

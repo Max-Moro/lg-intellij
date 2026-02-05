@@ -8,8 +8,6 @@
  * Commands:
  * - provider.claude-cli/SELECT_MODEL — update selected model
  * - provider.claude-cli/SELECT_METHOD — update integration method
- *
- * Ported from VS Code Extension's services/ai/providers/claude-cli/settings.ts
  */
 package lg.intellij.services.ai.providers.claudecli
 

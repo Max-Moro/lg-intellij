@@ -20,7 +20,6 @@ import javax.swing.ScrollPaneConstants
  * Features:
  * - Displays all available tag-sets in collapsible groups
  * - Checkbox for each tag with description tooltip
- * - Syncs with LgPanelStateService state
  * - Returns selected tags on OK (grouped by tag-set)
  */
 class LgTagsDialog(

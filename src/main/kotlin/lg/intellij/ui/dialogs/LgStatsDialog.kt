@@ -28,10 +28,13 @@ import lg.intellij.LgBundle
 import lg.intellij.actions.LgGenerateContextAction
 import lg.intellij.actions.LgGenerateListingAction
 import lg.intellij.actions.LgSendToAiAction
+import lg.intellij.bootstrap.getCoordinator
 import lg.intellij.models.ReportSchema
 import lg.intellij.models.Scope
 import lg.intellij.services.generation.LgStatsService
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.statepce.PCEStateStore
+import lg.intellij.statepce.domains.SetTask
+import lg.intellij.statepce.domains.SetTaskPayload
 import lg.intellij.ui.components.LgGroupedTable
 import lg.intellij.ui.components.LgTaskTextField
 import lg.intellij.ui.components.LgTaskTextField.addChangeListener
@@ -55,7 +58,7 @@ class LgStatsDialog(
 ) : DialogWrapper(project) {
     
     private val statsService = project.service<LgStatsService>()
-    private val panelState = project.service<LgPanelStateService>()
+    private val store = PCEStateStore.getInstance(project)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     
     private var currentStats: ReportSchema = initialStats
@@ -178,15 +181,19 @@ class LgStatsDialog(
                 row {
                     val wrapper = LgTaskTextField.create(
                         project = project,
-                        initialText = panelState.state.taskText ?: "",
+                        initialText = store.getBusinessState().persistent.taskText,
                         placeholder = LgBundle.message("control.task.placeholder")
                     )
-                    
+
                     // Debounced refresh on text change
                     var debounceJob: Job? = null
                     wrapper.editorField.addChangeListener { newText ->
-                        // Update shared state (with reactive notification)
-                        panelState.updateTaskText(newText)
+                        // Update shared state via coordinator dispatch
+                        scope.launch {
+                            getCoordinator(project).dispatch(
+                                SetTask.create(SetTaskPayload(newText))
+                            )
+                        }
 
                         // Debounced stats refresh
                         debounceJob?.cancel()
@@ -198,11 +205,11 @@ class LgStatsDialog(
                             }
                         }
                     }
-                    
+
                     cell(wrapper)
                         .align(Align.FILL)
                 }
-                
+
                 separator()
             }
             

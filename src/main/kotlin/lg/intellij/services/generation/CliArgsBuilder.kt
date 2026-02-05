@@ -1,6 +1,6 @@
 package lg.intellij.services.generation
 
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.statepce.PCEStateStore
 
 /**
  * Helper utility for building CLI command arguments.
@@ -105,23 +105,24 @@ object CliArgsBuilder {
     }
 
     /**
-     * Extracts generation parameters from panel state.
+     * Extracts generation parameters from PCEStateStore.
      *
-     * @param state Panel state service
+     * @param store PCE state store
      * @return Generation parameters
      */
-    fun fromPanelState(state: LgPanelStateService): GenerationParams {
-        val ctx = state.state.selectedTemplate ?: ""
-        val provider = state.state.providerId ?: ""
+    fun fromStore(store: PCEStateStore): GenerationParams {
+        val state = store.getBusinessState()
+        val ctx = state.persistent.template
+        val provider = state.persistent.providerId
 
         return GenerationParams(
-            tokenizerLib = state.state.tokenizerLib!!,
-            encoder = state.state.encoder!!,
-            ctxLimit = state.state.ctxLimit,
-            modes = state.getCurrentModes(ctx, provider),
-            tags = state.getCurrentTags(ctx).mapValues { it.value.toSet() },
-            taskText = state.state.taskText?.takeIf { it.isNotBlank() },
-            targetBranch = state.state.targetBranch?.takeIf { it.isNotBlank() },
+            tokenizerLib = state.persistent.tokenizerLib,
+            encoder = state.persistent.encoder,
+            ctxLimit = state.persistent.ctxLimit,
+            modes = store.getCurrentModes(ctx, provider),
+            tags = store.getCurrentTags(ctx),
+            taskText = state.persistent.taskText.takeIf { it.isNotBlank() },
+            targetBranch = state.persistent.targetBranch.takeIf { it.isNotBlank() },
             providerId = provider.takeIf { it.isNotBlank() }
         )
     }

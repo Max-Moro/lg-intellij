@@ -12,5 +12,7 @@ class LgGenerateListingAction : LgGenerateAction(
     description = LgBundle.message("action.generate.listing.description"),
     icon = AllIcons.Actions.ShowCode,
     targetType = GenerationTarget.SECTION,
-    targetNameProvider = { it.state.selectedSection }
+    targetNameProvider = { store ->
+        store.getBusinessState().persistent.section.takeIf { it.isNotBlank() }
+    }
 )

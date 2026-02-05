@@ -13,7 +13,7 @@ import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
 import lg.intellij.services.generation.LgStatsService
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.statepce.PCEStateStore
 import lg.intellij.ui.toolwindow.LgIncludedFilesPanel
 
 /**
@@ -30,10 +30,10 @@ class LgShowIncludedFilesAction : AnAction(
     
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        val panelState = project.service<LgPanelStateService>()
+        val store = PCEStateStore.getInstance(project)
         val statsService = project.service<LgStatsService>()
-        
-        val selectedSection = panelState.state.selectedSection ?: "all"
+
+        val selectedSection = store.getBusinessState().persistent.section.ifBlank { "all" }
         val target = "sec:$selectedSection"
         
         object : Task.Backgroundable(

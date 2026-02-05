@@ -19,10 +19,9 @@ import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
 import lg.intellij.services.ai.AiIntegrationService
 import lg.intellij.services.ai.AiProviderException
-import lg.intellij.services.catalog.LgCatalogService
 import lg.intellij.services.generation.GenerationTarget
 import lg.intellij.services.generation.LgGenerationService
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.statepce.PCEStateStore
 
 /**
  * Action to send generated context to AI provider.
@@ -46,19 +45,19 @@ class LgSendToAiAction : AnAction(
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
 
-        val panelState = project.service<LgPanelStateService>()
-        val catalogService = project.service<LgCatalogService>()
+        val store = PCEStateStore.getInstance(project)
+        val state = store.getBusinessState()
         val aiService = AiIntegrationService.getInstance()
         val generationService = project.service<LgGenerationService>()
 
-        // Get provider from panel state
+        // Get provider from state
         val providerId = runBlocking {
-            aiService.resolveProvider(panelState.state.providerId)
+            aiService.resolveProvider(state.persistent.providerId)
         }
 
         // Validate: must have context selected
-        val selectedTemplate = panelState.state.selectedTemplate
-        if (selectedTemplate.isNullOrBlank()) {
+        val selectedTemplate = state.persistent.template
+        if (selectedTemplate.isBlank()) {
             NotificationGroupManager.getInstance()
                 .getNotificationGroup("LG Notifications")
                 .createNotification(
@@ -72,9 +71,8 @@ class LgSendToAiAction : AnAction(
 
         val providerName = aiService.getProviderName(providerId)
 
-        // Get runs from integration mode-set
-        val modeSets = catalogService.modeSets.value
-        val runs = panelState.getIntegrationModeRuns(selectedTemplate, providerId, modeSets)
+        // Get runs from integration mode-set (via store query method)
+        val runs = store.getIntegrationModeRuns(selectedTemplate, providerId)
 
         // Validate: must have integration mode configured (except clipboard)
         if (runs == null && providerId != "clipboard") {

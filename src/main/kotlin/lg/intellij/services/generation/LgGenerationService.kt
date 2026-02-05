@@ -8,7 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lg.intellij.cli.CliExecutor
 import lg.intellij.cli.handleWith
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.statepce.PCEStateStore
 
 /**
  * Target type for generation.
@@ -28,9 +28,9 @@ class LgGenerationService(private val project: Project) {
     
     private val cliExecutor: CliExecutor
         get() = project.service()
-    
-    private val panelState: LgPanelStateService
-        get() = project.service()
+
+    private val store: PCEStateStore
+        get() = PCEStateStore.getInstance(project)
 
     /**
      * Generates content for the specified target.
@@ -41,7 +41,7 @@ class LgGenerationService(private val project: Project) {
      */
     suspend fun generate(targetType: GenerationTarget, targetName: String): String? {
         return withContext(Dispatchers.IO) {
-            val params = CliArgsBuilder.fromPanelState(panelState)
+            val params = CliArgsBuilder.fromStore(store)
             val target = "${targetType.prefix}:$targetName"
             val (args, stdinData) = CliArgsBuilder.buildRenderArgs(target, params)
             

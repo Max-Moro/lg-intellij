@@ -1,7 +1,6 @@
 package lg.intellij.services.ai.providers.claudecli
 
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.terminal.ui.TerminalWidget
 import kotlinx.coroutines.Dispatchers
@@ -11,7 +10,7 @@ import lg.intellij.models.ClaudeIntegrationMethod
 import lg.intellij.services.ai.ProviderModeInfo
 import lg.intellij.services.ai.base.BaseCliProvider
 import lg.intellij.services.ai.base.CliExecutionContext
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.statepce.PCEStateStore
 import kotlin.io.path.exists
 
 /**
@@ -52,9 +51,7 @@ class ClaudeCliProvider : BaseCliProvider() {
         ctx: CliExecutionContext
     ): BusyState {
         val workingDirectory = ClaudeCommon.getWorkingDirectory(project, ctx.scope)
-
-        val stateService = project.service<LgPanelStateService>()
-        val method = stateService.state.claudeIntegrationMethod
+        val method = resolveIntegrationMethod(project)
 
         val lockFile = when (method) {
             ClaudeIntegrationMethod.MEMORY_FILE -> ClaudeMethodMemoryFile.CLAUDE_LOCAL_FILE
@@ -85,9 +82,7 @@ class ClaudeCliProvider : BaseCliProvider() {
         ctx: CliExecutionContext
     ) {
         val workingDirectory = ClaudeCommon.getWorkingDirectory(project, ctx.scope)
-
-        val stateService = project.service<LgPanelStateService>()
-        val method = stateService.state.claudeIntegrationMethod
+        val method = resolveIntegrationMethod(project)
 
         // ctx.runs is passed as-is to CLI (opaque string from mode configuration)
         when (method) {
@@ -148,6 +143,16 @@ class ClaudeCliProvider : BaseCliProvider() {
         withContext(Dispatchers.EDT) {
             widget.sendCommandToExecute(claudeCommand)
         }
+    }
+
+    /**
+     * Resolves integration method from PCEStateStore provider settings.
+     */
+    private fun resolveIntegrationMethod(project: Project): ClaudeIntegrationMethod {
+        val store = PCEStateStore.getInstance(project)
+        val methodStr = store.getProviderSetting(id, "method")
+        return methodStr?.let { runCatching { ClaudeIntegrationMethod.valueOf(it) }.getOrNull() }
+            ?: ClaudeIntegrationMethod.SESSION
     }
 
     override fun getSupportedModes(): List<ProviderModeInfo> {

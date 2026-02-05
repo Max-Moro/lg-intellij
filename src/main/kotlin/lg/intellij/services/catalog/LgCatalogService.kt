@@ -1,6 +1,5 @@
 package lg.intellij.services.catalog
 
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
@@ -20,7 +19,7 @@ import lg.intellij.models.ContextsListSchema
 import lg.intellij.models.ModeSetsListSchema
 import lg.intellij.models.SectionsListSchema
 import lg.intellij.models.TagSetsListSchema
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.statepce.PCEStateStore
 
 /**
  * Service for loading and caching catalog data from CLI.
@@ -79,9 +78,10 @@ class LgCatalogService(private val project: Project) {
 
         try {
             // Get current context and provider from state for context-dependent loading
-            val panelState = project.service<LgPanelStateService>()
-            val currentContext = panelState.state.selectedTemplate ?: ""
-            val currentProvider = panelState.state.providerId ?: ""
+            val store = PCEStateStore.getInstance(project)
+            val state = store.getBusinessState()
+            val currentContext = state.persistent.template
+            val currentProvider = state.persistent.providerId
 
             withContext(Dispatchers.IO) {
                 // Parallel loading of all independent catalog data
@@ -254,22 +254,13 @@ class LgCatalogService(private val project: Project) {
     }
 
     /**
-     * Actualizes LgPanelStateService by removing obsolete modes and tags.
-     * @param context Current context name
-     * @param provider Current provider ID
+     * State actualization is now handled by domain rules in the coordinator
+     * (ModeSetsLoaded, TagSetsLoaded commands in adaptive domain).
+     * This method is kept as no-op for compatibility with loadAll() flow.
      */
+    @Suppress("UNUSED_PARAMETER")
     private suspend fun actualizeState(context: String, provider: String) {
-        withContext(Dispatchers.EDT) {
-            val panelState = project.service<LgPanelStateService>()
-            val modeSets = _modeSets.value
-            val tagSets = _tagSets.value
-
-            val changed = panelState.actualizeState(context, provider, modeSets, tagSets)
-
-            if (changed) {
-                LOG.info("Panel state actualized: obsolete modes/tags removed")
-            }
-        }
+        // No-op: actualization is handled by coordinator domain rules
     }
 
     companion object {

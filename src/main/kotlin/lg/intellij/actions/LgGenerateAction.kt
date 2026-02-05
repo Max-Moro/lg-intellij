@@ -12,8 +12,8 @@ import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
 import lg.intellij.services.generation.GenerationTarget
 import lg.intellij.services.generation.LgGenerationService
-import lg.intellij.services.state.LgPanelStateService
 import lg.intellij.services.vfs.LgVirtualFileService
+import lg.intellij.statepce.PCEStateStore
 import javax.swing.Icon
 
 /**
@@ -26,36 +26,36 @@ open class LgGenerateAction(
     description: String,
     icon: Icon?,
     private val targetType: GenerationTarget,
-    private val targetNameProvider: (LgPanelStateService) -> String?
+    private val targetNameProvider: (PCEStateStore) -> String?
 ) : AnAction(text, description, icon) {
-    
+
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        val panelState = project.service<LgPanelStateService>()
+        val store = PCEStateStore.getInstance(project)
         val generationService = project.service<LgGenerationService>()
-        
-        val targetName = targetNameProvider(panelState)
+
+        val targetName = targetNameProvider(store)
         if (targetName.isNullOrBlank()) {
             LOG.warn("Generate action triggered but no target selected for ${targetType.displayName}")
             return
         }
-        
+
         object : Task.Backgroundable(
             project,
             LgBundle.message("action.generate.${targetType.displayName}.progress", targetName),
             true
         ) {
             private var output: String? = null
-            
+
             override fun run(indicator: ProgressIndicator) {
                 indicator.isIndeterminate = true
                 indicator.text = LgBundle.message("action.generate.${targetType.displayName}.progress.text", targetName)
-                
+
                 output = runBlocking {
                     generationService.generate(targetType, targetName)
                 }
             }
-            
+
             override fun onSuccess() {
                 val result = output
                 if (result != null) {
@@ -64,35 +64,34 @@ open class LgGenerateAction(
             }
         }.queue()
     }
-    
+
     /**
      * Opens generated content in editor via LgVirtualFileService.
      */
     private fun openInEditor(project: Project, content: String, targetName: String) {
         val virtualFileService = project.service<LgVirtualFileService>()
-        
+
         val success = when (targetType) {
             GenerationTarget.SECTION -> virtualFileService.openListing(content, targetName)
             GenerationTarget.CONTEXT -> virtualFileService.openContext(content, targetName)
         }
-        
+
         if (!success) {
             LOG.warn("Failed to open ${targetType.displayName} in editor")
         }
     }
-    
+
     override fun update(e: AnActionEvent) {
         val project = e.project
-        val panelState = project?.service<LgPanelStateService>()
-        val targetName = panelState?.let { targetNameProvider(it) }
-        
+        val store = project?.let { PCEStateStore.getInstance(it) }
+        val targetName = store?.let { targetNameProvider(it) }
+
         e.presentation.isEnabled = project != null && !targetName.isNullOrBlank()
     }
-    
+
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
-    
+
     companion object {
         private val LOG = logger<LgGenerateAction>()
     }
 }
-

@@ -3,34 +3,39 @@ package lg.intellij.actions
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
-import lg.intellij.services.catalog.LgCatalogService
-import lg.intellij.services.state.LgPanelStateService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import lg.intellij.bootstrap.getCoordinator
+import lg.intellij.bootstrap.getStore
+import lg.intellij.statepce.domains.SetTags
+import lg.intellij.statepce.domains.SetTagsPayload
 import lg.intellij.ui.dialogs.LgTagsDialog
 
 /**
  * Action to open Tags Configuration Dialog.
  *
  * Opens modal dialog with tag-sets, allows user to select tags,
- * saves selection to LgPanelStateService on OK.
+ * dispatches SetTags command to coordinator on OK.
  */
 class LgConfigureTagsAction : AnAction() {
-    
+
     private val log = logger<LgConfigureTagsAction>()
-    
+    private val scope = CoroutineScope(Dispatchers.Default)
+
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
 
-        val catalogService = project.service<LgCatalogService>()
-        val panelState = project.service<LgPanelStateService>()
+        val store = getStore(project)
+        val state = store.getBusinessState()
 
         // Get current context for context-dependent tags
-        val ctx = panelState.state.selectedTemplate ?: ""
+        val ctx = state.persistent.template
 
         // Get current tag-sets and selected tags
-        val tagSetsData = catalogService.tagSets.value
-        val currentSelectedTags = panelState.getCurrentTags(ctx)
+        val tagSetsData = state.configuration.tagSets
+        val currentSelectedTags = store.getCurrentTags(ctx)
 
         // Open dialog
         val dialog = LgTagsDialog(
@@ -40,22 +45,27 @@ class LgConfigureTagsAction : AnAction() {
         )
 
         if (dialog.showAndGet()) {
-            // User clicked OK — save selected tags using context-dependent storage
+            // User clicked OK — dispatch SetTags command
             val newSelectedTags = dialog.getSelectedTags()
-            panelState.setCurrentTags(ctx, newSelectedTags)
+
+            scope.launch {
+                val coordinator = getCoordinator(project)
+                coordinator.dispatch(
+                    SetTags.create(SetTagsPayload(newSelectedTags))
+                )
+            }
 
             val totalTags = newSelectedTags.values.sumOf { it.size }
             log.info("Tags updated: $totalTags tags selected across ${newSelectedTags.size} tag-sets")
         }
     }
-    
+
     override fun update(e: AnActionEvent) {
         // Available only if project is open
         e.presentation.isEnabled = e.project != null
     }
-    
+
     override fun getActionUpdateThread(): ActionUpdateThread {
         return ActionUpdateThread.BGT
     }
 }
-

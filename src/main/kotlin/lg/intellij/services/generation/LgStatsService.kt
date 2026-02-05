@@ -10,7 +10,7 @@ import kotlinx.serialization.json.*
 import lg.intellij.cli.CliExecutor
 import lg.intellij.cli.handleWith
 import lg.intellij.models.ReportSchema
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.statepce.PCEStateStore
 
 /**
  * Service for fetching statistics via CLI 'lg report' command.
@@ -20,9 +20,9 @@ class LgStatsService(private val project: Project) {
     
     private val cliExecutor: CliExecutor
         get() = project.service()
-    
-    private val panelState: LgPanelStateService
-        get() = project.service()
+
+    private val store: PCEStateStore
+        get() = PCEStateStore.getInstance(project)
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -33,14 +33,14 @@ class LgStatsService(private val project: Project) {
     /**
      * Fetches statistics for the specified target.
      *
-     * All parameters (tokenization, modes, tags, taskText) are taken from LgPanelStateService.
+     * All parameters (tokenization, modes, tags, taskText) are taken from PCEStateStore.
      *
      * @param target Target specifier (e.g., "sec:all", "ctx:template-name")
      * @return Parsed statistics report or null if stats collection failed (user already notified)
      */
     suspend fun getStats(target: String): ReportSchema? {
         return withContext(Dispatchers.IO) {
-            val params = CliArgsBuilder.fromPanelState(panelState)
+            val params = CliArgsBuilder.fromStore(store)
             val (args, stdinData) = CliArgsBuilder.buildReportArgs(target, params)
             
             LOG.debug("Fetching stats for '$target' with args: $args")

@@ -3,7 +3,6 @@ package lg.intellij.services.ai.base
 import com.intellij.notification.NotificationAction
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.project.Project
@@ -12,10 +11,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import lg.intellij.models.ShellType
+import lg.intellij.models.ClaudeModel
+import lg.intellij.models.CodexReasoningEffort
 import lg.intellij.services.ai.AiProvider
 import lg.intellij.services.ai.AiProviderException
 import lg.intellij.services.ai.ProviderModeInfo
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.statepce.PCEStateStore
 import com.intellij.terminal.ui.TerminalWidget
 import org.jetbrains.plugins.terminal.TerminalToolWindowManager
 
@@ -61,22 +62,24 @@ abstract class BaseCliProvider : AiProvider {
     protected val log = logger<BaseCliProvider>()
 
     /**
-     * Get CLI execution context from panel state.
+     * Get CLI execution context from PCEStateStore.
      *
      * @param project Project context
      * @param runs Provider-specific runs string
      * @return CLI execution context with scope/shell/runs
      */
     protected fun getCliBaseContext(project: Project, runs: String): CliExecutionContext {
-        val stateService = project.service<LgPanelStateService>()
-        val state = stateService.state
+        val store = PCEStateStore.getInstance(project)
+        val state = store.getBusinessState()
 
         return CliExecutionContext(
-            scope = state.cliScope ?: "",
-            shell = state.cliShell,
+            scope = state.persistent.cliScope,
+            shell = state.persistent.cliShell,
             runs = runs,
-            claudeModel = state.claudeModel,
-            codexReasoningEffort = state.codexReasoningEffort
+            claudeModel = store.getProviderSetting("com.anthropic.claude.cli", "model")
+                ?.let { runCatching { ClaudeModel.valueOf(it) }.getOrNull() },
+            codexReasoningEffort = store.getProviderSetting("com.openai.codex.cli", "reasoning")
+                ?.let { runCatching { CodexReasoningEffort.valueOf(it) }.getOrNull() }
         )
     }
 

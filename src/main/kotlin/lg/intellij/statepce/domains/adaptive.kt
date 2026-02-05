@@ -40,6 +40,9 @@ val SelectMode = command("adaptive/SELECT_MODE").payload<SelectModePayload>()
 data class ToggleTagPayload(val tagSetId: String, val tagId: String)
 val ToggleTag = command("adaptive/TOGGLE_TAG").payload<ToggleTagPayload>()
 
+data class SetTagsPayload(val tags: Map<String, Set<String>>)
+val SetTags = command("adaptive/SET_TAGS").payload<SetTagsPayload>()
+
 data class SelectBranchPayload(val branch: String)
 val SelectBranch = command("adaptive/SELECT_BRANCH").payload<SelectBranchPayload>()
 
@@ -246,6 +249,22 @@ fun registerAdaptiveRules(project: Project) {
             lgResult(
                 envMutations = mapOf("branches" to branches),
                 mutations = mutations
+            )
+        }
+    ))
+
+    // Batch set all tags for current context (from tags dialog)
+    rule.invoke(SetTags, RuleConfig(
+        condition = { _: PCEState, _: SetTagsPayload -> true },
+        apply = { state: PCEState, payload: SetTagsPayload ->
+            val ctx = state.persistent.template
+
+            // Deep copy
+            val newTagsByContext = state.persistent.tagsByContext.toMutableMap()
+            newTagsByContext[ctx] = payload.tags.mapValues { it.value.toMutableSet() }.toMutableMap()
+
+            lgResult(
+                mutations = mapOf("tagsByContext" to newTagsByContext)
             )
         }
     ))

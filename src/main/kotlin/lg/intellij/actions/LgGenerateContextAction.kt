@@ -12,5 +12,7 @@ class LgGenerateContextAction : LgGenerateAction(
     description = LgBundle.message("action.generate.context.description"),
     icon = AllIcons.Actions.ShowCode,
     targetType = GenerationTarget.CONTEXT,
-    targetNameProvider = { it.state.selectedTemplate }
+    targetNameProvider = { store ->
+        store.getBusinessState().persistent.template.takeIf { it.isNotBlank() }
+    }
 )

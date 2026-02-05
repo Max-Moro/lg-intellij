@@ -2,7 +2,7 @@ package lg.intellij.actions
 
 import com.intellij.icons.AllIcons
 import lg.intellij.LgBundle
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.statepce.PCEStateStore
 
 /**
  * Action to show statistics for selected section.
@@ -12,19 +12,18 @@ class LgShowSectionStatsAction : LgShowStatsAction(
     LgBundle.message("action.show.stats.description"),
     AllIcons.Actions.ListFiles
 ) {
-    
-    override fun determineTarget(panelState: LgPanelStateService): Pair<String?, String?> {
-        val selectedSection = panelState.state.selectedSection
-        
-        return if (!selectedSection.isNullOrBlank()) {
+
+    override fun determineTarget(store: PCEStateStore): Pair<String?, String?> {
+        val selectedSection = store.getBusinessState().persistent.section
+
+        return if (selectedSection.isNotBlank()) {
             "sec:$selectedSection" to selectedSection
         } else {
             null to null
         }
     }
-    
-    override fun hasValidTarget(panelState: LgPanelStateService): Boolean {
-        return !panelState.state.selectedSection.isNullOrBlank()
+
+    override fun hasValidTarget(store: PCEStateStore): Boolean {
+        return store.getBusinessState().persistent.section.isNotBlank()
     }
 }
-

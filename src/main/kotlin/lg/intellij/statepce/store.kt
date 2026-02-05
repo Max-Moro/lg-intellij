@@ -9,6 +9,9 @@ import lg.intellij.models.ShellType
 import lg.intellij.models.TagSetsListSchema
 import lg.intellij.stateengine.StateListener
 import lg.intellij.stateengine.StateStore
+import lg.intellij.statepce.domains.DEFAULT_CTX_LIMIT
+import lg.intellij.statepce.domains.DEFAULT_ENCODER
+import lg.intellij.statepce.domains.DEFAULT_TOKENIZER_LIB
 
 // ============================================
 // LG Rule Result
@@ -125,13 +128,13 @@ class PCEStateStore(
         var tagsByContext by map<String, MutableMap<String, MutableSet<String>>>()
 
         /** Tokenizer library (tiktoken, tokenizers, sentencepiece) */
-        var tokenizerLib by string(PersistentState.DEFAULT_TOKENIZER_LIB)
+        var tokenizerLib by string(DEFAULT_TOKENIZER_LIB)
 
         /** Encoder name (o200k_base, cl100k_base, etc.) */
-        var encoder by string(PersistentState.DEFAULT_ENCODER)
+        var encoder by string(DEFAULT_ENCODER)
 
         /** Context limit in tokens */
-        var ctxLimit by property(PersistentState.DEFAULT_CTX_LIMIT)
+        var ctxLimit by property(DEFAULT_CTX_LIMIT)
 
         /** CLI scope - relative path from workspace root (empty = root) */
         var cliScope by string("")
@@ -256,8 +259,8 @@ class PCEStateStore(
             section = state.section ?: "",
             modesByContextProvider = state.modesByContextProvider.toMutableMap(),
             tagsByContext = state.tagsByContext.toMutableMap(),
-            tokenizerLib = state.tokenizerLib ?: PersistentState.DEFAULT_TOKENIZER_LIB,
-            encoder = state.encoder ?: PersistentState.DEFAULT_ENCODER,
+            tokenizerLib = state.tokenizerLib ?: DEFAULT_TOKENIZER_LIB,
+            encoder = state.encoder ?: DEFAULT_ENCODER,
             ctxLimit = state.ctxLimit,
             cliScope = state.cliScope ?: "",
             cliShell = state.cliShell,
@@ -294,9 +297,9 @@ class PCEStateStore(
                 "providerId" -> state.providerId = value as? String ?: ""
                 "template" -> state.template = value as? String ?: ""
                 "section" -> state.section = value as? String ?: ""
-                "tokenizerLib" -> state.tokenizerLib = value as? String ?: PersistentState.DEFAULT_TOKENIZER_LIB
-                "encoder" -> state.encoder = value as? String ?: PersistentState.DEFAULT_ENCODER
-                "ctxLimit" -> state.ctxLimit = value as? Int ?: PersistentState.DEFAULT_CTX_LIMIT
+                "tokenizerLib" -> state.tokenizerLib = value as? String ?: DEFAULT_TOKENIZER_LIB
+                "encoder" -> state.encoder = value as? String ?: DEFAULT_ENCODER
+                "ctxLimit" -> state.ctxLimit = value as? Int ?: DEFAULT_CTX_LIMIT
                 "cliScope" -> state.cliScope = value as? String ?: ""
                 "cliShell" -> state.cliShell = value as? ShellType ?: ShellType.getDefault()
                 "targetBranch" -> state.targetBranch = value as? String ?: ""
@@ -464,9 +467,9 @@ class PCEStateStore(
         state.section = ""
         state.modesByContextProvider.clear()
         state.tagsByContext.clear()
-        state.tokenizerLib = PersistentState.DEFAULT_TOKENIZER_LIB
-        state.encoder = PersistentState.DEFAULT_ENCODER
-        state.ctxLimit = PersistentState.DEFAULT_CTX_LIMIT
+        state.tokenizerLib = DEFAULT_TOKENIZER_LIB
+        state.encoder = DEFAULT_ENCODER
+        state.ctxLimit = DEFAULT_CTX_LIMIT
         state.cliScope = ""
         state.cliShell = ShellType.getDefault()
         state.targetBranch = ""

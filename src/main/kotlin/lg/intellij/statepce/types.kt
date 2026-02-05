@@ -4,6 +4,9 @@ import lg.intellij.models.ModeSetsListSchema
 import lg.intellij.models.SectionInfo
 import lg.intellij.models.ShellType
 import lg.intellij.models.TagSetsListSchema
+import lg.intellij.statepce.domains.DEFAULT_CTX_LIMIT
+import lg.intellij.statepce.domains.DEFAULT_ENCODER
+import lg.intellij.statepce.domains.DEFAULT_TOKENIZER_LIB
 
 // Re-export engine types for convenience
 typealias BaseCommand = lg.intellij.stateengine.BaseCommand
@@ -97,11 +100,6 @@ data class PersistentState(
      */
     var providerSettings: MutableMap<String, MutableMap<String, Any?>> = mutableMapOf()
 ) {
-    companion object {
-        const val DEFAULT_TOKENIZER_LIB = "tiktoken"
-        const val DEFAULT_ENCODER = "o200k_base"
-        const val DEFAULT_CTX_LIMIT = 128000
-    }
 }
 
 // ============================================

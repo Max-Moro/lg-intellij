@@ -46,17 +46,6 @@ val Initialize = command("lifecycle/INITIALIZE").noPayload()
 val Refresh = command("lifecycle/REFRESH").noPayload()
 
 // ============================================
-// Temporary Command Stubs
-// Will be moved to respective domains in steps 10-12.
-// Commands moved to context.kt: ContextsLoaded, SectionsLoaded,
-// ModeSetsLoaded, TagSetsLoaded, BranchesLoaded
-// ============================================
-
-// Tokenization domain (step 12)
-data class TokenizerLibsLoadedPayload(val libs: List<String>)
-val TokenizerLibsLoaded = command("tokenization/LIBS_LOADED").payload<TokenizerLibsLoadedPayload>()
-
-// ============================================
 // Shared Catalog Loading
 // ============================================
 
@@ -115,7 +104,7 @@ private fun buildCatalogOps(
             } catch (_: Exception) {
                 emptyList()
             }
-            return TokenizerLibsLoaded.create(TokenizerLibsLoadedPayload(libs))
+            return LibsLoaded.create(LibsLoadedPayload(libs))
         }
     })
 

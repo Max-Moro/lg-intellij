@@ -47,23 +47,10 @@ val Refresh = command("lifecycle/REFRESH").noPayload()
 
 // ============================================
 // Temporary Command Stubs
-// Will be moved to respective domains in steps 8-12.
+// Will be moved to respective domains in steps 10-12.
+// Commands moved to context.kt: ContextsLoaded, SectionsLoaded,
+// ModeSetsLoaded, TagSetsLoaded, BranchesLoaded
 // ============================================
-
-// Section domain (step 10)
-data class SectionsLoadedPayload(val sections: List<String>)
-val SectionsLoaded = command("section/LOADED").payload<SectionsLoadedPayload>()
-
-// Context domain (step 9)
-data class ContextsLoadedPayload(val contexts: List<String>)
-val ContextsLoaded = command("context/LOADED").payload<ContextsLoadedPayload>()
-
-// Adaptive domain (step 11)
-data class ModeSetsLoadedPayload(val modeSets: ModeSetsListSchema?)
-val ModeSetsLoaded = command("adaptive/MODE_SETS_LOADED").payload<ModeSetsLoadedPayload>()
-
-data class TagSetsLoadedPayload(val tagSets: TagSetsListSchema?)
-val TagSetsLoaded = command("adaptive/TAG_SETS_LOADED").payload<TagSetsLoadedPayload>()
 
 // Tokenization domain (step 12)
 data class TokenizerLibsLoadedPayload(val libs: List<String>)

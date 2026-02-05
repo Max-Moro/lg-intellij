@@ -21,7 +21,7 @@ import com.intellij.openapi.project.Project
 fun registerAllDomainRules(project: Project) {
     registerLifecycleRules(project)
     registerProviderRules(project)
-    // registerContextRules(project)       // Step 9
+    registerContextRules(project)
     // registerSectionRules(project)       // Step 10
     // registerAdaptiveRules(project)      // Step 11
     // registerTokenizationRules(project)  // Step 12

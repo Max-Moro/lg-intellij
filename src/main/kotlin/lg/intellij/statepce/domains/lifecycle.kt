@@ -50,10 +50,6 @@ val Refresh = command("lifecycle/REFRESH").noPayload()
 // Will be moved to respective domains in steps 8-12.
 // ============================================
 
-// Provider domain (step 8)
-data class ProvidersDetectedPayload(val providers: List<ProviderInfo>)
-val ProvidersDetected = command("provider/DETECTED").payload<ProvidersDetectedPayload>()
-
 // Section domain (step 10)
 data class SectionsLoadedPayload(val sections: List<String>)
 val SectionsLoaded = command("section/LOADED").payload<SectionsLoadedPayload>()

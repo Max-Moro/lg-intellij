@@ -120,14 +120,19 @@ typealias StateListener<TState> = (state: TState) -> Unit
  * Only responsible for storing and updating business state.
  * Coordination (stability, pending ops) is handled by StateCoordinator.
  *
+ * Note: Method is named getBusinessState() to avoid conflict with
+ * IntelliJ Platform's SimplePersistentStateComponent.getState().
+ *
  * @param TState Application state type
  * @param TResult Rule result type (for applyMutations)
  */
 interface StateStore<TState, TResult : RuleResult> {
     /**
-     * Get current state snapshot.
+     * Get current business state snapshot.
+     *
+     * Named getBusinessState() to avoid conflict with platform persistence APIs.
      */
-    fun getState(): TState
+    fun getBusinessState(): TState
 
     /**
      * Apply mutations from rule result.

@@ -106,7 +106,7 @@ class StateCoordinator<TState, TResult : RuleResult>(
     suspend fun dispatch(command: BaseCommand) {
         logger.debug("Dispatching command: ${command.type}")
 
-        val state = store.getState()
+        val state = store.getBusinessState()
 
         // Find applicable rules
         val applicableRules = rules.filter { rule ->

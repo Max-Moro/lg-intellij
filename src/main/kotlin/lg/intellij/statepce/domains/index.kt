@@ -22,7 +22,7 @@ fun registerAllDomainRules(project: Project) {
     registerLifecycleRules(project)
     registerProviderRules(project)
     registerContextRules(project)
-    // registerSectionRules(project)       // Step 10
+    registerSectionRules(project)
     // registerAdaptiveRules(project)      // Step 11
     // registerTokenizationRules(project)  // Step 12
 }

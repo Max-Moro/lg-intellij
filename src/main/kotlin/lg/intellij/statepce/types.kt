@@ -1,6 +1,7 @@
 package lg.intellij.statepce
 
 import lg.intellij.models.ModeSetsListSchema
+import lg.intellij.models.SectionInfo
 import lg.intellij.models.ShellType
 import lg.intellij.models.TagSetsListSchema
 
@@ -120,7 +121,7 @@ data class PersistentState(
  */
 data class ConfigurationState(
     var contexts: List<String> = emptyList(),
-    var sections: List<String> = emptyList(),
+    var sections: List<SectionInfo> = emptyList(),
     var modeSets: ModeSetsListSchema = ModeSetsListSchema(emptyList()),
     var tagSets: TagSetsListSchema = TagSetsListSchema(emptyList()),
     var tokenizerLibs: List<String> = emptyList(),

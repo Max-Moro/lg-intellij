@@ -156,7 +156,7 @@ class LgCatalogService(private val project: Project) {
             schema.sections
         }
 
-        _sections.value = sections
+        _sections.value = sections.map { it.name }
     }
     
     /**

@@ -44,12 +44,8 @@ val ContextsLoaded = command("context/LOADED").payload<ContextsLoadedPayload>()
 
 // ============================================
 // Temporary Command Stubs
-// Will be moved to respective domains in steps 10-11.
+// Will be moved to respective domains in step 11.
 // ============================================
-
-// Section domain (step 10)
-data class SectionsLoadedPayload(val sections: List<String>)
-val SectionsLoaded = command("section/LOADED").payload<SectionsLoadedPayload>()
 
 // Adaptive domain (step 11)
 data class ModeSetsLoadedPayload(val modeSets: ModeSetsListSchema?)

@@ -4,6 +4,7 @@ import com.intellij.openapi.components.*
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import lg.intellij.models.ModeSetsListSchema
+import lg.intellij.models.SectionInfo
 import lg.intellij.models.ShellType
 import lg.intellij.models.TagSetsListSchema
 import lg.intellij.stateengine.StateListener
@@ -333,7 +334,7 @@ class PCEStateStore(
         @Suppress("UNCHECKED_CAST")
         configuration = configuration.copy(
             contexts = mutations["contexts"] as? List<String> ?: configuration.contexts,
-            sections = mutations["sections"] as? List<String> ?: configuration.sections,
+            sections = mutations["sections"] as? List<SectionInfo> ?: configuration.sections,
             modeSets = mutations["modeSets"] as? ModeSetsListSchema ?: configuration.modeSets,
             tagSets = mutations["tagSets"] as? TagSetsListSchema ?: configuration.tagSets,
             tokenizerLibs = mutations["tokenizerLibs"] as? List<String> ?: configuration.tokenizerLibs,

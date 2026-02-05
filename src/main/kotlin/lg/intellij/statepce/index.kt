@@ -1,8 +1,13 @@
 /**
  * State PCE Layer - Public API
  *
- * This file re-exports public types from the statepce package
- * for convenient imports in other modules.
+ * This file documents the public API of the statepce package.
+ *
+ * Public surface:
+ * - types.kt: PCEState, PersistentState, ConfigurationState, EnvironmentState, ProviderInfo, EncoderEntry
+ * - store.kt: PCEStateStore, LGRuleResult, lgResult(), emptyLgResult()
+ * - rule.kt: rule (factory), getAllRules()
+ * - coordinator.kt: PCEStateCoordinator (typealias), createPCECoordinator()
  *
  * Usage:
  * ```
@@ -13,5 +18,5 @@
 
 package lg.intellij.statepce
 
-// Types are exported directly from types.kt and store.kt
-// This file exists for documentation and potential future re-exports
+// All types are exported directly from their respective files.
+// This file exists for documentation.

@@ -6,8 +6,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import kotlinx.coroutines.*
-import lg.intellij.services.catalog.LgCatalogService
+import lg.intellij.bootstrap.getCoordinator
 import lg.intellij.services.LgInitService
+import lg.intellij.statepce.domains.Refresh
 
 /**
  * Listens for file changes in lg-cfg/ directory and triggers catalog reload.
@@ -64,14 +65,16 @@ class LgConfigFileListener(private val project: Project) : BulkFileListener {
             delay(DEBOUNCE_DELAY_MS)
 
             try {
-                val catalogService = project.service<LgCatalogService>()
-                catalogService.reload()
-                LOG.info("Catalog reloaded after lg-cfg/ changes")
+                val coordinator = getCoordinator(project)
+                coordinator.dispatch(Refresh.create())
+                LOG.info("Dispatched Refresh after lg-cfg/ changes")
             } catch (e: CancellationException) {
-                // Cancelled by new event - normal
                 throw e
+            } catch (e: IllegalStateException) {
+                // Coordinator not yet bootstrapped - ignore
+                LOG.debug("Coordinator not ready, skipping refresh")
             } catch (e: Exception) {
-                LOG.error("Failed to reload catalog after file changes", e)
+                LOG.error("Failed to dispatch refresh after file changes", e)
             }
         }
     }

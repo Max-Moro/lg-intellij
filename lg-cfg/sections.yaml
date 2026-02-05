@@ -140,7 +140,6 @@ src:
             - "/models/ClaudeModel.kt"
             - "/models/ShellType.kt"
             - "/models/CliExecutionContext.kt"
-            - "/ui/toolwindow/LgCliSettingsPanel.kt"
 
       src/main/kotlin/lg/intellij/services/ai:
         mode: block

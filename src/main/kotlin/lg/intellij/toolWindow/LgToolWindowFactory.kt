@@ -10,6 +10,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.content.ContentFactory
 import lg.intellij.LgBundle
+import lg.intellij.bootstrap.shutdownCoordinator
 import lg.intellij.services.state.LgWorkspaceStateService
 import lg.intellij.ui.toolwindow.LgControlPanel
 import lg.intellij.ui.toolwindow.LgIncludedFilesPanel
@@ -82,9 +83,14 @@ class LgToolWindowFactory : ToolWindowFactory, DumbAware {
         
         // Register control panel as disposable with content as parent
         Disposer.register(content, controlPanel)
-        
+
         contentManager.addContent(content)
-        
+
+        // Cleanup coordinator when content is disposed
+        Disposer.register(content, com.intellij.openapi.Disposable {
+            shutdownCoordinator(project)
+        })
+
         log.info("Tool Window content created for project: ${project.name}")
     }
     

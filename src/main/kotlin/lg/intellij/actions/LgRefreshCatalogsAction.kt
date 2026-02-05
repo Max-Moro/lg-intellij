@@ -6,15 +6,12 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
-import lg.intellij.services.catalog.LgCatalogService
-import lg.intellij.services.catalog.TokenizerCatalogService
+import lg.intellij.bootstrap.getCoordinator
+import lg.intellij.statepce.domains.Refresh
 
 /**
  * Action to refresh all catalog data from CLI.
@@ -46,27 +43,15 @@ class LgRefreshCatalogsAction : AnAction(
             override fun run(indicator: ProgressIndicator) {
                 indicator.isIndeterminate = true
                 indicator.text = LgBundle.message("action.refresh.progress.text")
-                
-                try {
-                    // Invalidate tokenizer cache first (fast sync operation)
-                    val tokenizerService = TokenizerCatalogService.getInstance()
-                    tokenizerService.invalidateAll()
 
-                    // Parallel reload of catalog and tokenizer data
+                try {
                     runBlocking {
-                        coroutineScope {
-                            launch {
-                                val catalogService = project.service<LgCatalogService>()
-                                catalogService.reload()
-                            }
-                            launch {
-                                tokenizerService.loadLibraries(project)
-                            }
-                        }
+                        val coordinator = getCoordinator(project)
+                        coordinator.dispatch(Refresh.create())
                     }
-                    
+
                     indicator.text = LgBundle.message("action.refresh.progress.completed")
-                    
+
                     // Success notification
                     NotificationGroupManager.getInstance()
                         .getNotificationGroup("LG Notifications")
@@ -76,7 +61,7 @@ class LgRefreshCatalogsAction : AnAction(
                             NotificationType.INFORMATION
                         )
                         .notify(project)
-                    
+
                 } catch (e: Exception) {
                     // Error notification
                     NotificationGroupManager.getInstance()

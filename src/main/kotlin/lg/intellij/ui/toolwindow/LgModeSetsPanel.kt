@@ -1,21 +1,22 @@
 package lg.intellij.ui.toolwindow
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.EDT
-import com.intellij.openapi.components.service
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
 import lg.intellij.LgBundle
-import lg.intellij.models.ModeSet
-import lg.intellij.services.catalog.LgCatalogService
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.statepce.PCEState
+import lg.intellij.statepce.PCEStateCoordinator
+import lg.intellij.statepce.PCEStateStore
+import lg.intellij.statepce.domains.SelectMode
+import lg.intellij.statepce.domains.SelectModePayload
+import lg.intellij.statepce.domains.SelectBranch
+import lg.intellij.statepce.domains.SelectBranchPayload
 import lg.intellij.ui.components.LgLabeledComponent
 import lg.intellij.ui.components.LgWrappingPanel
 import javax.swing.JComponent
@@ -23,60 +24,45 @@ import javax.swing.JComponent
 /**
  * Self-contained panel for managing modes (mode-sets).
  *
- * Fully encapsulates:
- * - Loading mode-sets from LgCatalogService
- * - State management via LgPanelStateService
+ * Command-driven architecture:
+ * - Subscribes to PCEStateStore for state updates
+ * - Dispatches commands via PCEStateCoordinator for all user interactions
  * - Dynamic UI updates when data changes
  * - Target branch selector (shown in review mode)
  */
 class LgModeSetsPanel(
-    project: Project,
+    private val coordinator: PCEStateCoordinator,
+    private val store: PCEStateStore,
     parentDisposable: Disposable
 ) : Disposable {
 
-    private val catalogService = project.service<LgCatalogService>()
-    private val stateService = project.service<LgPanelStateService>()
-
     // Coroutine scope (auto-cancelled on dispose)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
-    // Track current mode-sets data
-    private var currentModeSets: List<ModeSet> = emptyList()
-
-    // Track current branches data
-    private var currentBranches: List<String> = emptyList()
 
     // UI references
     private lateinit var wrappingPanel: LgWrappingPanel
     private var targetBranchCombo: ComboBox<String>? = null
 
+    // Track last state for diff-based updates
+    private var lastState: PCEState? = null
+
+    // Suppresses dispatch during programmatic UI updates
+    private var suppressDispatch = false
+
     init {
         // Register as child disposable
         Disposer.register(parentDisposable, this)
 
-        // Subscribe to catalog updates
-        scope.launch {
-            catalogService.modeSets.collectLatest { modeSets ->
-                currentModeSets = modeSets?.modeSets ?: emptyList()
-                LOG.debug("Mode-sets updated: ${currentModeSets.size} sets")
-
-                withContext(Dispatchers.EDT) {
-                    rebuildUI()
-                }
+        // Subscribe to state changes
+        val unsubscribe = store.subscribe { state ->
+            ApplicationManager.getApplication().invokeLater {
+                updateUI(state)
             }
         }
 
-        // Subscribe to branches updates
-        scope.launch {
-            catalogService.branches.collectLatest { branches ->
-                currentBranches = branches
-                LOG.debug("Branches updated: ${branches.size} branches")
-
-                withContext(Dispatchers.EDT) {
-                    updateTargetBranchCombo()
-                }
-            }
-        }
+        Disposer.register(this, Disposable {
+            unsubscribe()
+        })
     }
 
     /**
@@ -85,34 +71,60 @@ class LgModeSetsPanel(
      */
     fun createUI(): JComponent {
         wrappingPanel = LgWrappingPanel(hgap = 16)
-        rebuildUI()
         return wrappingPanel
+    }
+
+    /**
+     * Updates UI from PCEState.
+     */
+    private fun updateUI(state: PCEState) {
+        suppressDispatch = true
+        try {
+            val prev = lastState
+
+            if (prev == null || prev.configuration.modeSets != state.configuration.modeSets
+                || prev.environment.branches != state.environment.branches
+                || prev.persistent.modesByContextProvider != state.persistent.modesByContextProvider
+                || prev.persistent.template != state.persistent.template) {
+                rebuildUI(state)
+            }
+
+            if (prev == null || prev.environment.branches != state.environment.branches
+                || prev.persistent.targetBranch != state.persistent.targetBranch) {
+                updateTargetBranchCombo(state)
+            }
+
+            lastState = state
+        } finally {
+            suppressDispatch = false
+        }
     }
 
     /**
      * Rebuilds UI with current data.
      */
-    private fun rebuildUI() {
+    private fun rebuildUI(state: PCEState) {
         if (!::wrappingPanel.isInitialized) return
 
         // Clear existing components
         wrappingPanel.removeAll()
 
-        if (currentModeSets.isEmpty()) {
+        val modeSetsSchema = state.configuration.modeSets
+        if (modeSetsSchema.modeSets.isEmpty()) {
             // Empty state
             val emptyLabel = JBLabel(LgBundle.message("control.modes.empty")).apply {
                 foreground = JBUI.CurrentTheme.ContextHelp.FOREGROUND
             }
             wrappingPanel.add(emptyLabel)
         } else {
-            // Get current context and provider for context-dependent state
-            val ctx = stateService.state.selectedTemplate ?: ""
-            val provider = stateService.state.providerId ?: ""
-            val currentModes = stateService.getCurrentModes(ctx, provider).toMutableMap()
+            val ctx = state.persistent.template
+            val provider = state.persistent.providerId
+            val currentModes = state.persistent.modesByContextProvider[ctx]?.get(provider) ?: emptyMap()
 
             // Create labeled ComboBox for each mode-set
-            for (modeSet in currentModeSets) {
-                val combo = ComboBox(modeSet.modes.map { it.id }.toTypedArray()).apply {
+            for (modeSet in modeSetsSchema.modeSets) {
+                val modeIds = modeSet.modes.map { it.id }.toTypedArray()
+                val combo = ComboBox(modeIds).apply {
                     // Custom renderer
                     renderer = SimpleListCellRenderer.create { label, value, _ ->
                         val mode = modeSet.modes.find { it.id == value }
@@ -126,26 +138,23 @@ class LgModeSetsPanel(
                     val savedMode = currentModes[modeSet.id]
                     val defaultMode = modeSet.modes.firstOrNull()?.id
 
-                    if (savedMode != null && savedMode in modeSet.modes.map { it.id }) {
+                    if (savedMode != null && savedMode in modeIds) {
                         selectedItem = savedMode
                     } else if (defaultMode != null) {
                         selectedItem = defaultMode
-                        currentModes[modeSet.id] = defaultMode
-                        stateService.setCurrentModes(ctx, provider, currentModes)
                     }
 
                     // Listen to changes
                     addActionListener {
-                        val selectedMode = selectedItem as? String
-                        if (selectedMode != null) {
-                            // Update modes map with new selection
-                            val updatedModes = stateService.getCurrentModes(ctx, provider).toMutableMap()
-                            updatedModes[modeSet.id] = selectedMode
-                            stateService.setCurrentModes(ctx, provider, updatedModes)
-                            LOG.debug("Mode changed: ${modeSet.id} -> $selectedMode")
-
-                            // Update target branch visibility
-                            updateTargetBranchVisibility()
+                        if (!suppressDispatch) {
+                            val selectedMode = selectedItem as? String
+                            if (selectedMode != null) {
+                                scope.launch {
+                                    coordinator.dispatch(
+                                        SelectMode.create(SelectModePayload(modeSet.id, selectedMode))
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -159,7 +168,7 @@ class LgModeSetsPanel(
             }
 
             // Add target branch selector at the end
-            addTargetBranchSelector()
+            addTargetBranchSelector(state)
         }
 
         // Refresh layout
@@ -170,8 +179,8 @@ class LgModeSetsPanel(
     /**
      * Adds target branch selector at the end of panel.
      */
-    private fun addTargetBranchSelector() {
-        if (!hasReviewMode()) {
+    private fun addTargetBranchSelector(state: PCEState) {
+        if (!hasReviewMode(state)) {
             targetBranchCombo = null
             return
         }
@@ -189,26 +198,20 @@ class LgModeSetsPanel(
             component = combo
         )
         wrappingPanel.add(labeledCombo)
-
-        // If branches have not been loaded yet, trigger their loading
-        if (currentBranches.isEmpty()) {
-            scope.launch {
-                catalogService.loadBranchesOnly()
-            }
-        } else {
-            updateTargetBranchCombo()
-        }
     }
-    
+
     /**
      * Updates target branch ComboBox content without full UI rebuild.
      */
-    private fun updateTargetBranchCombo() {
+    private fun updateTargetBranchCombo(state: PCEState) {
         val combo = targetBranchCombo ?: return
 
-        if (!hasReviewMode()) {
+        if (!hasReviewMode(state)) {
             return
         }
+
+        val branches = state.environment.branches
+        val savedBranch = state.persistent.targetBranch
 
         // Remove all listeners
         val listeners = combo.actionListeners
@@ -220,34 +223,30 @@ class LgModeSetsPanel(
         // Update items
         combo.removeAllItems()
 
-        if (currentBranches.isEmpty()) {
+        if (branches.isEmpty()) {
             combo.isEnabled = false
             combo.addItem(LgBundle.message("control.target.branch.no.git"))
         } else {
             combo.isEnabled = true
-            currentBranches.forEach { combo.addItem(it) }
+            branches.forEach { combo.addItem(it) }
 
             // Priority: saved from state > current selection > main/master > first
-            val savedBranch = stateService.state.targetBranch
-
             when {
                 // 1. Restore from state (priority)
-                !savedBranch.isNullOrBlank() && savedBranch in currentBranches -> {
+                !savedBranch.isBlank() && savedBranch in branches -> {
                     combo.selectedItem = savedBranch
                 }
                 // 2. Keep current selection if still valid
-                currentSelection != null && currentSelection in currentBranches -> {
+                currentSelection != null && currentSelection in branches -> {
                     combo.selectedItem = currentSelection
                 }
                 // 3. Fallback: search for main/master or first in list
                 else -> {
-                    val defaultBranch = findDefaultBranch(currentBranches)
+                    val defaultBranch = findDefaultBranch(branches)
                     if (defaultBranch != null) {
                         combo.selectedItem = defaultBranch
-                        stateService.state.targetBranch = defaultBranch
-                    } else if (currentBranches.isNotEmpty()) {
+                    } else if (branches.isNotEmpty()) {
                         combo.selectedIndex = 0
-                        stateService.state.targetBranch = currentBranches[0]
                     }
                 }
             }
@@ -255,9 +254,15 @@ class LgModeSetsPanel(
 
         // Set listener AFTER filling and selecting the right item
         combo.addActionListener {
-            val selected = combo.selectedItem as? String
-            if (selected != null && selected != LgBundle.message("control.target.branch.no.git")) {
-                stateService.state.targetBranch = selected
+            if (!suppressDispatch) {
+                val selected = combo.selectedItem as? String
+                if (selected != null && selected != LgBundle.message("control.target.branch.no.git")) {
+                    scope.launch {
+                        coordinator.dispatch(
+                            SelectBranch.create(SelectBranchPayload(selected))
+                        )
+                    }
+                }
             }
         }
     }
@@ -281,20 +286,12 @@ class LgModeSetsPanel(
     }
 
     /**
-     * Updates visibility of target branch selector based on current modes.
-     */
-    private fun updateTargetBranchVisibility() {
-        // Full rebuild to add/remove target branch selector
-        rebuildUI()
-    }
-
-    /**
      * Checks for "review" mode in current selections.
      */
-    private fun hasReviewMode(): Boolean {
-        val ctx = stateService.state.selectedTemplate ?: ""
-        val provider = stateService.state.providerId ?: ""
-        val modes = stateService.getCurrentModes(ctx, provider)
+    private fun hasReviewMode(state: PCEState): Boolean {
+        val ctx = state.persistent.template
+        val provider = state.persistent.providerId
+        val modes = state.persistent.modesByContextProvider[ctx]?.get(provider) ?: emptyMap()
         return modes.values.any { it == "review" }
     }
 

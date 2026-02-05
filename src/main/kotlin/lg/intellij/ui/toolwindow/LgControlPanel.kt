@@ -2,33 +2,49 @@ package lg.intellij.ui.toolwindow
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.DataManager
-import com.intellij.ide.actions.ShowSettingsUtilImpl
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.Panel
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.JBUI
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
 import lg.intellij.LgBundle
 import lg.intellij.actions.*
-import lg.intellij.models.TagSet
-import lg.intellij.models.TagSetsListSchema
+import lg.intellij.bootstrap.bootstrapCoordinator
+import lg.intellij.bootstrap.getStore
+import lg.intellij.models.ClaudeIntegrationMethod
+import lg.intellij.models.ClaudeModel
+import lg.intellij.models.CodexReasoningEffort
+import lg.intellij.models.ShellType
 import lg.intellij.services.ai.AiIntegrationService
-import lg.intellij.services.catalog.LgCatalogService
-import lg.intellij.services.catalog.TokenizerCatalogService
-import lg.intellij.services.state.LgPanelStateService
+import lg.intellij.services.ai.FieldCommand
+import lg.intellij.services.ai.FieldOption
+import lg.intellij.services.ai.FieldType
+import lg.intellij.services.ai.ProviderSettingsContribution
+import lg.intellij.services.ai.ProviderSettingsField
+import lg.intellij.services.ai.providers.claudecli.SelectClaudeMethod
+import lg.intellij.services.ai.providers.claudecli.SelectClaudeMethodPayload
+import lg.intellij.services.ai.providers.claudecli.SelectClaudeModel
+import lg.intellij.services.ai.providers.claudecli.SelectClaudeModelPayload
+import lg.intellij.services.ai.providers.codexcli.SelectCodexReasoning
+import lg.intellij.services.ai.providers.codexcli.SelectCodexReasoningPayload
+import lg.intellij.statepce.PCEState
+import lg.intellij.statepce.PCEStateCoordinator
+import lg.intellij.statepce.PCEStateStore
+import lg.intellij.statepce.ProviderInfo
+import lg.intellij.statepce.domains.*
 import lg.intellij.ui.components.LgEncoderCompletionField
 import lg.intellij.ui.components.LgLabeledComponent
 import lg.intellij.ui.components.LgTaskTextField
@@ -36,16 +52,19 @@ import lg.intellij.ui.components.LgTaskTextField.addChangeListener
 import lg.intellij.ui.components.LgWrappingPanel
 import javax.swing.JButton
 import javax.swing.JComponent
+import javax.swing.JPanel
 import javax.swing.ScrollPaneConstants
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
+import java.awt.BorderLayout
 
 /**
  * Control Panel for Listing Generator Tool Window.
  *
- * Integrates:
- * - LgCatalogService (sections/contexts/mode-sets/tag-sets)
- * - TokenizerCatalogService (libraries/encoders)
- * - Reactive updates via Flow collectors
- * - Auto-reload via VFS listener
+ * Command-driven architecture:
+ * - Subscribes to PCEStateStore for all state updates
+ * - Dispatches commands via PCEStateCoordinator for all user interactions
+ * - Dynamic provider settings UI from ProviderSettingsModule contributions
  */
 class LgControlPanel(
     private val project: Project
@@ -53,340 +72,388 @@ class LgControlPanel(
     true,   // vertical = true (toolbar at top)
     true    // borderless = true
 ), Disposable {
-    
-    private val stateService = project.service<LgPanelStateService>()
-    private val catalogService = project.service<LgCatalogService>()
-    private val tokenizerService = TokenizerCatalogService.getInstance()
-    
+
+    private val coordinator: PCEStateCoordinator = bootstrapCoordinator(project)
+    private val store: PCEStateStore = getStore(project)
+
     // Coroutine scope (cancelled on dispose)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // UI component references for dynamic updates
     private lateinit var taskTextField: LgTaskTextField.TaskFieldWrapper
-    private lateinit var providerCombo: ComboBox<AiIntegrationService.ProviderInfo>
+    private lateinit var providerCombo: ComboBox<ProviderInfo>
     private lateinit var templateCombo: ComboBox<String>
     private lateinit var sectionCombo: ComboBox<String>
     private lateinit var libraryCombo: ComboBox<String>
     private lateinit var encoderField: LgEncoderCompletionField
+    private lateinit var ctxLimitField: JBTextField
     private lateinit var tagsButton: JButton
-    private var cliSettingsGroup: JComponent? = null
+    private var providerSettingsContainer: JPanel? = null
 
-    // Modes panel (self-contained, manages own state and data)
-    private val modesPanel = LgModeSetsPanel(project, this)
+    // Modes panel (self-contained, subscribes to store)
+    private val modesPanel = LgModeSetsPanel(coordinator, store, this)
 
-    // Tag-sets data (for dynamic rendering)
-    private var currentTagSets: List<TagSet> = emptyList()
-    
+    // Track last state for diff-based updates
+    private var lastState: PCEState? = null
+
+    // Suppresses dispatch during programmatic UI updates
+    private var suppressDispatch = false
+
     init {
         setContent(createScrollableContent())
         toolbar = createToolbar()
 
-        // Start loading data
-        loadDataAsync()
+        // Subscribe to state changes
+        subscribeToStateUpdates()
 
-        // Subscribe to updates
-        subscribeToDataUpdates()
-
-        // Subscribe to settings changes (for updating CLI Settings visibility)
-        subscribeToSettingsChanges()
-    }
-    
-    /**
-     * Starts asynchronous loading of all catalogs with parallel execution of CLI requests.
-     */
-    private fun loadDataAsync() {
+        // Dispatch Initialize command to start loading
         scope.launch {
-            try {
-                // Get current tokenizer library from state
-                val currentLib = stateService.state.tokenizerLib!!
-
-                // Parallel loading of catalog and tokenizer data
-                coroutineScope {
-                    launch { catalogService.loadAll() }
-                    launch { tokenizerService.loadLibraries(project) }
-                    launch { tokenizerService.getEncoders(currentLib, project) }
-                }
-
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                LOG.error("Failed to load initial catalog data", e)
-            }
-        }
-    }
-    
-    /**
-     * Subscribes to Flow updates from catalog services.
-     */
-    private fun subscribeToDataUpdates() {
-        // Sections
-        scope.launch {
-            catalogService.sections.collectLatest { sections ->
-                withContext(Dispatchers.EDT) {
-                    updateSectionsUI(sections)
-                }
-            }
-        }
-
-        // Contexts
-        scope.launch {
-            catalogService.contexts.collectLatest { contexts ->
-                withContext(Dispatchers.EDT) {
-                    updateContextsUI(contexts)
-                }
-            }
-        }
-
-        // Tag-sets
-        scope.launch {
-            catalogService.tagSets.collectLatest { tagSets ->
-                withContext(Dispatchers.EDT) {
-                    updateTagSetsUI(tagSets)
-                }
-            }
-        }
-
-        // Tokenizer libraries
-        scope.launch {
-            tokenizerService.libraries.collectLatest { libraries ->
-                withContext(Dispatchers.EDT) {
-                    updateLibrariesUI(libraries)
-                }
-            }
-        }
-
-        // Task text (from Stats Dialog or other sources)
-        scope.launch {
-            stateService.taskTextFlow.collectLatest { newText ->
-                withContext(Dispatchers.EDT) {
-                    updateTaskTextUI(newText)
-                }
-            }
-        }
-
-        // Providers (initial load - detect available only)
-        scope.launch {
-            val aiService = AiIntegrationService.getInstance()
-            val providers = aiService.detectAvailableProvidersInfo()
-
-            withContext(Dispatchers.EDT) {
-                updateProvidersUI(providers)
-            }
+            coordinator.dispatch(Initialize.create())
         }
     }
 
     /**
-     * Subscribes to settings changes for dynamic UI updates.
+     * Subscribes to PCEState changes from the store.
      */
-    private fun subscribeToSettingsChanges() {
-        ApplicationManager.getApplication().messageBus
-            .connect(this)
-            .subscribe(lg.intellij.listeners.LgSettingsChangeListener.TOPIC,
-                object : lg.intellij.listeners.LgSettingsChangeListener {
-                    override fun settingsChanged() {
-                        rebuildUI()
-                    }
-                })
-    }
-
-    /**
-     * Updates visibility of CLI Settings block without full UI recreation.
-     */
-    private fun rebuildUI() {
-        ApplicationManager.getApplication().invokeLater {
-            cliSettingsGroup?.isVisible = shouldShowCliSettings()
+    private fun subscribeToStateUpdates() {
+        val unsubscribe = store.subscribe { state ->
+            ApplicationManager.getApplication().invokeLater {
+                updateUI(state)
+            }
         }
+
+        Disposer.register(this, Disposable {
+            unsubscribe()
+        })
     }
 
     // =============== UI Updates ===============
-    
-    private fun updateSectionsUI(sections: List<String>) {
-        if (!::sectionCombo.isInitialized) return
 
-        val savedSection = stateService.state.selectedSection
+    /**
+     * Updates all UI components from PCEState.
+     * Uses diff-based approach to minimize unnecessary updates.
+     */
+    private fun updateUI(state: PCEState) {
+        suppressDispatch = true
+        try {
+            val prev = lastState
 
-        sectionCombo.removeAllItems()
-        sections.forEach { sectionCombo.addItem(it) }
+            if (prev == null || prev.environment.providers != state.environment.providers
+                || prev.persistent.providerId != state.persistent.providerId) {
+                updateProvidersUI(state)
+            }
 
-        // Restore selection from state or reset to first available
-        if (!savedSection.isNullOrBlank() && savedSection in sections) {
-            sectionCombo.selectedItem = savedSection
-        } else if (sections.isNotEmpty()) {
-            sectionCombo.selectedIndex = 0
-            // Update state with new section
-            stateService.state.selectedSection = sections[0]
-        } else {
-            // No sections available - clear state
-            stateService.state.selectedSection = ""
-        }
-    }
-    
-    private fun updateContextsUI(contexts: List<String>) {
-        if (!::templateCombo.isInitialized) return
+            if (prev == null || prev.configuration.contexts != state.configuration.contexts
+                || prev.persistent.template != state.persistent.template) {
+                updateContextsUI(state)
+            }
 
-        val savedTemplate = stateService.state.selectedTemplate
+            if (prev == null || prev.configuration.sections != state.configuration.sections
+                || prev.persistent.section != state.persistent.section) {
+                updateSectionsUI(state)
+            }
 
-        templateCombo.removeAllItems()
-        contexts.forEach { templateCombo.addItem(it) }
+            if (prev == null || prev.configuration.tokenizerLibs != state.configuration.tokenizerLibs
+                || prev.persistent.tokenizerLib != state.persistent.tokenizerLib) {
+                updateLibrariesUI(state)
+            }
 
-        // Restore selection from state or reset to first available
-        if (!savedTemplate.isNullOrBlank() && savedTemplate in contexts) {
-            templateCombo.selectedItem = savedTemplate
-        } else if (contexts.isNotEmpty()) {
-            templateCombo.selectedIndex = 0
-            // IMPORTANT: Update state with new template (triggers onContextChanged via listener)
-            stateService.state.selectedTemplate = contexts[0]
-        } else {
-            // No contexts available - clear state
-            stateService.state.selectedTemplate = ""
-        }
-    }
+            if (prev == null || prev.persistent.encoder != state.persistent.encoder) {
+                updateEncoderUI(state)
+            }
 
-    private fun updateTagSetsUI(tagSets: TagSetsListSchema?) {
-        if (tagSets == null) return
-        
-        currentTagSets = tagSets.tagSets
+            if (prev == null || prev.persistent.ctxLimit != state.persistent.ctxLimit) {
+                updateCtxLimitUI(state)
+            }
 
-        // Update tags button text
-        updateTagsButtonText()
-        
-        LOG.debug("Updated tag-sets UI: ${tagSets.tagSets.size} sets")
-    }
-    
-    private fun updateLibrariesUI(libraries: List<String>) {
-        if (!::libraryCombo.isInitialized) return
+            if (prev == null || prev.persistent.taskText != state.persistent.taskText) {
+                updateTaskTextUI(state)
+            }
 
-        val effectiveLib = stateService.state.tokenizerLib
+            if (prev == null || prev.persistent.tagsByContext != state.persistent.tagsByContext
+                || prev.persistent.template != state.persistent.template) {
+                updateTagsButtonText(state)
+            }
 
-        libraryCombo.removeAllItems()
-        libraries.forEach { libraryCombo.addItem(it) }
+            if (prev == null || prev.persistent.providerId != state.persistent.providerId) {
+                updateProviderSettingsUI(state)
+            }
 
-        if (effectiveLib in libraries) {
-            libraryCombo.selectedItem = effectiveLib
-        } else if (libraries.isNotEmpty()) {
-            libraryCombo.selectedIndex = 0
-            stateService.state.tokenizerLib = libraries[0]
-        }
-    }
-    
-    private fun updateTaskTextUI(newText: String) {
-        if (!::taskTextField.isInitialized) return
-
-        // Update UI only if text differs (avoid loops)
-        val currentText = taskTextField.editorField.text
-        if (currentText != newText) {
-            taskTextField.editorField.text = newText
+            lastState = state
+        } finally {
+            suppressDispatch = false
         }
     }
 
-    private fun updateProvidersUI(providers: List<AiIntegrationService.ProviderInfo>) {
+    private fun updateProvidersUI(state: PCEState) {
         if (!::providerCombo.isInitialized) return
 
-        val savedProviderId = stateService.state.providerId
+        val providers = state.environment.providers
+        val selectedId = state.persistent.providerId
 
         providerCombo.removeAllItems()
         providers.forEach { providerCombo.addItem(it) }
 
-        // Restore selection from state or set default
-        val savedProvider = providers.find { it.id == savedProviderId }
-        if (savedProvider != null) {
-            providerCombo.selectedItem = savedProvider
+        val selectedProvider = providers.find { it.id == selectedId }
+        if (selectedProvider != null) {
+            providerCombo.selectedItem = selectedProvider
         } else if (providers.isNotEmpty()) {
-            // IMPORTANT: Set first provider SYNCHRONOUSLY to avoid race conditions
-            // This ensures providerId is never empty during subsequent operations
             providerCombo.selectedIndex = 0
-            stateService.state.providerId = providers[0].id
+        }
+    }
 
-            // Then asynchronously detect best provider and update if different
-            scope.launch {
-                val aiService = AiIntegrationService.getInstance()
-                val bestProviderId = aiService.detectBestProvider()
+    private fun updateContextsUI(state: PCEState) {
+        if (!::templateCombo.isInitialized) return
 
-                // Only update if detected provider is different from current
-                if (bestProviderId != providers[0].id) {
-                    withContext(Dispatchers.EDT) {
-                        val bestProvider = providers.find { it.id == bestProviderId }
-                        if (bestProvider != null) {
-                            providerCombo.selectedItem = bestProvider
-                            stateService.state.providerId = bestProviderId
-                            // Trigger provider change to reload contexts/modes
-                            onProviderChanged(bestProviderId)
+        val contexts = state.configuration.contexts
+        val selectedTemplate = state.persistent.template
+
+        templateCombo.removeAllItems()
+        contexts.forEach { templateCombo.addItem(it) }
+
+        if (selectedTemplate.isNotBlank() && selectedTemplate in contexts) {
+            templateCombo.selectedItem = selectedTemplate
+        } else if (contexts.isNotEmpty()) {
+            templateCombo.selectedIndex = 0
+        }
+    }
+
+    private fun updateSectionsUI(state: PCEState) {
+        if (!::sectionCombo.isInitialized) return
+
+        val sectionNames = state.configuration.sections.map { it.name }
+        val selectedSection = state.persistent.section
+
+        sectionCombo.removeAllItems()
+        sectionNames.forEach { sectionCombo.addItem(it) }
+
+        if (selectedSection.isNotBlank() && selectedSection in sectionNames) {
+            sectionCombo.selectedItem = selectedSection
+        } else if (sectionNames.isNotEmpty()) {
+            sectionCombo.selectedIndex = 0
+        }
+    }
+
+    private fun updateLibrariesUI(state: PCEState) {
+        if (!::libraryCombo.isInitialized) return
+
+        val libraries = state.configuration.tokenizerLibs
+        val selectedLib = state.persistent.tokenizerLib
+
+        libraryCombo.removeAllItems()
+        libraries.forEach { libraryCombo.addItem(it) }
+
+        if (selectedLib in libraries) {
+            libraryCombo.selectedItem = selectedLib
+        } else if (libraries.isNotEmpty()) {
+            libraryCombo.selectedIndex = 0
+        }
+    }
+
+    private fun updateEncoderUI(state: PCEState) {
+        if (!::encoderField.isInitialized) return
+
+        val currentLib = state.persistent.tokenizerLib
+        encoderField.setLibrary(currentLib)
+
+        if (encoderField.text != state.persistent.encoder) {
+            encoderField.text = state.persistent.encoder
+        }
+    }
+
+    private fun updateCtxLimitUI(state: PCEState) {
+        if (!::ctxLimitField.isInitialized) return
+
+        val limitStr = state.persistent.ctxLimit.toString()
+        if (ctxLimitField.text != limitStr) {
+            ctxLimitField.text = limitStr
+        }
+    }
+
+    private fun updateTaskTextUI(state: PCEState) {
+        if (!::taskTextField.isInitialized) return
+
+        val currentText = taskTextField.editorField.text
+        if (currentText != state.persistent.taskText) {
+            taskTextField.editorField.text = state.persistent.taskText
+        }
+    }
+
+    private fun updateTagsButtonText(state: PCEState) {
+        if (!::tagsButton.isInitialized) return
+
+        val ctx = state.persistent.template
+        val currentTags = state.persistent.tagsByContext[ctx] ?: emptyMap()
+        val selectedCount = currentTags.values.sumOf { it.size }
+
+        if (selectedCount > 0) {
+            tagsButton.text = LgBundle.message("control.btn.configure.tags.with.count", selectedCount)
+        } else {
+            tagsButton.text = LgBundle.message("control.btn.configure.tags")
+        }
+    }
+
+    /**
+     * Renders dynamic provider settings from ProviderSettingsModule contributions.
+     * Replaces the old hardcoded LgCliSettingsPanel.
+     */
+    private fun updateProviderSettingsUI(state: PCEState) {
+        val container = providerSettingsContainer ?: return
+
+        val aiService = AiIntegrationService.getInstance()
+        val contributions = aiService.getAllSettingsModules()
+            .map { it.buildContribution(state) }
+            .filter { it.visible }
+
+        // Also check if provider is CLI-based for scope/shell fields
+        val isCliProvider = state.persistent.providerId.endsWith(".cli")
+
+        if (!isCliProvider && contributions.isEmpty()) {
+            container.isVisible = false
+            return
+        }
+
+        container.removeAll()
+
+        val settingsPanel = panel {
+            // CLI scope and shell (for all CLI providers)
+            if (isCliProvider) {
+                row {
+                    val flowPanel = LgWrappingPanel(hgap = 16).apply {
+                        // Scope TextField
+                        val scopeField = JBTextField(10).apply {
+                            text = state.persistent.cliScope
+                            document.addDocumentListener(object : DocumentListener {
+                                override fun insertUpdate(e: DocumentEvent?) = update()
+                                override fun removeUpdate(e: DocumentEvent?) = update()
+                                override fun changedUpdate(e: DocumentEvent?) = update()
+                                private fun update() {
+                                    if (!suppressDispatch) {
+                                        scope.launch {
+                                            coordinator.dispatch(
+                                                SetCliScope.create(SetCliScopePayload(text))
+                                            )
+                                        }
+                                    }
+                                }
+                            })
+                        }
+                        add(LgLabeledComponent.create(
+                            LgBundle.message("control.cli.scope.label"), scopeField
+                        ))
+
+                        // Shell ComboBox
+                        val shellDescriptors = ShellType.getAvailableShells()
+                        val shellCombo = ComboBox(shellDescriptors.toTypedArray()).apply {
+                            selectedItem = shellDescriptors.find { it.id == state.persistent.cliShell }
+                            addActionListener {
+                                if (!suppressDispatch) {
+                                    val selected = selectedItem as? lg.intellij.models.ShellDescriptor
+                                    if (selected != null) {
+                                        scope.launch {
+                                            coordinator.dispatch(
+                                                SelectCliShell.create(SelectCliShellPayload(selected.id))
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        add(LgLabeledComponent.create(
+                            LgBundle.message("control.cli.shell.label"), shellCombo
+                        ))
+                    }
+                    cell(flowPanel).align(AlignX.FILL)
+                }
+            }
+
+            // Dynamic provider settings from contributions
+            for (contrib in contributions) {
+                row {
+                    val flowPanel = LgWrappingPanel(hgap = 16).apply {
+                        for (field in contrib.fields) {
+                            when (field.type) {
+                                FieldType.SELECT -> {
+                                    val options = field.options ?: emptyList()
+                                    val combo = ComboBox(options.toTypedArray()).apply {
+                                        renderer = SimpleListCellRenderer.create { label, value, _ ->
+                                            label.text = value?.label ?: ""
+                                            if (value?.description != null) {
+                                                label.toolTipText = value.description
+                                            }
+                                        }
+                                        // Select current value
+                                        val current = options.find { it.value == field.value }
+                                        if (current != null) selectedItem = current
+
+                                        addActionListener {
+                                            if (!suppressDispatch) {
+                                                val selected = selectedItem as? FieldOption
+                                                if (selected != null) {
+                                                    dispatchProviderSettingsCommand(field.command, selected.value)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    add(LgLabeledComponent.create(field.label + ":", combo))
+                                }
+                                FieldType.TEXT -> {
+                                    val textField = JBTextField(field.value, 10).apply {
+                                        document.addDocumentListener(object : DocumentListener {
+                                            override fun insertUpdate(e: DocumentEvent?) = update()
+                                            override fun removeUpdate(e: DocumentEvent?) = update()
+                                            override fun changedUpdate(e: DocumentEvent?) = update()
+                                            private fun update() {
+                                                if (!suppressDispatch) {
+                                                    dispatchProviderSettingsCommand(field.command, text)
+                                                }
+                                            }
+                                        })
+                                    }
+                                    add(LgLabeledComponent.create(field.label + ":", textField))
+                                }
+                            }
                         }
                     }
+                    cell(flowPanel).align(AlignX.FILL)
                 }
             }
         }
+
+        container.add(settingsPanel, BorderLayout.CENTER)
+        container.isVisible = true
+        container.revalidate()
+        container.repaint()
     }
 
-    private fun onProviderChanged(providerId: String) {
-        // Save to state
-        stateService.state.providerId = providerId
-
+    /**
+     * Dispatches a typed command from FieldCommand descriptor.
+     * Maps command type strings to actual typed command instances.
+     */
+    private fun dispatchProviderSettingsCommand(cmd: FieldCommand, value: String) {
         scope.launch {
-            // Reload contexts (filtered by provider)
-            catalogService.loadContexts(providerId)
-
-            // Validate current context against new list
-            val contexts = catalogService.contexts.value
-            var currentCtx = stateService.state.selectedTemplate ?: ""
-
-            // If current context is not in new list, reset to first available
-            if (currentCtx.isNotBlank() && currentCtx !in contexts) {
-                currentCtx = contexts.firstOrNull() ?: ""
-                withContext(Dispatchers.EDT) {
-                    stateService.state.selectedTemplate = currentCtx
-                    if (::templateCombo.isInitialized && contexts.isNotEmpty()) {
-                        templateCombo.selectedItem = currentCtx
-                    }
+            when (cmd.type) {
+                SelectClaudeModel.type -> {
+                    val model = ClaudeModel.entries.find { it.name == value } ?: return@launch
+                    coordinator.dispatch(SelectClaudeModel.create(SelectClaudeModelPayload(model)))
                 }
-            }
-
-            // Reload mode-sets and tag-sets for current context
-            if (currentCtx.isNotBlank()) {
-                catalogService.loadModeSets(currentCtx, providerId)
-                catalogService.loadTagSets(currentCtx)
-
-                // Actualize state to clean up obsolete modes/tags
-                val modeSets = catalogService.modeSets.value
-                val tagSets = catalogService.tagSets.value
-                withContext(Dispatchers.EDT) {
-                    stateService.actualizeState(currentCtx, providerId, modeSets, tagSets)
+                SelectClaudeMethod.type -> {
+                    val method = ClaudeIntegrationMethod.entries.find { it.name == value } ?: return@launch
+                    coordinator.dispatch(SelectClaudeMethod.create(SelectClaudeMethodPayload(method)))
                 }
-            }
-
-            // Update CLI settings visibility
-            withContext(Dispatchers.EDT) {
-                cliSettingsGroup?.isVisible = shouldShowCliSettings()
-            }
-        }
-    }
-
-    private fun onContextChanged(template: String) {
-        // Save to state
-        stateService.state.selectedTemplate = template
-
-        scope.launch {
-            val providerId = stateService.state.providerId ?: ""
-
-            // Reload mode-sets and tag-sets
-            if (providerId.isNotBlank()) {
-                catalogService.loadModeSets(template, providerId)
-            }
-            catalogService.loadTagSets(template)
-
-            // Actualize state to clean up obsolete modes/tags
-            if (template.isNotBlank() && providerId.isNotBlank()) {
-                val modeSets = catalogService.modeSets.value
-                val tagSets = catalogService.tagSets.value
-                withContext(Dispatchers.EDT) {
-                    stateService.actualizeState(template, providerId, modeSets, tagSets)
+                SelectCodexReasoning.type -> {
+                    val effort = CodexReasoningEffort.entries.find { it.name == value } ?: return@launch
+                    coordinator.dispatch(SelectCodexReasoning.create(SelectCodexReasoningPayload(effort)))
+                }
+                else -> {
+                    LOG.warn("Unknown provider settings command: ${cmd.type}")
                 }
             }
         }
     }
 
     // =============== UI Creation ===============
-    
+
     private fun createScrollableContent(): JComponent {
         val scrollPane = JBScrollPane(createControlPanel()).apply {
             border = null
@@ -396,18 +463,10 @@ class LgControlPanel(
         return scrollPane
     }
 
-
     private fun createControlPanel(): JComponent {
-        // Create CLI settings panel separately for visibility management
-        cliSettingsGroup = panel {
-            group(LgBundle.message("control.group.cli.settings"), indent = false) {
-                row {
-                    val panel = LgCliSettingsPanel(project).createUI()
-                    cell(panel).align(AlignX.FILL)
-                }
-            }
-        }.apply {
-            isVisible = shouldShowCliSettings()
+        // Provider settings container (managed dynamically)
+        providerSettingsContainer = JPanel(BorderLayout()).apply {
+            isVisible = false
         }
 
         return panel {
@@ -431,9 +490,11 @@ class LgControlPanel(
                 createTokenizationSection()
             }
 
-            // Group 5: CLI Settings (embedded as pre-created component)
-            row {
-                cell(cliSettingsGroup!!).align(AlignX.FILL)
+            // Group 5: CLI / Provider Settings (dynamic)
+            group(LgBundle.message("control.group.cli.settings"), indent = false) {
+                row {
+                    cell(providerSettingsContainer!!).align(AlignX.FILL)
+                }
             }
 
         }.apply {
@@ -441,19 +502,20 @@ class LgControlPanel(
         }
     }
 
-    private fun shouldShowCliSettings(): Boolean {
-        val providerId = stateService.state.providerId
-        return providerId?.endsWith(".cli") == true
-    }
-    
     private fun Panel.createAiContextsSection() {
         // Context selector row
         row {
             templateCombo = ComboBox<String>().apply {
                 addActionListener {
-                    val selected = selectedItem as? String
-                    if (selected != null) {
-                        onContextChanged(selected)
+                    if (!suppressDispatch) {
+                        val selected = selectedItem as? String
+                        if (selected != null) {
+                            scope.launch {
+                                coordinator.dispatch(
+                                    SelectContext.create(SelectContextPayload(selected))
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -464,12 +526,18 @@ class LgControlPanel(
         row {
             taskTextField = LgTaskTextField.create(
                 project = project,
-                initialText = stateService.state.taskText ?: "",
+                initialText = "",
                 placeholder = LgBundle.message("control.task.placeholder")
             )
 
             taskTextField.editorField.addChangeListener { newText ->
-                stateService.updateTaskText(newText)
+                if (!suppressDispatch) {
+                    scope.launch {
+                        coordinator.dispatch(
+                            SetTask.create(SetTaskPayload(newText))
+                        )
+                    }
+                }
             }
 
             cell(taskTextField).align(AlignX.FILL)
@@ -478,15 +546,21 @@ class LgControlPanel(
         // Provider selector + buttons
         row {
             val flowPanel = LgWrappingPanel().apply {
-                // Provider ComboBox (without label)
-                providerCombo = ComboBox<AiIntegrationService.ProviderInfo>().apply {
+                // Provider ComboBox
+                providerCombo = ComboBox<ProviderInfo>().apply {
                     renderer = SimpleListCellRenderer.create { label, value, _ ->
                         label.text = value?.name ?: ""
                     }
                     addActionListener {
-                        val selected = selectedItem as? AiIntegrationService.ProviderInfo
-                        if (selected != null) {
-                            onProviderChanged(selected.id)
+                        if (!suppressDispatch) {
+                            val selected = selectedItem as? ProviderInfo
+                            if (selected != null) {
+                                scope.launch {
+                                    coordinator.dispatch(
+                                        SelectProvider.create(SelectProviderPayload(selected.id))
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -519,15 +593,14 @@ class LgControlPanel(
             cell(flowPanel).align(AlignX.FILL)
         }.resizableRow()
     }
-    
+
     private fun Panel.createAdaptiveSettingsSection() {
         // Single row with modes panel
         row {
             val modesUI = modesPanel.createUI()
-            cell(modesUI)
-                .align(AlignX.FILL)
+            cell(modesUI).align(AlignX.FILL)
         }
-        
+
         // Configure Tags button
         row {
             tagsButton = JButton(LgBundle.message("control.btn.configure.tags"), AllIcons.General.Filter).apply {
@@ -535,27 +608,34 @@ class LgControlPanel(
                     LgConfigureTagsAction().performSafely(this@LgControlPanel)
 
                     // Update button text after dialog closed
-                    updateTagsButtonText()
+                    val state = store.getBusinessState()
+                    updateTagsButtonText(state)
                 }
             }
             cell(tagsButton)
         }
     }
-    
+
     private fun Panel.createInspectSection() {
         row {
             val flowPanel = LgWrappingPanel().apply {
                 // Section ComboBox
                 sectionCombo = ComboBox<String>().apply {
                     addActionListener {
-                        val selected = selectedItem as? String
-                        if (selected != null) {
-                            stateService.state.selectedSection = selected
+                        if (!suppressDispatch) {
+                            val selected = selectedItem as? String
+                            if (selected != null) {
+                                scope.launch {
+                                    coordinator.dispatch(
+                                        SelectSection.create(SelectSectionPayload(selected))
+                                    )
+                                }
+                            }
                         }
                     }
                 }
                 add(LgLabeledComponent.create(LgBundle.message("control.section.label"), sectionCombo))
-                
+
                 // Show Included button
                 add(JButton(LgBundle.message("control.btn.show.included"), AllIcons.Actions.ShowAsTree).apply {
                     addActionListener {
@@ -569,7 +649,7 @@ class LgControlPanel(
                         LgGenerateListingAction().performSafely(this@LgControlPanel)
                     }
                 })
-                
+
                 // Show Stats button
                 add(JButton(LgBundle.message("control.btn.show.stats"), AllIcons.Actions.ListFiles).apply {
                     addActionListener {
@@ -577,71 +657,72 @@ class LgControlPanel(
                     }
                 })
             }
-            
+
             cell(flowPanel).align(AlignX.FILL)
         }
     }
-    
+
     private fun Panel.createTokenizationSection() {
         row {
             val flowPanel = LgWrappingPanel(hgap = 16).apply {
                 // Library ComboBox
                 libraryCombo = ComboBox<String>().apply {
                     addActionListener {
-                        val newLib = selectedItem as? String
-                        if (newLib != null) {
-                            stateService.state.tokenizerLib = newLib
-
-                            // Update encoder field library (triggers reload of suggestions)
-                            if (::encoderField.isInitialized) {
-                                encoderField.setLibrary(newLib)
+                        if (!suppressDispatch) {
+                            val newLib = selectedItem as? String
+                            if (newLib != null) {
+                                scope.launch {
+                                    coordinator.dispatch(
+                                        SelectLib.create(SelectLibPayload(newLib))
+                                    )
+                                }
                             }
                         }
                     }
                 }
                 add(LgLabeledComponent.create(LgBundle.message("control.library.label"), libraryCombo))
-                
-                // Encoder Completion Field (with auto-suggestions and custom values)
+
+                // Encoder Completion Field
                 encoderField = LgEncoderCompletionField(project, this@LgControlPanel).apply {
-                    // Set initial library
-                    val initialLib = stateService.state.tokenizerLib!!
-                    setLibrary(initialLib)
-
-                    // Set initial value (from state)
-                    text = stateService.state.encoder
-
-                    // Update state when text changes (supports custom values)
                     whenTextChangedFromUi(this@LgControlPanel) { newText ->
-                        stateService.state.encoder = newText
+                        if (!suppressDispatch) {
+                            scope.launch {
+                                coordinator.dispatch(
+                                    SetEncoder.create(SetEncoderPayload(newText))
+                                )
+                            }
+                        }
                     }
                 }
                 add(LgLabeledComponent.create(LgBundle.message("control.encoder.label"), encoderField))
 
                 // Context Limit TextField
-                val ctxLimitField = com.intellij.ui.components.JBTextField(10).apply {
-                    // Use context limit with default from state
-                    val effectiveLimit = stateService.state.ctxLimit
-                    text = effectiveLimit.toString()
-                    
-                    document.addDocumentListener(object : javax.swing.event.DocumentListener {
-                        override fun insertUpdate(e: javax.swing.event.DocumentEvent?) = update()
-                        override fun removeUpdate(e: javax.swing.event.DocumentEvent?) = update()
-                        override fun changedUpdate(e: javax.swing.event.DocumentEvent?) = update()
+                ctxLimitField = JBTextField(10).apply {
+                    document.addDocumentListener(object : DocumentListener {
+                        override fun insertUpdate(e: DocumentEvent?) = update()
+                        override fun removeUpdate(e: DocumentEvent?) = update()
+                        override fun changedUpdate(e: DocumentEvent?) = update()
                         private fun update() {
-                            val parsed = text.toIntOrNull()?.coerceIn(1000, 2_000_000)
-                            if (parsed != null) {
-                                stateService.state.ctxLimit = parsed
+                            if (!suppressDispatch) {
+                                val parsed = text.toIntOrNull()?.coerceIn(1000, 2_000_000)
+                                if (parsed != null) {
+                                    scope.launch {
+                                        coordinator.dispatch(
+                                            SetCtxLimit.create(SetCtxLimitPayload(parsed))
+                                        )
+                                    }
+                                }
                             }
                         }
                     })
                 }
                 add(LgLabeledComponent.create(LgBundle.message("control.ctx.limit.label"), ctxLimitField))
             }
-            
+
             cell(flowPanel).align(AlignX.FILL)
         }
     }
-    
+
     private fun createToolbar(): JComponent {
         val actionGroup = DefaultActionGroup().apply {
             // Refresh
@@ -666,7 +747,9 @@ class LgControlPanel(
                 AllIcons.General.Settings
             ) {
                 override fun actionPerformed(e: AnActionEvent) {
-                    openSettings()
+                    com.intellij.ide.actions.ShowSettingsUtilImpl.showSettingsDialog(
+                        project, "maxmoro.lg.settings", null
+                    )
                 }
             })
 
@@ -680,26 +763,6 @@ class LgControlPanel(
         toolbar.targetComponent = this
         return toolbar.component
     }
-    
-    private fun openSettings() {
-        ShowSettingsUtilImpl.showSettingsDialog(project, "maxmoro.lg.settings", null)
-    }
-    
-    /**
-     * Updates tags button text to show selection count.
-     */
-    private fun updateTagsButtonText() {
-        if (!::tagsButton.isInitialized) return
-
-        val ctx = stateService.state.selectedTemplate ?: ""
-        val currentTags = stateService.getCurrentTags(ctx)
-        val selectedCount = currentTags.values.sumOf { it.size }
-        if (selectedCount > 0) {
-            tagsButton.text = LgBundle.message("control.btn.configure.tags.with.count", selectedCount)
-        } else {
-            tagsButton.text = LgBundle.message("control.btn.configure.tags")
-        }
-    }
 
     override fun dispose() {
         scope.cancel()
@@ -707,10 +770,7 @@ class LgControlPanel(
     }
 
     /**
-     * Helper function to properly execute actions using IntelliJ Platform API.
-     *
-     * Uses ActionUtil.performAction instead of direct actionPerformed() call
-     * to avoid override-only API violations.
+     * Helper to properly execute actions using IntelliJ Platform API.
      */
     private fun AnAction.performSafely(component: JComponent) {
         val dataContext = DataManager.getInstance().getDataContext(component)

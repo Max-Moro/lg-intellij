@@ -12,6 +12,7 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.SimpleListCellRenderer
+import com.intellij.ui.components.JBLoadingPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.AlignX
@@ -95,12 +96,18 @@ class LgControlPanel(
     // Suppresses dispatch during programmatic UI updates
     private var suppressDispatch = false
 
+    // Loading overlay panel
+    private lateinit var loadingPanel: JBLoadingPanel
+
     init {
         setContent(createScrollableContent())
         toolbar = createToolbar()
 
         // Subscribe to state changes
         subscribeToStateUpdates()
+
+        // Subscribe to loading state changes
+        subscribeToMetaUpdates()
 
         // Dispatch Initialize command to start loading
         scope.launch {
@@ -115,6 +122,24 @@ class LgControlPanel(
         val unsubscribe = store.subscribe { state ->
             ApplicationManager.getApplication().invokeLater {
                 updateUI(state)
+            }
+        }
+
+        Disposer.register(this) { unsubscribe() }
+    }
+
+    /**
+     * Subscribes to coordinator meta changes (loading state).
+     * Shows/hides loading overlay based on async operation status.
+     */
+    private fun subscribeToMetaUpdates() {
+        val unsubscribe = coordinator.subscribeToMeta { meta ->
+            ApplicationManager.getApplication().invokeLater {
+                if (meta.isLoading) {
+                    loadingPanel.startLoading()
+                } else {
+                    loadingPanel.stopLoading()
+                }
             }
         }
 
@@ -446,7 +471,12 @@ class LgControlPanel(
             horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
             verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
         }
-        return scrollPane
+
+        loadingPanel = JBLoadingPanel(BorderLayout(), this).apply {
+            add(scrollPane, BorderLayout.CENTER)
+        }
+
+        return loadingPanel
     }
 
     private fun createControlPanel(): JComponent {

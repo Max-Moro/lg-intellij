@@ -89,6 +89,20 @@ class StateCoordinator<TState, TResult : RuleResult>(
     fun isStable(): Boolean = pendingOps == 0
 
     /**
+     * Subscribe to UI meta changes (loading state).
+     *
+     * Listeners receive [UIMeta] whenever stability changes
+     * (async operations start or complete).
+     *
+     * @param listener Callback invoked on meta state changes
+     * @return Unsubscribe function
+     */
+    fun subscribeToMeta(listener: MetaListener): () -> Unit {
+        metaListeners.add(listener)
+        return { metaListeners.remove(listener) }
+    }
+
+    /**
      * Process a command through the rules engine.
      *
      * Command processing flow:

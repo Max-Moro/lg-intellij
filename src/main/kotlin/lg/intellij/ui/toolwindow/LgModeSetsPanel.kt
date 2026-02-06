@@ -132,14 +132,9 @@ class LgModeSetsPanel(
                         }
                     }
 
-                    // Restore saved value or default to first mode
                     val savedMode = currentModes[modeSet.id]
-                    val defaultMode = modeSet.modes.firstOrNull()?.id
-
-                    if (savedMode != null && savedMode in modeIds) {
+                    if (savedMode != null) {
                         selectedItem = savedMode
-                    } else if (defaultMode != null) {
-                        selectedItem = defaultMode
                     }
 
                     // Listen to changes
@@ -211,12 +206,9 @@ class LgModeSetsPanel(
         val branches = state.environment.branches
         val savedBranch = state.persistent.targetBranch
 
-        // Remove all listeners
+        // Remove all listeners to prevent dispatch during programmatic update
         val listeners = combo.actionListeners
         listeners.forEach { combo.removeActionListener(it) }
-
-        // Remember current selection
-        val currentSelection = combo.selectedItem as? String
 
         // Update items
         combo.removeAllItems()
@@ -228,25 +220,8 @@ class LgModeSetsPanel(
             combo.isEnabled = true
             branches.forEach { combo.addItem(it) }
 
-            // Priority: saved from state > current selection > main/master > first
-            when {
-                // 1. Restore from state (priority)
-                !savedBranch.isBlank() && savedBranch in branches -> {
-                    combo.selectedItem = savedBranch
-                }
-                // 2. Keep current selection if still valid
-                currentSelection != null && currentSelection in branches -> {
-                    combo.selectedItem = currentSelection
-                }
-                // 3. Fallback: search for main/master or first in list
-                else -> {
-                    val defaultBranch = findDefaultBranch(branches)
-                    if (defaultBranch != null) {
-                        combo.selectedItem = defaultBranch
-                    } else if (branches.isNotEmpty()) {
-                        combo.selectedIndex = 0
-                    }
-                }
+            if (savedBranch.isNotBlank() && savedBranch in branches) {
+                combo.selectedItem = savedBranch
             }
         }
 
@@ -263,24 +238,6 @@ class LgModeSetsPanel(
                 }
             }
         }
-    }
-    
-    /**
-     * Searches for default parent branch (main or master).
-     * Returns the first found in priority order.
-     */
-    private fun findDefaultBranch(branches: List<String>): String? {
-        // Default branch name options in priority order
-        val defaultBranchNames = listOf("main", "master", "origin/main", "origin/master")
-
-        for (defaultName in defaultBranchNames) {
-            val found = branches.find { it == defaultName || it.endsWith("/$defaultName") }
-            if (found != null) {
-                return found
-            }
-        }
-
-        return null
     }
 
     /**

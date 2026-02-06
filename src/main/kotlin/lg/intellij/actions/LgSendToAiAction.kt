@@ -50,10 +50,7 @@ class LgSendToAiAction : AnAction(
         val aiService = AiIntegrationService.getInstance()
         val generationService = project.service<LgGenerationService>()
 
-        // Get provider from state
-        val providerId = runBlocking {
-            aiService.resolveProvider(state.persistent.providerId)
-        }
+        val providerId = state.persistent.providerId
 
         // Validate: must have context selected
         val selectedTemplate = state.persistent.template

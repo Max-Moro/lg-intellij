@@ -191,8 +191,6 @@ class LgControlPanel(
         val selectedProvider = providers.find { it.id == selectedId }
         if (selectedProvider != null) {
             providerCombo.selectedItem = selectedProvider
-        } else if (providers.isNotEmpty()) {
-            providerCombo.selectedIndex = 0
         }
     }
 
@@ -205,10 +203,8 @@ class LgControlPanel(
         templateCombo.removeAllItems()
         contexts.forEach { templateCombo.addItem(it) }
 
-        if (selectedTemplate.isNotBlank() && selectedTemplate in contexts) {
+        if (selectedTemplate.isNotBlank()) {
             templateCombo.selectedItem = selectedTemplate
-        } else if (contexts.isNotEmpty()) {
-            templateCombo.selectedIndex = 0
         }
     }
 
@@ -221,10 +217,8 @@ class LgControlPanel(
         sectionCombo.removeAllItems()
         sectionNames.forEach { sectionCombo.addItem(it) }
 
-        if (selectedSection.isNotBlank() && selectedSection in sectionNames) {
+        if (selectedSection.isNotBlank()) {
             sectionCombo.selectedItem = selectedSection
-        } else if (sectionNames.isNotEmpty()) {
-            sectionCombo.selectedIndex = 0
         }
     }
 
@@ -237,10 +231,8 @@ class LgControlPanel(
         libraryCombo.removeAllItems()
         libraries.forEach { libraryCombo.addItem(it) }
 
-        if (selectedLib in libraries) {
+        if (selectedLib.isNotBlank()) {
             libraryCombo.selectedItem = selectedLib
-        } else if (libraries.isNotEmpty()) {
-            libraryCombo.selectedIndex = 0
         }
     }
 

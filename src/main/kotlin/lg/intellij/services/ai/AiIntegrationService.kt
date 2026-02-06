@@ -149,39 +149,6 @@ class AiIntegrationService {
     }
 
     /**
-     * Detects the best provider (with highest priority).
-     *
-     * @return ID of the best provider (defaults to "clipboard" if none found)
-     */
-    suspend fun detectBestProvider(): String {
-        val available = detectAvailableProviders()
-
-        return if (available.isNotEmpty()) {
-            available.first() // Already sorted by priority
-        } else {
-            log.warn("No available providers detected, falling back to clipboard")
-            "clipboard"
-        }
-    }
-
-    /**
-     * Resolves effective provider ID.
-     *
-     * If providerId is blank/null → auto-detect best.
-     * Otherwise → use as is.
-     *
-     * @param providerId Provider ID from settings (may be blank)
-     * @return Resolved provider ID
-     */
-    suspend fun resolveProvider(providerId: String?): String {
-        return if (providerId.isNullOrBlank()) {
-            detectBestProvider()
-        } else {
-            providerId
-        }
-    }
-
-    /**
      * Sends content to the specified provider.
      *
      * @param providerId Provider ID

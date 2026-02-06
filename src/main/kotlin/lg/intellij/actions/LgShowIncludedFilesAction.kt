@@ -33,7 +33,7 @@ class LgShowIncludedFilesAction : AnAction(
         val store = PCEStateStore.getInstance(project)
         val statsService = project.service<LgStatsService>()
 
-        val selectedSection = store.getBusinessState().persistent.section.ifBlank { "all" }
+        val selectedSection = store.getBusinessState().persistent.section
         val target = "sec:$selectedSection"
         
         object : Task.Backgroundable(

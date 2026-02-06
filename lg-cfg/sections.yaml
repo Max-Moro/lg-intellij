@@ -27,7 +27,7 @@ src:
                 mode: allow
                 allow: ["/plugin.xml"]
                 when:
-                  - condition: "TAGSET:intellij-plugin:modes-panel"
+                  - condition: "TAGSET:intellij-plugin:adaptive"
                     allow: ["/withGit.xml"]
                   - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:jetbrains-ai-assistant"
                     allow: ["/withJetBrainsAi.xml"]
@@ -39,131 +39,194 @@ src:
       src/main/kotlin/lg/intellij:
         mode: allow
         when:
-        - condition: "TAGSET:intellij-plugin:core"
-          allow:
-            - "/cli/CliExecutor.kt"
-            - "/LgBundle.kt"
-            - "/models/CliResult.kt"
-            - "/services/LgErrorReportingService.kt"
-            - "/services/state/LgSettingsService.kt"
-            - "/settings/LgSettingsConfigurable.kt"
-            - "/toolWindow/LgToolWindowFactory.kt"
-            - "/utils/LgStubNotifications.kt"
-            - "/services/state/LgPanelStateService.kt"
-        - condition: "TAGSET:intellij-plugin:ui"
-          allow: ["/ui/components/"]
-        - condition: "TAGSET:intellij-plugin:control"
-          allow:
-            - "/ui/toolwindow/LgControlPanel.kt"
-            - "/services/state/LgWorkspaceStateService.kt"
-            - "/ui/components/LgWrappingPanel.kt"
-            - "/ui/components/LgTaskTextField.kt"
-        - condition: "TAGSET:intellij-plugin:generate"
-          allow:
-            - "/services/generation/LgGenerationService.kt"
-            - "/services/generation/CliArgsBuilder.kt"
-            - "/services/vfs/LgVirtualFileService.kt"
-            - "/actions/LgGenerate**.kt"
-        - condition: "TAGSET:intellij-plugin:catalog"
-          allow:
-            - "/actions/LgRefreshCatalogsAction.kt"
-            - "/models/ContextsListSchema.kt"
-            - "/models/EncodersListSchema.kt"
-            - "/models/SectionsListSchema.kt"
-            - "/models/TokenizerLibsListSchema.kt"
-            - "/listeners/LgConfigFileListener.kt"
-            - "/services/catalog/LgCatalogService.kt"
-            - "/services/catalog/TokenizerCatalogService.kt"
-        - condition: "TAGSET:intellij-plugin:cli"
-          allow:
-            - "/cli/"
-            - "/listeners/LgSettingsChangeListener.kt"
-            - "/services/LgInitService.kt"
-        - condition: "TAGSET:intellij-plugin:stats"
-          allow:
-            - "**Stats**"
-            - "/generation/CliArgsBuilder.kt"
-            - "/models/ReportSchema.kt"
-            - "/ui/components/LgTaskTextField.kt"
-            - "/ui/components/LgGroupedTable.kt"
-            - "/utils/LgFormatUtils.kt"
-        - condition: "TAGSET:intellij-plugin:included-files"
-          allow:
-            - "/ui/toolwindow/LgIncludedFilesPanel.kt"
-            - "/ui/renderers/FileTreeCellRenderer.kt"
-            - "/actions/LgShowIncludedFilesAction.kt"
-            - "/actions/LgToggleTreeViewModeAction.kt"
-            - "/services/generation/LgStatsService.kt"
-            - "/services/generation/CliArgsBuilder.kt"
-            - "/services/state/LgWorkspaceStateService.kt"
-            - "/models/ReportSchema.kt"
-        - condition: "TAGSET:intellij-plugin:tags-dialog"
-          allow:
-            - "/ui/dialogs/LgTagsDialog.kt"
-            - "/actions/LgConfigureTagsAction.kt"
-            - "/models/TagSetsListSchema.kt"
-        - condition: "TAGSET:intellij-plugin:modes-panel"
-          allow:
-            - "/ui/toolwindow/LgModeSetsPanel.kt"
-            - "/ui/components/LgLabeledComponent.kt"
-            - "/ui/components/LgWrappingPanel.kt"
-            - "/models/ModeSetsListSchema.kt"
-            - "/services/catalog/LgCatalogService.kt"
-            - "/services/generation/CliArgsBuilder.kt"
-            - "/services/git/LgGitService.kt"
-        - condition: "TAGSET:intellij-plugin:diag"
-          allow:
-            - "/ui/dialogs/LgDoctorDialog.kt"
-            - "/services/diagnostics/LgDiagnosticsService.kt"
-            - "/actions/LgResetCacheAction.kt"
-            - "/actions/LgRunDoctorAction.kt"
-            - "/models/DiagReportSchema.kt"
-        - condition: "TAGSET:intellij-plugin:starter"
-          allow:
-            - "/ui/dialogs/LgInitWizardDialog.kt"
-            - "/services/LgInitService.kt"
-            - "/actions/LgCreateStarterConfigAction.kt"
-            - "/actions/LgOpenConfigAction.kt"
-            - "/models/InitResult.kt"
-        - condition: "TAGSET:intellij-plugin:send-to-ai"
-          allow:
-            - "/services/ai/"
-            - "/actions/LgSendToAiAction.kt"
-            - "/services/state/LgSettingsService.kt"
-            - "/settings/LgSettingsConfigurable.kt"
-            - "/ui/toolwindow/LgControlPanel.kt"
-            - "/models/AiInteractionMode.kt"
-            - "/actions/LgUpdateAiModesAction.kt"
-        - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:claude-code-cli"
-          allow:
-            - "/models/ClaudeIntegrationMethod.kt"
-            - "/models/ClaudeModel.kt"
-            - "/models/ShellType.kt"
-            - "/models/CliExecutionContext.kt"
+          # ==================== INFRASTRUCTURE ====================
 
-      src/main/kotlin/lg/intellij/services/ai:
-        mode: block
+          # Core - bundle, tool window, error reporting, settings
+          - condition: "TAGSET:intellij-plugin:core"
+            allow:
+              - "/LgBundle.kt"
+              - "/toolWindow/LgToolWindowFactory.kt"
+              - "/services/LgErrorReportingService.kt"
+              - "/services/state/LgSettingsService.kt"
+              - "/settings/LgSettingsConfigurable.kt"
+
+          # State Engine - universal coordination engine
+          - condition: "TAGSET:intellij-plugin:state-engine"
+            allow: ["/stateengine/"]
+
+          # State PCE - LG-specific state management
+          - condition: "TAGSET:intellij-plugin:state-pce"
+            allow:
+              - "/statepce/types.kt"
+              - "/statepce/store.kt"
+              - "/statepce/coordinator.kt"
+              - "/statepce/LgCoordinatorService.kt"
+              - "/statepce/rule.kt"
+              - "/statepce/index.kt"
+              - "/statepce/domains/index.kt"
+              - "/statepce/domains/lifecycle.kt"
+              - "/listeners/LgConfigFileListener.kt"
+
+          # CLI Integration
+          - condition: "TAGSET:intellij-plugin:cli"
+            allow:
+              - "/cli/"
+              - "/models/CliResult.kt"
+              - "/listeners/LgSettingsChangeListener.kt"
+              - "/services/LgInitService.kt"
+
+          # UI Components
+          - condition: "TAGSET:intellij-plugin:ui-components"
+            allow: ["/ui/components/"]
+
+          # ==================== BUSINESS DOMAINS ====================
+
+          # Context Domain (state only)
+          - condition: "TAGSET:intellij-plugin:context"
+            allow:
+              - "/statepce/domains/context.kt"
+              - "/models/ContextsListSchema.kt"
+
+          # Section Domain (state + included files tree)
+          - condition: "TAGSET:intellij-plugin:section"
+            allow:
+              - "/statepce/domains/section.kt"
+              - "/models/SectionsListSchema.kt"
+              - "/ui/toolwindow/LgIncludedFilesPanel.kt"
+              - "/ui/renderers/FileTreeCellRenderer.kt"
+              - "/actions/LgShowIncludedFilesAction.kt"
+              - "/actions/LgToggleTreeViewModeAction.kt"
+
+          # Adaptive Domain - modes, tags, branches
+          - condition: "TAGSET:intellij-plugin:adaptive"
+            allow:
+              - "/statepce/domains/adaptive.kt"
+              - "/models/ModeSetsListSchema.kt"
+              - "/models/TagSetsListSchema.kt"
+              - "/ui/toolwindow/LgModeSetsPanel.kt"
+              - "/ui/dialogs/LgTagsDialog.kt"
+              - "/services/git/LgGitService.kt"
+              - "/actions/LgConfigureTagsAction.kt"
+              - "/ui/components/LgLabeledComponent.kt"
+
+          # Stats Domain - statistics, tokenization
+          - condition: "TAGSET:intellij-plugin:stats"
+            allow:
+              - "/statepce/domains/tokenization.kt"
+              - "/services/generation/LgStatsService.kt"
+              - "/services/generation/CliArgsBuilder.kt"
+              - "/models/ReportSchema.kt"
+              - "/models/EncodersListSchema.kt"
+              - "/models/TokenizerLibsListSchema.kt"
+              - "/ui/dialogs/LgStatsDialog.kt"
+              - "/ui/components/LgGroupedTable.kt"
+              - "/ui/components/LgEncoderCompletionField.kt"
+              - "/actions/LgShowStatsAction.kt"
+              - "/actions/LgShowContextStatsAction.kt"
+              - "/actions/LgShowSectionStatsAction.kt"
+              - "/utils/LgFormatUtils.kt"
+
+          # Generate Domain - content generation
+          - condition: "TAGSET:intellij-plugin:generate"
+            allow:
+              - "/services/generation/LgGenerationService.kt"
+              - "/services/generation/CliArgsBuilder.kt"
+              - "/services/vfs/LgVirtualFileService.kt"
+              - "/actions/LgGenerateAction.kt"
+              - "/actions/LgGenerateContextAction.kt"
+              - "/actions/LgGenerateListingAction.kt"
+
+          # Provider Domain - AI providers
+          - condition: "TAGSET:intellij-plugin:send-to-ai"
+            allow:
+              - "/statepce/domains/provider.kt"
+              - "/services/ai/"
+              - "/models/ShellType.kt"
+              - "/actions/LgSendToAiAction.kt"
+              - "/actions/LgUpdateAiModesAction.kt"
+
+          # Diagnostics Domain
+          - condition: "TAGSET:intellij-plugin:diag"
+            allow:
+              - "/services/diagnostics/LgDiagnosticsService.kt"
+              - "/ui/dialogs/LgDoctorDialog.kt"
+              - "/actions/LgResetCacheAction.kt"
+              - "/actions/LgRunDoctorAction.kt"
+              - "/models/DiagReportSchema.kt"
+
+          # Starter Domain
+          - condition: "TAGSET:intellij-plugin:starter"
+            allow:
+              - "/ui/dialogs/LgInitWizardDialog.kt"
+              - "/services/LgInitService.kt"
+              - "/actions/LgCreateStarterConfigAction.kt"
+              - "/actions/LgOpenConfigAction.kt"
+              - "/models/InitResult.kt"
+
+          # ==================== VIEWS ====================
+
+          # Control Panel View
+          - condition: "TAGSET:intellij-plugin:control"
+            allow:
+              - "/ui/toolwindow/LgControlPanel.kt"
+              - "/services/state/LgWorkspaceStateService.kt"
+              - "/ui/components/LgTaskTextField.kt"
+              - "/ui/components/LgWrappingPanel.kt"
+              - "/ui/components/LgLabeledComponent.kt"
+              - "/actions/LgRefreshCatalogsAction.kt"
+
+          # ==================== PROVIDER-SPECIFIC ====================
+
+          # Claude CLI provider with settings
+          - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:claude-code-cli"
+            allow:
+              - "/models/ClaudeIntegrationMethod.kt"
+              - "/models/ClaudeModel.kt"
+
+          # Codex CLI provider with settings
+          - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:codex-cli"
+            allow:
+              - "/models/CodexReasoningEffort.kt"
+
         children:
-          base:
-            mode: allow
-            when:
-              - condition: >
-                  TAGSET:ai-providers:jetbrains-ai-assistant OR 
-                  TAGSET:ai-providers:jetbrains-junie OR 
-                  TAGSET:ai-providers:github-copilot
-                allow: ["/BaseExtensionProvider.kt"]
-              - condition: "TAGSET:ai-providers:claude-code-cli"
-                allow: ["/BaseCliProvider.kt"]
-          providers:
-            mode: allow
-            when:
-              - condition: "TAGSET:ai-providers:clipboard"
-                allow: ["/ClipboardProvider.kt"]
-              - condition: "TAGSET:ai-providers:jetbrains-ai-assistant"
-                allow: ["/JetBrainsAiProvider.kt"]
-              - condition: "TAGSET:ai-providers:jetbrains-junie"
-                allow: ["/JunieProvider.kt"]
-              - condition: "TAGSET:ai-providers:github-copilot"
-                allow: ["/GitHubCopilotProvider.kt"]
-              - condition: "TAGSET:ai-providers:claude-code-cli"
-                allow: ["/claudecli/"]
+          services:
+            mode: block
+            children:
+              ai:
+                mode: block
+                children:
+                  base:
+                    mode: allow
+                    when:
+                      - condition: >
+                          TAGSET:ai-providers:jetbrains-ai-assistant OR
+                          TAGSET:ai-providers:jetbrains-junie OR
+                          TAGSET:ai-providers:github-copilot
+                        allow: ["/BaseExtensionProvider.kt"]
+                      - condition: "TAGSET:ai-providers:claude-code-cli OR TAGSET:ai-providers:codex-cli"
+                        allow: ["/BaseCliProvider.kt"]
+                  providers:
+                    mode: allow
+                    when:
+                      - condition: "TAGSET:ai-providers:clipboard"
+                        allow: ["/ClipboardProvider.kt"]
+                      - condition: "TAGSET:ai-providers:jetbrains-ai-assistant"
+                        allow: ["/JetBrainsAiProvider.kt"]
+                      - condition: "TAGSET:ai-providers:jetbrains-junie"
+                        allow: ["/JunieProvider.kt"]
+                      - condition: "TAGSET:ai-providers:github-copilot"
+                        allow: ["/GitHubCopilotProvider.kt"]
+                      - condition: "TAGSET:ai-providers:claude-code-cli"
+                        allow: ["/claudecli/"]
+                      - condition: "TAGSET:ai-providers:codex-cli"
+                        allow: ["/codexcli/"]
+
+review:
+  extensions: [".kt", ".kts", ".xml", ".properties"]
+  filters:
+    mode: allow
+    allow:
+      - "/gradle.properties"
+      - "/build.gradle.kts"
+      - "/settings.gradle.kts"
+      - "/src/main/"

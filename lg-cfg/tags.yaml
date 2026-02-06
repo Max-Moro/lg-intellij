@@ -2,32 +2,53 @@ tag-sets:
   intellij-plugin:
     title: "Listing Generator IntelliJ Plugin"
     tags:
+      # Infrastructure
       core:
-        title: "Core"
-      ui:
-        title: "UI Component Base"
+        title: "Core Infrastructure"
+        description: "Bundle, ToolWindow factory, error reporting, settings"
+      state-engine:
+        title: "State Engine"
+        description: "Universal state coordination engine (stateengine/)"
+      state-pce:
+        title: "State PCE & Coordinator"
+        description: "LG-specific state management and coordination (statepce/)"
+      cli:
+        title: "CLI Integration"
+        description: "CLI resolver, executor, installer, init service"
+      ui-components:
+        title: "UI Components"
+        description: "Reusable UI component library (ui/components/)"
+
+      # Business domains
+      context:
+        title: "Context Domain"
+        description: "Context selection state, contexts catalog"
+      section:
+        title: "Section Domain"
+        description: "Section selection state, included files tree"
+      adaptive:
+        title: "Adaptive Domain"
+        description: "Mode-sets, tag-sets, target branch selection"
+      send-to-ai:
+        title: "Provider Domain"
+        description: "AI providers, sending content, provider settings"
+      stats:
+        title: "Stats Domain"
+        description: "Statistics service, tokenization, stats dialog"
+      generate:
+        title: "Generate Domain"
+        description: "Generation service, actions, virtual file service"
+      diag:
+        title: "Diagnostics Domain"
+        description: "Doctor dialog, cache reset, self-diagnostics"
+      starter:
+        title: "Starter Domain"
+        description: "Initial configuration wizard"
+
+      # Views (for focused UI work)
       control:
         title: "Control Panel"
-      included-files:
-        title: "Included Files Panel"
-      generate:
-        title: "Generation (for Display)"
-      catalog:
-        title: "Catalog Services"
-      cli:
-        title: "CLI Executable"
-      stats:
-        title: "Statistics Dialog"
-      tags-dialog:
-        title: "Tag Management Dialog"
-      modes-panel:
-        title: "Modes Panel"
-      diag:
-        title: "Self-Diagnostics"
-      starter:
-        title: "Starter Configuration"
-      send-to-ai:
-        title: "Send to AI"
+        description: "Main control panel in tool window"
 
   ai-providers:
     title: "AI Providers"
@@ -42,3 +63,5 @@ tag-sets:
         title: "GitHub Copilot"
       claude-code-cli:
         title: "Claude Code (CLI)"
+      codex-cli:
+        title: "OpenAI Codex (CLI)"

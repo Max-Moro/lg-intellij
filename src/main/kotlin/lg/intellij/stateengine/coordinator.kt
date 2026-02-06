@@ -215,34 +215,6 @@ class StateCoordinator<TState, TResult : RuleResult>(
     }
 
     /**
-     * Subscribe to UI meta changes (loading state).
-     *
-     * Meta state contains isLoading flag which UI can use
-     * to show/hide loading indicators.
-     *
-     * @param listener Callback for meta changes
-     * @return Unsubscribe function
-     */
-    fun subscribeToMeta(listener: MetaListener): () -> Unit {
-        metaListeners.add(listener)
-        return { metaListeners.remove(listener) }
-    }
-
-    /**
-     * Wait for all pending operations to complete.
-     *
-     * Useful for testing or when you need to ensure
-     * all async operations have finished.
-     */
-    suspend fun waitForStability() {
-        while (pendingJobs.isNotEmpty()) {
-            val jobs = pendingJobs.toList()
-            pendingJobs.clear()
-            jobs.joinAll()
-        }
-    }
-
-    /**
      * Cancel all pending operations and cleanup.
      *
      * Should be called when the coordinator is no longer needed.

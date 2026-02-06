@@ -37,12 +37,6 @@ class RuleRegistry<TState, TResult : RuleResult> {
         return rules.toList()
     }
 
-    /**
-     * Clear all rules (useful for testing).
-     */
-    fun clear() {
-        rules.clear()
-    }
 }
 
 // ============================================
@@ -62,11 +56,6 @@ data class Command<T>(
     override val type: String,
     val payload: T
 ) : BaseCommand
-
-/**
- * Command without payload (Unit as payload placeholder).
- */
-typealias NoPayloadCommand = Command<Unit>
 
 // ============================================
 // Command Factory

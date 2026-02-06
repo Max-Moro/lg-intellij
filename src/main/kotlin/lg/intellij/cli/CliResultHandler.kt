@@ -95,31 +95,6 @@ object CliResultHandler {
             }
         }
     }
-    
-    /**
-     * Processes result with additional fallback value on error.
-     *
-     * @param T data type in CliResult.Success
-     * @param R return result type
-     * @param project project for error reports
-     * @param operationName operation name for logs and notifications
-     * @param logger logger for message recording
-     * @param fallback value returned on any error
-     * @param errorReporting service for error reports (default - singleton)
-     * @param onSuccess successful result handler
-     * @return processing result or fallback on error
-     */
-    fun <T, R> handleWithFallback(
-        result: CliResult<T>,
-        project: Project,
-        operationName: String,
-        logger: Logger,
-        fallback: R,
-        errorReporting: LgErrorReportingService = LgErrorReportingService.getInstance(),
-        onSuccess: (CliResult.Success<T>) -> R
-    ): R {
-        return handle(result, project, operationName, logger, errorReporting, onSuccess) ?: fallback
-    }
 }
 
 /**
@@ -142,25 +117,4 @@ fun <T, R> CliResult<T>.handleWith(
     onSuccess: (CliResult.Success<T>) -> R?
 ): R? = CliResultHandler.handle(result = this, project, operationName, logger, errorReporting, onSuccess)
 
-/**
- * Extension function with fallback value.
- *
- * Example:
- * ```kotlin
- * val sections = result.handleWithFallback(
- *     project = project,
- *     operationName = "Loading sections",
- *     logger = LOG,
- *     fallback = emptyList()
- * ) { success -> json.decodeFromString<SectionsListSchema>(success.data).sections }
- * ```
- */
-fun <T, R> CliResult<T>.handleWithFallback(
-    project: Project,
-    operationName: String,
-    logger: Logger,
-    fallback: R,
-    errorReporting: LgErrorReportingService = LgErrorReportingService.getInstance(),
-    onSuccess: (CliResult.Success<T>) -> R
-): R = CliResultHandler.handleWithFallback(result = this, project, operationName, logger, fallback, errorReporting, onSuccess)
 

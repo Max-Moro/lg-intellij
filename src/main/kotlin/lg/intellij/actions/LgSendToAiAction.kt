@@ -61,7 +61,7 @@ class LgSendToAiAction : AnAction(
             NotificationGroupManager.getInstance()
                 .getNotificationGroup("LG Notifications")
                 .createNotification(
-                    "No Context Selected",
+                    "No context selected",
                     "Select a context first. Section listings cannot be sent to AI.",
                     NotificationType.WARNING
                 )
@@ -79,7 +79,7 @@ class LgSendToAiAction : AnAction(
             NotificationGroupManager.getInstance()
                 .getNotificationGroup("LG Important")
                 .createNotification(
-                    "No Integration Mode",
+                    "No integration mode",
                     "No integration mode configured for this context and provider.\n" +
                     "Run 'Update AI Modes Template' to generate ai-interaction.sec.yaml.",
                     NotificationType.ERROR

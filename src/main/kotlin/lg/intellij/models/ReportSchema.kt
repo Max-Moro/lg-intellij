@@ -6,9 +6,6 @@
 package lg.intellij.models
 
 import kotlinx.serialization.*
-import kotlinx.serialization.json.*
-import kotlinx.serialization.descriptors.*
-import kotlinx.serialization.encoding.*
 
 @Serializable
 data class ReportSchema (
@@ -49,6 +46,7 @@ data class File (
     val tokensRaw: Long
 )
 
+@Suppress("unused")
 @Serializable
 sealed class Meta {
     class BoolValue(val value: Boolean)  : Meta()
@@ -57,6 +55,7 @@ sealed class Meta {
     class StringValue(val value: String) : Meta()
 }
 
+@Suppress("unused")
 @Serializable
 enum class Scope(val value: String) {
     @SerialName("context") Context("context"),

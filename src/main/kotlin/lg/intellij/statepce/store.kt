@@ -62,11 +62,6 @@ fun lgResult(
     override val followUp = followUp
 }
 
-/**
- * Creates an empty LGRuleResult (no mutations, no side effects).
- */
-fun emptyLgResult(): LGRuleResult = lgResult()
-
 // ============================================
 // PCE State Store
 // ============================================
@@ -390,18 +385,6 @@ class PCEStateStore(
     }
 
     /**
-     * Checks if review mode is active for the given context/provider.
-     *
-     * @param ctx Context name
-     * @param provider Provider ID
-     * @return true if any mode with ID "review" is selected
-     */
-    fun isReviewModeActive(ctx: String, provider: String): Boolean {
-        val modes = getCurrentModes(ctx, provider)
-        return modes.values.any { it == "review" }
-    }
-
-    /**
      * Gets the 'runs' string from the integration mode-set for current selection.
      *
      * Integration mode-sets define how to send content to different AI providers.
@@ -440,46 +423,8 @@ class PCEStateStore(
         return state.providerSettings[providerId]?.get(key)
     }
 
-    /**
-     * Sets provider-specific setting value.
-     *
-     * @param providerId Provider ID
-     * @param key Setting key
-     * @param value Setting value
-     */
-    fun setProviderSetting(providerId: String, key: String, value: String) {
-        val providerMap = state.providerSettings.getOrPut(providerId) { mutableMapOf() }
-        providerMap[key] = value
-    }
-
     // ============================================
     // Lifecycle Methods
     // ============================================
 
-    /**
-     * Clears all state (persistent, configuration, environment).
-     * Used for testing or resetting to defaults.
-     */
-    fun clearAll() {
-        // Reset persistent state
-        state.providerId = ""
-        state.template = ""
-        state.section = ""
-        state.modesByContextProvider.clear()
-        state.tagsByContext.clear()
-        state.tokenizerLib = DEFAULT_TOKENIZER_LIB
-        state.encoder = DEFAULT_ENCODER
-        state.ctxLimit = DEFAULT_CTX_LIMIT
-        state.cliScope = ""
-        state.cliShell = ShellType.getDefault()
-        state.targetBranch = ""
-        state.taskText = ""
-        state.providerSettings.clear()
-
-        // Reset in-memory state
-        configuration = createDefaultConfigurationState()
-        environment = createDefaultEnvironmentState()
-
-        LOG.debug("All state cleared")
-    }
 }

@@ -76,41 +76,15 @@ class AiIntegrationService {
     }
 
     /**
-     * Returns list of all registered providers for UI display.
-     * Sorted by priority (descending).
-     */
-    fun getRegisteredProviders(): List<ProviderInfo> {
-        return providers.values
-            .map { ProviderInfo(it.id, it.name, it.priority) }
-            .sortedByDescending { it.priority }
-    }
-
-    /**
      * Detects available providers and returns ProviderInfo list for UI display.
-     * Checks each provider's isAvailable() and returns only available ones.
+     * Delegates to [detectAvailableProviders] and enriches with provider metadata.
      * Sorted by priority (descending).
      */
-    suspend fun detectAvailableProvidersInfo(): List<ProviderInfo> = withContext(Dispatchers.IO) {
-        val available = mutableListOf<ProviderInfo>()
-
-        for ((id, provider) in providers) {
-            try {
-                if (provider.isAvailable()) {
-                    available.add(ProviderInfo(id, provider.name, provider.priority))
-                    log.debug("Provider '$id' is available (priority: ${provider.priority})")
-                } else {
-                    log.debug("Provider '$id' is not available")
-                }
-            } catch (e: Exception) {
-                log.warn("Failed to check availability of provider '$id'", e)
-            }
+    suspend fun detectAvailableProvidersInfo(): List<ProviderInfo> {
+        val availableIds = detectAvailableProviders()
+        return availableIds.mapNotNull { id ->
+            providers[id]?.let { ProviderInfo(id, it.name, it.priority) }
         }
-
-        // Sort by priority (descending)
-        available.sortByDescending { it.priority }
-
-        log.info("Detected ${available.size} available providers: ${available.map { it.id }}")
-        available
     }
 
     /**
@@ -239,16 +213,6 @@ class AiIntegrationService {
     fun registerSettingsModule(module: ProviderSettingsModule) {
         settingsModules[module.providerId] = module
         log.debug("Registered provider settings module: ${module.providerId}")
-    }
-
-    /**
-     * Returns settings module for a specific provider.
-     *
-     * @param providerId Provider ID
-     * @return Settings module or null if not registered
-     */
-    fun getSettingsModule(providerId: String): ProviderSettingsModule? {
-        return settingsModules[providerId]
     }
 
     /**

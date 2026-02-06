@@ -32,7 +32,7 @@ import javax.swing.JComponent
  */
 class LgModeSetsPanel(
     private val coordinator: PCEStateCoordinator,
-    private val store: PCEStateStore,
+    store: PCEStateStore,
     parentDisposable: Disposable
 ) : Disposable {
 
@@ -60,9 +60,7 @@ class LgModeSetsPanel(
             }
         }
 
-        Disposer.register(this, Disposable {
-            unsubscribe()
-        })
+        Disposer.register(this) { unsubscribe() }
     }
 
     /**

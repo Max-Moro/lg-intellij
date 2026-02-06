@@ -35,10 +35,10 @@ data class CliExecutionContext(
     val runs: String,
 
     /** Claude model (optional, only for Claude CLI provider) */
-    val claudeModel: lg.intellij.models.ClaudeModel? = null,
+    val claudeModel: ClaudeModel? = null,
 
     /** Codex reasoning effort (optional, only for Codex CLI provider) */
-    val codexReasoningEffort: lg.intellij.models.CodexReasoningEffort? = null
+    val codexReasoningEffort: CodexReasoningEffort? = null
 )
 
 /**

@@ -21,6 +21,7 @@ import lg.intellij.services.ai.base.BaseExtensionProvider
  *
  * Priority: 90 (highest among all providers)
  */
+@Suppress("CanConvertToMultiDollarString")
 class JetBrainsAiProvider : BaseExtensionProvider() {
 
     private val log = logger<JetBrainsAiProvider>()

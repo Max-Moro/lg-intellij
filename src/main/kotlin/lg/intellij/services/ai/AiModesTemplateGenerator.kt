@@ -126,7 +126,7 @@ class AiModesTemplateGenerator(private val project: Project) {
 
         for (line in content.lines()) {
             // Detect mode start (8 spaces indent)
-            val modeMatch = Regex("""^        (\w+):\s*$""").find(line)
+            val modeMatch = Regex("""^ {8}(\w+):\s*$""").find(line)
             if (modeMatch != null) {
                 currentMode = modeMatch.groupValues[1]
                 inRuns = false
@@ -142,12 +142,12 @@ class AiModesTemplateGenerator(private val project: Project) {
 
             // Parse provider runs (12 spaces indent)
             if (inRuns && currentMode != null) {
-                val runsMatch = Regex("""^            ([a-z0-9._-]+):\s*"?([^"]*)"?\s*$""").find(line)
+                val runsMatch = Regex("""^ {12}([a-z0-9._-]+):\s*"?([^"]*)"?\s*$""").find(line)
                 if (runsMatch != null) {
                     val providerId = runsMatch.groupValues[1]
                     val runsValue = runsMatch.groupValues[2].trim()
                     result[currentMode]?.put(providerId, runsValue)
-                } else if (!line.startsWith("            ") && line.isNotBlank()) {
+                } else if (!line.startsWith(" ".repeat(12)) && line.isNotBlank()) {
                     // End of runs section
                     inRuns = false
                 }
@@ -177,7 +177,7 @@ class AiModesTemplateGenerator(private val project: Project) {
         val processedModes = mutableSetOf<String>()
         for ((modeId, meta) in canonicalModes) {
             val providers = allModes[modeId]
-            if (providers != null && providers.isNotEmpty()) {
+            if (!providers.isNullOrEmpty()) {
                 appendMode(lines, modeId, meta, providers)
                 processedModes.add(modeId)
             }

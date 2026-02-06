@@ -6,7 +6,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
@@ -31,8 +30,6 @@ import lg.intellij.services.ai.AiIntegrationService
 import lg.intellij.services.ai.FieldCommand
 import lg.intellij.services.ai.FieldOption
 import lg.intellij.services.ai.FieldType
-import lg.intellij.services.ai.ProviderSettingsContribution
-import lg.intellij.services.ai.ProviderSettingsField
 import lg.intellij.services.ai.providers.claudecli.SelectClaudeMethod
 import lg.intellij.services.ai.providers.claudecli.SelectClaudeMethodPayload
 import lg.intellij.services.ai.providers.claudecli.SelectClaudeModel
@@ -121,9 +118,7 @@ class LgControlPanel(
             }
         }
 
-        Disposer.register(this, Disposable {
-            unsubscribe()
-        })
+        Disposer.register(this) { unsubscribe() }
     }
 
     // =============== UI Updates ===============

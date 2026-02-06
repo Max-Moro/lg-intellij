@@ -99,8 +99,7 @@ data class PersistentState(
      * requiring changes to this class.
      */
     var providerSettings: MutableMap<String, MutableMap<String, Any?>> = mutableMapOf()
-) {
-}
+)
 
 // ============================================
 // Configuration State (C) - loaded from CLI
@@ -173,11 +172,6 @@ data class PCEState(
 // ============================================
 
 /**
- * Creates default PersistentState with sensible defaults.
- */
-fun createDefaultPersistentState(): PersistentState = PersistentState()
-
-/**
  * Creates default ConfigurationState (empty catalogs).
  */
 fun createDefaultConfigurationState(): ConfigurationState = ConfigurationState()
@@ -187,11 +181,3 @@ fun createDefaultConfigurationState(): ConfigurationState = ConfigurationState()
  */
 fun createDefaultEnvironmentState(): EnvironmentState = EnvironmentState()
 
-/**
- * Creates default PCEState with all defaults.
- */
-fun createDefaultPCEState(): PCEState = PCEState(
-    persistent = createDefaultPersistentState(),
-    configuration = createDefaultConfigurationState(),
-    environment = createDefaultEnvironmentState()
-)

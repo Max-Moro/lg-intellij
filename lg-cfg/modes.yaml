@@ -19,11 +19,11 @@ mode-sets:
       claude-code:
         title: "Claude Code"
         description: "Claude Code by Anthropic"
-        tags: [claude-code]
-      claude-code-subagents:
-        title: "Claude Code (Subagents)"
-        description: "Claude Code with subagents"
-        tags: [claude-code, claude-code-subagents]
+        tags: [claude-code, agents-pipeline]
+      claude-code-inspections:
+        title: "Claude Code (Inspections)"
+        description: "Claude Code with inspections"
+        tags: [claude-code, agents-pipeline, code-inspector]
 
   dev-stage:
     title: "Dev stage"

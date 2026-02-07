@@ -26,7 +26,7 @@ class GitHubCopilotProvider : BaseExtensionProvider() {
 
     private val log = logger<GitHubCopilotProvider>()
 
-    override val id = "com.github.copilot.ext"
+    override val id = "com.github.copilot.idea"
     override val name = "GitHub Copilot"
     override val priority = 80
     override val pluginId = "com.github.copilot"

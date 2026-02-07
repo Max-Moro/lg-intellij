@@ -20,7 +20,6 @@ import lg.intellij.stateengine.AsyncOperation
 import lg.intellij.stateengine.BaseCommand
 import lg.intellij.stateengine.RuleConfig
 import lg.intellij.stateengine.command
-import lg.intellij.statepce.EncoderEntry
 import lg.intellij.statepce.PCEState
 import lg.intellij.statepce.lgResult
 import lg.intellij.statepce.rule
@@ -75,7 +74,7 @@ val SelectLib = command("tokenization/SELECT_LIB").payload<String>()
 val SetEncoder = command("tokenization/SET_ENCODER").payload<String>()
 val SetCtxLimit = command("tokenization/SET_CTX_LIMIT").payload<Int>()
 val LibsLoaded = command("tokenization/LIBS_LOADED").payload<List<String>>()
-val EncodersLoaded = command("tokenization/ENCODERS_LOADED").payload<List<EncoderEntry>>()
+val EncodersLoaded = command("tokenization/ENCODERS_LOADED").payload<List<String>>()
 
 // ============================================
 // Rule Registration
@@ -104,7 +103,7 @@ fun registerTokenizationRules(project: Project) {
                     asyncOps = listOf(object : AsyncOperation {
                         override suspend fun execute(): BaseCommand {
                             val cliClient = project.service<CliClient>()
-                            val encoders = cliClient.listEncoders(newLib).map { EncoderEntry(name = it) }
+                            val encoders = cliClient.listEncoders(newLib)
                             return EncodersLoaded.create(encoders)
                         }
                     })
@@ -128,7 +127,7 @@ fun registerTokenizationRules(project: Project) {
                 asyncOps = listOf(object : AsyncOperation {
                     override suspend fun execute(): BaseCommand {
                         val cliClient = project.service<CliClient>()
-                        val encoders = cliClient.listEncoders(lib).map { EncoderEntry(name = it) }
+                        val encoders = cliClient.listEncoders(lib)
                         return EncodersLoaded.create(encoders)
                     }
                 })
@@ -138,20 +137,19 @@ fun registerTokenizationRules(project: Project) {
 
     // When encoders are loaded, store them and validate current selection
     rule.invoke(EncodersLoaded, RuleConfig(
-        condition = { _: PCEState, _: List<EncoderEntry> -> true },
-        apply = { state: PCEState, encoders: List<EncoderEntry> ->
+        condition = { _: PCEState, _: List<String> -> true },
+        apply = { state: PCEState, encoders: List<String> ->
             val currentEncoder = state.persistent.encoder
             val currentLib = state.persistent.tokenizerLib
 
-            val encoderNames = encoders.map { it.name }
-            val isValid = currentEncoder.isNotEmpty() && currentEncoder in encoderNames
+            val isValid = currentEncoder.isNotEmpty() && currentEncoder in encoders
 
             if (isValid) {
                 lgResult(
                     config = { c -> c.copy(encoders = encoders) }
                 )
             } else {
-                val newEncoder = selectBestEncoder(currentLib, encoderNames)
+                val newEncoder = selectBestEncoder(currentLib, encoders)
                 lgResult(
                     config = { c -> c.copy(encoders = encoders) },
                     followUp = if (newEncoder.isNotBlank()) {

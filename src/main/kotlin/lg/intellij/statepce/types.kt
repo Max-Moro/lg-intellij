@@ -10,21 +10,6 @@ import lg.intellij.statepce.domains.DEFAULT_ENCODER
 import lg.intellij.statepce.domains.DEFAULT_TOKENIZER_LIB
 
 // ============================================
-// Encoder Entry
-// ============================================
-
-/**
- * Encoder entry with optional cached flag.
- *
- * The cached flag indicates if this encoder's vocabulary
- * has been downloaded and is available locally.
- */
-data class EncoderEntry(
-    val name: String,
-    val cached: Boolean = false
-)
-
-// ============================================
 // Persistent State (P) - saved between sessions
 // ============================================
 
@@ -157,7 +142,7 @@ data class ConfigurationState(
     var modeSets: ModeSetsListSchema = ModeSetsListSchema(emptyList()),
     var tagSets: TagSetsListSchema = TagSetsListSchema(emptyList()),
     var tokenizerLibs: List<String> = emptyList(),
-    var encoders: List<EncoderEntry> = emptyList()
+    var encoders: List<String> = emptyList()
 )
 
 // ============================================

@@ -70,7 +70,7 @@ class LgEncoderCompletionField(
 
             LOG.debug("Loaded ${encoders.size} encoder suggestions for library '$currentLibrary'")
 
-            encoders.map { TextCompletionInfo(it.name) }
+            encoders.map { TextCompletionInfo(it) }
         } catch (e: Exception) {
             LOG.warn("Failed to load encoder suggestions", e)
             emptyList()

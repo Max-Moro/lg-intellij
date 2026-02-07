@@ -19,13 +19,7 @@ package lg.intellij.statepce.domains
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import kotlinx.serialization.json.Json
-import lg.intellij.cli.CliExecutor
-import lg.intellij.models.ContextsListSchema
-import lg.intellij.models.ModeSetsListSchema
-import lg.intellij.models.SectionsListSchema
-import lg.intellij.models.TagSetsListSchema
-import lg.intellij.models.TokenizerLibsListSchema
+import lg.intellij.cli.CliClient
 import lg.intellij.ai.AiIntegrationService
 import lg.intellij.stateengine.AsyncOperation
 import lg.intellij.stateengine.BaseCommand
@@ -47,24 +41,8 @@ val Refresh = command("lifecycle/REFRESH").noPayload()
 // Shared Catalog Loading
 // ============================================
 
-private val json = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-}
-
 /**
  * Build async operations for loading all available catalogs.
- *
- * Each catalog is loaded conditionally based on state dependencies:
- * - tokenizer-libs: always (no dependencies)
- * - sections: if template exists
- * - contexts: if providerId exists
- * - mode-sets: if providerId AND template exist
- * - tag-sets: if template exists
- *
- * @param state Current PCE state (for checking dependencies)
- * @param includeProviderDetection Whether to include provider detection (INITIALIZE only)
- * @param project Project for service access
  */
 private fun buildCatalogOps(
     state: PCEState,
@@ -92,12 +70,8 @@ private fun buildCatalogOps(
     // Tokenizer libs (always load, no dependencies)
     ops.add(object : AsyncOperation {
         override suspend fun execute(): BaseCommand {
-            val cliExecutor = project.service<CliExecutor>()
-            val stdout = cliExecutor.execute(
-                args = listOf("list", "tokenizer-libs"),
-                timeoutMs = 20_000
-            ).getOrThrow()
-            val libs = json.decodeFromString<TokenizerLibsListSchema>(stdout).tokenizerLibs
+            val cliClient = project.service<CliClient>()
+            val libs = cliClient.listTokenizerLibs()
             return LibsLoaded.create(libs)
         }
     })
@@ -106,12 +80,8 @@ private fun buildCatalogOps(
     if (template.isNotBlank()) {
         ops.add(object : AsyncOperation {
             override suspend fun execute(): BaseCommand {
-                val cliExecutor = project.service<CliExecutor>()
-                val stdout = cliExecutor.execute(
-                    args = listOf("list", "sections"),
-                    timeoutMs = 30_000
-                ).getOrThrow()
-                val sections = json.decodeFromString<SectionsListSchema>(stdout).sections
+                val cliClient = project.service<CliClient>()
+                val sections = cliClient.listSections()
                 return SectionsLoaded.create(sections)
             }
         })
@@ -121,12 +91,8 @@ private fun buildCatalogOps(
     if (providerId.isNotBlank()) {
         ops.add(object : AsyncOperation {
             override suspend fun execute(): BaseCommand {
-                val cliExecutor = project.service<CliExecutor>()
-                val stdout = cliExecutor.execute(
-                    args = listOf("list", "contexts", "--provider", providerId),
-                    timeoutMs = 30_000
-                ).getOrThrow()
-                val contexts = json.decodeFromString<ContextsListSchema>(stdout).contexts
+                val cliClient = project.service<CliClient>()
+                val contexts = cliClient.listContexts(providerId)
                 return ContextsLoaded.create(contexts)
             }
         })
@@ -136,12 +102,8 @@ private fun buildCatalogOps(
     if (providerId.isNotBlank() && template.isNotBlank()) {
         ops.add(object : AsyncOperation {
             override suspend fun execute(): BaseCommand {
-                val cliExecutor = project.service<CliExecutor>()
-                val stdout = cliExecutor.execute(
-                    args = listOf("list", "mode-sets", "--context", template, "--provider", providerId),
-                    timeoutMs = 30_000
-                ).getOrThrow()
-                val modeSets = json.decodeFromString<ModeSetsListSchema>(stdout)
+                val cliClient = project.service<CliClient>()
+                val modeSets = cliClient.listModeSets(template, providerId)
                 return ModeSetsLoaded.create(modeSets)
             }
         })
@@ -151,12 +113,8 @@ private fun buildCatalogOps(
     if (template.isNotBlank()) {
         ops.add(object : AsyncOperation {
             override suspend fun execute(): BaseCommand {
-                val cliExecutor = project.service<CliExecutor>()
-                val stdout = cliExecutor.execute(
-                    args = listOf("list", "tag-sets", "--context", template),
-                    timeoutMs = 30_000
-                ).getOrThrow()
-                val tagSets = json.decodeFromString<TagSetsListSchema>(stdout)
+                val cliClient = project.service<CliClient>()
+                val tagSets = cliClient.listTagSets(template)
                 return TagSetsLoaded.create(tagSets)
             }
         })
@@ -169,13 +127,7 @@ private fun buildCatalogOps(
 // Rule Registration
 // ============================================
 
-/**
- * Register lifecycle domain rules.
- *
- * @param project Project for service access in async operations
- */
 fun registerLifecycleRules(project: Project) {
-    // Initialize: detect providers + load all available catalogs
     rule.invoke(Initialize, NoPayloadRuleConfig(
         condition = { _ -> true },
         apply = { state ->
@@ -183,7 +135,6 @@ fun registerLifecycleRules(project: Project) {
         }
     ))
 
-    // Refresh: reload all available catalogs (no provider detection)
     rule.invoke(Refresh, NoPayloadRuleConfig(
         condition = { _ -> true },
         apply = { state ->

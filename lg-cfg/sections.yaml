@@ -67,7 +67,6 @@ src:
           - condition: "TAGSET:intellij-plugin:cli"
             allow:
               - "/cli/"
-              - "/models/CliResult.kt"
               - "/listeners/LgSettingsChangeListener.kt"
               - "/services/LgInitService.kt"
 

@@ -13,11 +13,7 @@ package lg.intellij.statepce.domains
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import kotlinx.serialization.json.Json
-import lg.intellij.cli.CliExecutor
-import lg.intellij.models.ModeSetsListSchema
-import lg.intellij.models.SectionsListSchema
-import lg.intellij.models.TagSetsListSchema
+import lg.intellij.cli.CliClient
 import lg.intellij.services.git.LgGitService
 import lg.intellij.stateengine.AsyncOperation
 import lg.intellij.stateengine.BaseCommand
@@ -38,11 +34,6 @@ val ContextsLoaded = command("context/LOADED").payload<List<String>>()
 // ============================================
 // Rule Registration
 // ============================================
-
-private val json = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-}
 
 /**
  * Register context domain rules.
@@ -86,12 +77,8 @@ fun registerContextRules(project: Project) {
             // Reload sections
             asyncOps.add(object : AsyncOperation {
                 override suspend fun execute(): BaseCommand {
-                    val cliExecutor = project.service<CliExecutor>()
-                    val stdout = cliExecutor.execute(
-                        args = listOf("list", "sections"),
-                        timeoutMs = 30_000
-                    ).getOrThrow()
-                    val sections = json.decodeFromString<SectionsListSchema>(stdout).sections
+                    val cliClient = project.service<CliClient>()
+                    val sections = cliClient.listSections()
                     return SectionsLoaded.create(sections)
                 }
             })
@@ -100,12 +87,8 @@ fun registerContextRules(project: Project) {
             if (providerId.isNotBlank()) {
                 asyncOps.add(object : AsyncOperation {
                     override suspend fun execute(): BaseCommand {
-                        val cliExecutor = project.service<CliExecutor>()
-                        val stdout = cliExecutor.execute(
-                            args = listOf("list", "mode-sets", "--context", template, "--provider", providerId),
-                            timeoutMs = 30_000
-                        ).getOrThrow()
-                        val modeSets = json.decodeFromString<ModeSetsListSchema>(stdout)
+                        val cliClient = project.service<CliClient>()
+                        val modeSets = cliClient.listModeSets(template, providerId)
                         return ModeSetsLoaded.create(modeSets)
                     }
                 })
@@ -114,12 +97,8 @@ fun registerContextRules(project: Project) {
             // Reload tag-sets (depend on template)
             asyncOps.add(object : AsyncOperation {
                 override suspend fun execute(): BaseCommand {
-                    val cliExecutor = project.service<CliExecutor>()
-                    val stdout = cliExecutor.execute(
-                        args = listOf("list", "tag-sets", "--context", template),
-                        timeoutMs = 30_000
-                    ).getOrThrow()
-                    val tagSets = json.decodeFromString<TagSetsListSchema>(stdout)
+                    val cliClient = project.service<CliClient>()
+                    val tagSets = cliClient.listTagSets(template)
                     return TagSetsLoaded.create(tagSets)
                 }
             })

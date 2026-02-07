@@ -10,21 +10,26 @@ open class CliException(
 
 /**
  * CLI process exited with non-zero exit code.
- * 
+ *
  * @property exitCode Process exit code
  * @property stderr Error output from stderr
+ * @property stdout Standard output (may contain partial data, e.g. JSON conflict report from init)
  */
 class CliExecutionException(
     message: String,
     val exitCode: Int,
-    val stderr: String
+    val stderr: String,
+    val stdout: String = ""
 ) : CliException(message)
 
 /**
  * CLI process execution exceeded timeout.
+ *
+ * @property timeoutMs Timeout duration in milliseconds
  */
 class CliTimeoutException(
-    message: String
+    message: String,
+    val timeoutMs: Long = 0
 ) : CliException(message)
 
 /**

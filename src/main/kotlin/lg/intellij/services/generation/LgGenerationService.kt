@@ -6,8 +6,9 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lg.intellij.cli.CliExecutor
-import lg.intellij.cli.handleWith
+import lg.intellij.cli.CliClient
+import lg.intellij.cli.CliException
+import lg.intellij.services.LgErrorReportingService
 import lg.intellij.statepce.PCEStateStore
 
 /**
@@ -26,7 +27,7 @@ enum class GenerationTarget(val prefix: String, val displayName: String) {
 @Service(Service.Level.PROJECT)
 class LgGenerationService(private val project: Project) {
 
-    private val cliExecutor: CliExecutor
+    private val cliClient: CliClient
         get() = project.service()
 
     private val store: PCEStateStore
@@ -44,7 +45,6 @@ class LgGenerationService(private val project: Project) {
             val target = "${targetType.prefix}:$targetName"
             val isContext = targetType == GenerationTarget.CONTEXT
 
-            // For sections, find section info and pass it for filtering
             val sectionInfo = if (!isContext) {
                 store.getBusinessState().configuration.sections.find { it.name == targetName }
             } else null
@@ -53,25 +53,17 @@ class LgGenerationService(private val project: Project) {
                 store,
                 BuildParamsOptions(includeProvider = isContext, sectionInfo = sectionInfo)
             )
-            val (args, stdinData) = CliArgsBuilder.buildCliArgs("render", target, params)
-
-            LOG.debug("Generating ${targetType.displayName} for '$targetName' with args: $args")
-
-            val result = cliExecutor.execute(
-                args = args,
-                stdinData = stdinData,
-                timeoutMs = 120_000
-            )
 
             val operationName = "${targetType.displayName.replaceFirstChar { it.uppercase() }} Generation"
+            LOG.debug("Generating ${targetType.displayName} for '$targetName'")
 
-            result.handleWith(
-                project = project,
-                operationName = operationName,
-                logger = LOG
-            ) { success ->
+            try {
+                val content = cliClient.render(target, params)
                 LOG.info("${targetType.displayName.replaceFirstChar { it.uppercase() }} generated successfully for '$targetName'")
-                success.data
+                content
+            } catch (e: CliException) {
+                LgErrorReportingService.getInstance().reportCliException(project, operationName, e)
+                null
             }
         }
     }

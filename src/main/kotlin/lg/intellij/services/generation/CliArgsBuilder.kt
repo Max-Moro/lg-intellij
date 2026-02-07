@@ -33,81 +33,9 @@ data class BuildParamsOptions(
 )
 
 /**
- * Helper utility for building CLI command arguments.
- *
- * Centralizes logic for constructing CLI command arguments
- * and extracting parameters from PCE state.
- *
- * Naming aligned with VS Code's ParamsBuilder.ts + CliClient.ts:
- * - buildCliParams() ↔ buildCliParams()
- * - buildCliArgs()   ↔ buildCliArgs()
+ * Helper utility for extracting CLI generation parameters from PCE state.
  */
 object CliArgsBuilder {
-
-    /**
-     * Builds CLI arguments for render/report commands.
-     *
-     * Equivalent to VS Code's buildCliArgs(command, target, params).
-     *
-     * @param command CLI command ("render" or "report")
-     * @param target Target specifier (e.g., "sec:all", "ctx:template-name")
-     * @param params CLI generation parameters
-     * @return Pair of (args list, stdin data or null)
-     */
-    fun buildCliArgs(
-        command: String,
-        target: String,
-        params: CliGenerationParams
-    ): Pair<List<String>, String?> {
-        val args = mutableListOf(command, target)
-
-        // Tokenization parameters
-        args.add("--lib")
-        args.add(params.tokenizerLib)
-
-        args.add("--encoder")
-        args.add(params.encoder)
-
-        args.add("--ctx-limit")
-        args.add(params.ctxLimit.toString())
-
-        // Modes
-        for ((modeSet, mode) in params.modes) {
-            if (mode.isNotBlank()) {
-                args.add("--mode")
-                args.add("$modeSet:$mode")
-            }
-        }
-
-        // Tags (flatten all tags from all tag-sets)
-        val allTags = params.tags.values.flatten()
-        if (allTags.isNotEmpty()) {
-            args.add("--tags")
-            args.add(allTags.joinToString(","))
-        }
-
-        // Target branch (for review mode)
-        if (!params.targetBranch.isNullOrBlank()) {
-            args.add("--target-branch")
-            args.add(params.targetBranch.trim())
-        }
-
-        // Provider (for template conditions)
-        if (!params.providerId.isNullOrBlank()) {
-            args.add("--provider")
-            args.add(params.providerId.trim())
-        }
-
-        // Task text (via stdin)
-        var stdinData: String? = null
-        if (!params.taskText.isNullOrBlank()) {
-            args.add("--task")
-            args.add("-") // Read from stdin
-            stdinData = params.taskText.trim()
-        }
-
-        return Pair(args, stdinData)
-    }
 
     /**
      * Extracts generation parameters from PCEStateStore.

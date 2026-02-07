@@ -15,9 +15,7 @@ package lg.intellij.statepce.domains
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import kotlinx.serialization.json.Json
-import lg.intellij.cli.CliExecutor
-import lg.intellij.models.EncodersListSchema
+import lg.intellij.cli.CliClient
 import lg.intellij.stateengine.AsyncOperation
 import lg.intellij.stateengine.BaseCommand
 import lg.intellij.stateengine.RuleConfig
@@ -70,15 +68,6 @@ private fun selectBestEncoder(lib: String, availableEncoders: List<String>): Str
 }
 
 // ============================================
-// CLI Access
-// ============================================
-
-private val json = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-}
-
-// ============================================
 // Commands
 // ============================================
 
@@ -114,13 +103,8 @@ fun registerTokenizationRules(project: Project) {
                     mutations = mapOf("tokenizerLib" to newLib),
                     asyncOps = listOf(object : AsyncOperation {
                         override suspend fun execute(): BaseCommand {
-                            val cliExecutor = project.service<CliExecutor>()
-                            val stdout = cliExecutor.execute(
-                                args = listOf("list", "encoders", "--lib", newLib),
-                                timeoutMs = 20_000
-                            ).getOrThrow()
-                            val encoders = json.decodeFromString<EncodersListSchema>(stdout).encoders
-                                .map { EncoderEntry(name = it) }
+                            val cliClient = project.service<CliClient>()
+                            val encoders = cliClient.listEncoders(newLib).map { EncoderEntry(name = it) }
                             return EncodersLoaded.create(encoders)
                         }
                     })
@@ -143,13 +127,8 @@ fun registerTokenizationRules(project: Project) {
                 mutations = mapOf("tokenizerLib" to lib),
                 asyncOps = listOf(object : AsyncOperation {
                     override suspend fun execute(): BaseCommand {
-                        val cliExecutor = project.service<CliExecutor>()
-                        val stdout = cliExecutor.execute(
-                            args = listOf("list", "encoders", "--lib", lib),
-                            timeoutMs = 20_000
-                        ).getOrThrow()
-                        val encoders = json.decodeFromString<EncodersListSchema>(stdout).encoders
-                            .map { EncoderEntry(name = it) }
+                        val cliClient = project.service<CliClient>()
+                        val encoders = cliClient.listEncoders(lib).map { EncoderEntry(name = it) }
                         return EncodersLoaded.create(encoders)
                     }
                 })

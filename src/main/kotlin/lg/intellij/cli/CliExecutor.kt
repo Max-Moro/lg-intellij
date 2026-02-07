@@ -9,25 +9,26 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lg.intellij.models.CliResult
 import java.nio.charset.StandardCharsets
 
 /**
+ * Successful CLI output with both streams.
+ */
+data class CliOutput(val stdout: String, val stderr: String = "")
+
+/**
  * Executes Listing Generator CLI commands.
- * 
- * Features:
- * - Async execution via Kotlin Coroutines (suspend functions)
- * - Timeout support (default 120 seconds)
- * - UTF-8 encoding enforcement
- * - stdin support for task text
- * - Mock mode for development without real CLI
- * - Typed results via CliResult sealed class
- * 
+ *
+ * Returns [CliOutput] on success, throws [CliException] subclasses on error:
+ * - [CliExecutionException] for non-zero exit codes
+ * - [CliTimeoutException] for timeouts
+ * - [CliNotFoundException] when CLI is not found
+ *
  * Thread Safety: All operations are performed on Dispatchers.IO
  */
 @Service(Service.Level.PROJECT)
 class CliExecutor(private val project: Project) {
-    
+
     private val log = logger<CliExecutor>()
     private val resolver = service<CliResolver>()
 
@@ -35,82 +36,63 @@ class CliExecutor(private val project: Project) {
      * Default timeout for CLI execution in milliseconds.
      */
     var defaultTimeoutMs: Long = 120_000 // 2 minutes
-    
+
     /**
-     * Executes CLI command and returns structured result.
-     * 
+     * Executes CLI command.
+     *
      * @param args Command arguments (without executable name)
      * @param stdinData Optional data to send to stdin (for --task -)
      * @param timeoutMs Timeout in milliseconds (defaults to [defaultTimeoutMs])
      * @param workingDirectory Working directory (defaults to project base path)
-     * @return Typed result of execution
+     * @return CLI output on success
+     * @throws CliExecutionException if process exits with non-zero code
+     * @throws CliTimeoutException if process exceeds timeout
+     * @throws CliNotFoundException if CLI executable is not found
      */
     suspend fun execute(
         args: List<String>,
         stdinData: String? = null,
         timeoutMs: Long = defaultTimeoutMs,
         workingDirectory: String? = null
-    ): CliResult<String> = withContext(Dispatchers.IO) {
-        try {
-            // Resolve CLI run specification
-            val runSpec = resolver.resolve()
+    ): CliOutput = withContext(Dispatchers.IO) {
+        // Resolve CLI run specification (may throw CliNotFoundException)
+        val runSpec = resolver.resolve()
 
-            // Build command line
-            val commandLine = buildCommandLine(
-                runSpec,
-                args,
-                workingDirectory ?: project.basePath
-            )
+        // Build command line
+        val commandLine = buildCommandLine(
+            runSpec,
+            args,
+            workingDirectory ?: project.basePath
+        )
 
-            log.debug("Executing CLI: ${commandLine.commandLineString}")
+        log.debug("Executing CLI: ${commandLine.commandLineString}")
 
-            // Create process handler
-            val handler = CapturingProcessHandler(commandLine)
-            
-            // Write stdin if provided
-            if (stdinData != null) {
-                log.debug("Writing ${stdinData.length} bytes to stdin")
-                handler.processInput.use { stdin ->
-                    stdin.write(stdinData.toByteArray(StandardCharsets.UTF_8))
-                }
+        // Create process handler
+        val handler = CapturingProcessHandler(commandLine)
+
+        // Write stdin if provided
+        if (stdinData != null) {
+            log.debug("Writing ${stdinData.length} bytes to stdin")
+            handler.processInput.use { stdin ->
+                stdin.write(stdinData.toByteArray(StandardCharsets.UTF_8))
             }
-            
-            // Execute with timeout
-            val output = handler.runProcess(timeoutMs.toInt())
-            
-            // Process result
-            processOutput(output, commandLine.commandLineString)
-            
-        } catch (e: CliNotFoundException) {
-            // Check if this is a silent error (subsequent failure after fatal error)
-            if (e.silent) {
-                CliResult.Unavailable(e.message ?: "CLI unavailable")
-            } else {
-                CliResult.NotFound(e.message ?: "CLI not found")
-            }
-        } catch (e: Exception) {
-            log.error("CLI execution failed", e)
-            CliResult.Failure(
-                exitCode = -1,
-                stderr = e.message ?: "Unknown error",
-                stdout = ""
-            )
         }
+
+        // Execute with timeout
+        val output = handler.runProcess(timeoutMs.toInt())
+
+        // Process result (throws on error)
+        processOutput(output, commandLine.commandLineString, timeoutMs)
     }
-    
+
     /**
      * Builds GeneralCommandLine with proper configuration.
-     *
-     * Uses CliRunSpec to construct command line with correct arguments.
-     * Handles both direct CLI execution and Python module invocation.
      */
     private fun buildCommandLine(
         runSpec: CliRunSpec,
         args: List<String>,
         workingDirectory: String?
     ): GeneralCommandLine {
-        // Combine run spec args with CLI command args
-        // E.g., for Python: ["-m", "lg.cli"] + ["render", "sec:all"]
         val allArgs = runSpec.args + args
 
         val commandLine = GeneralCommandLine()
@@ -129,46 +111,44 @@ class CliExecutor(private val project: Project) {
 
         return commandLine
     }
-    
+
     /**
-     * Processes command output into typed result.
+     * Processes command output. Returns [CliOutput] on success, throws on error.
      */
     private fun processOutput(
         output: ProcessOutput,
-        commandString: String
-    ): CliResult<String> {
-        return when {
+        commandString: String,
+        timeoutMs: Long
+    ): CliOutput {
+        when {
             output.isTimeout -> {
                 log.warn("CLI execution timeout: $commandString")
-                CliResult.Timeout(defaultTimeoutMs)
+                throw CliTimeoutException(
+                    "Process timeout after ${timeoutMs}ms",
+                    timeoutMs
+                )
             }
-            
+
             output.exitCode != 0 -> {
                 log.warn("CLI failed with exit code ${output.exitCode}: $commandString")
-
-                // IMPORTANT: stderr contains Python traceback - always include in result
                 if (output.stderr.isNotEmpty()) {
                     log.debug("Full stderr output:\n${output.stderr}")
                 }
-                
-                CliResult.Failure(
-                    exitCode = output.exitCode,
-                    stderr = output.stderr,
-                    stdout = output.stdout
+                throw CliExecutionException(
+                    "CLI failed with exit code ${output.exitCode}",
+                    output.exitCode,
+                    output.stderr,
+                    output.stdout
                 )
             }
-            
+
             else -> {
                 log.debug("CLI succeeded, output length: ${output.stdout.length}")
-
-                // IMPORTANT: even on success stderr may contain useful information
-                // (e.g., bundle path in `lg diag --bundle`)
                 if (output.stderr.isNotEmpty()) {
                     log.debug("stderr on success:\n${output.stderr}")
                 }
-                
-                CliResult.Success(
-                    data = output.stdout,
+                return CliOutput(
+                    stdout = output.stdout,
                     stderr = output.stderr
                 )
             }

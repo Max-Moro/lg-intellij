@@ -35,6 +35,9 @@ repositories {
 dependencies {
     // Kotlin serialization for generated models
     implementation(libs.kotlinx.serialization.json)
+
+    // YAML AST manipulation for ai-interaction.sec.yaml merge/generation
+    implementation(libs.snakeyaml.engine)
     
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)

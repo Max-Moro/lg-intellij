@@ -26,7 +26,7 @@ import lg.intellij.models.ModeSetsListSchema
 import lg.intellij.models.SectionsListSchema
 import lg.intellij.models.TagSetsListSchema
 import lg.intellij.models.TokenizerLibsListSchema
-import lg.intellij.services.ai.AiIntegrationService
+import lg.intellij.ai.AiIntegrationService
 import lg.intellij.stateengine.AsyncOperation
 import lg.intellij.stateengine.BaseCommand
 import lg.intellij.stateengine.NoPayloadRuleConfig

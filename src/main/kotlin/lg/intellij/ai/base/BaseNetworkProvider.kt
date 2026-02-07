@@ -1,9 +1,9 @@
-package lg.intellij.services.ai.base
+package lg.intellij.ai.base
 
 import com.intellij.ide.passwordSafe.PasswordSafe
 import com.intellij.openapi.diagnostic.logger
-import lg.intellij.services.ai.AiProvider
-import lg.intellij.services.ai.AiProviderException
+import lg.intellij.ai.AiProvider
+import lg.intellij.ai.AiProviderException
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse

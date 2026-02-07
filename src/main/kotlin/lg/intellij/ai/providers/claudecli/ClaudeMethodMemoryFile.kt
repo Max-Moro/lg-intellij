@@ -1,11 +1,11 @@
-package lg.intellij.services.ai.providers.claudecli
+package lg.intellij.ai.providers.claudecli
 
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.terminal.ui.TerminalWidget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lg.intellij.services.ai.base.CliExecutionContext
+import lg.intellij.ai.base.CliExecutionContext
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.writeText

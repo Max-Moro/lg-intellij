@@ -17,8 +17,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
-import lg.intellij.services.ai.AiIntegrationService
-import lg.intellij.services.ai.AiProviderException
+import lg.intellij.ai.AiIntegrationService
+import lg.intellij.ai.AiProviderException
 import lg.intellij.services.generation.GenerationTarget
 import lg.intellij.services.generation.LgGenerationService
 import lg.intellij.statepce.PCEStateStore

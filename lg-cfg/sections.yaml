@@ -9,7 +9,7 @@ src:
       - "/src/main/"
     when:
       - condition: "NOT TAGSET:intellij-plugin:send-to-ai"
-        block: ["/src/main/kotlin/lg/intellij/services/ai/"]
+        block: ["/src/main/kotlin/lg/intellij/ai/"]
     children:
       src/main:
         mode: allow
@@ -136,7 +136,7 @@ src:
           - condition: "TAGSET:intellij-plugin:send-to-ai"
             allow:
               - "/statepce/domains/provider.kt"
-              - "/services/ai/"
+              - "/ai/"
               - "/models/ShellType.kt"
               - "/actions/LgSendToAiAction.kt"
               - "/actions/LgUpdateAiModesAction.kt"
@@ -171,51 +171,35 @@ src:
               - "/ui/components/LgLabeledComponent.kt"
               - "/actions/LgRefreshCatalogsAction.kt"
 
-          # ==================== PROVIDER-SPECIFIC ====================
-
-          # Claude CLI provider with settings
-          - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:claude-code-cli"
-            allow:
-              - "/models/ClaudeIntegrationMethod.kt"
-              - "/models/ClaudeModel.kt"
-
-          # Codex CLI provider with settings
-          - condition: "TAGSET:intellij-plugin:send-to-ai AND TAGSET:ai-providers:codex-cli"
-            allow:
-              - "/models/CodexReasoningEffort.kt"
-
         children:
-          services:
+          ai:
             mode: block
             children:
-              ai:
-                mode: block
-                children:
-                  base:
-                    mode: allow
-                    when:
-                      - condition: >
-                          TAGSET:ai-providers:jetbrains-ai-assistant OR
-                          TAGSET:ai-providers:jetbrains-junie OR
-                          TAGSET:ai-providers:github-copilot
-                        allow: ["/BaseExtensionProvider.kt"]
-                      - condition: "TAGSET:ai-providers:claude-code-cli OR TAGSET:ai-providers:codex-cli"
-                        allow: ["/BaseCliProvider.kt"]
-                  providers:
-                    mode: allow
-                    when:
-                      - condition: "TAGSET:ai-providers:clipboard"
-                        allow: ["/ClipboardProvider.kt"]
-                      - condition: "TAGSET:ai-providers:jetbrains-ai-assistant"
-                        allow: ["/JetBrainsAiProvider.kt"]
-                      - condition: "TAGSET:ai-providers:jetbrains-junie"
-                        allow: ["/JunieProvider.kt"]
-                      - condition: "TAGSET:ai-providers:github-copilot"
-                        allow: ["/GitHubCopilotProvider.kt"]
-                      - condition: "TAGSET:ai-providers:claude-code-cli"
-                        allow: ["/claudecli/"]
-                      - condition: "TAGSET:ai-providers:codex-cli"
-                        allow: ["/codexcli/"]
+              base:
+                mode: allow
+                when:
+                  - condition: >
+                      TAGSET:ai-providers:jetbrains-ai-assistant OR
+                      TAGSET:ai-providers:jetbrains-junie OR
+                      TAGSET:ai-providers:github-copilot
+                    allow: ["/BaseExtensionProvider.kt"]
+                  - condition: "TAGSET:ai-providers:claude-code-cli OR TAGSET:ai-providers:codex-cli"
+                    allow: ["/BaseCliProvider.kt"]
+              providers:
+                mode: allow
+                when:
+                  - condition: "TAGSET:ai-providers:clipboard"
+                    allow: ["/ClipboardProvider.kt"]
+                  - condition: "TAGSET:ai-providers:jetbrains-ai-assistant"
+                    allow: ["/JetBrainsAiProvider.kt"]
+                  - condition: "TAGSET:ai-providers:jetbrains-junie"
+                    allow: ["/JunieProvider.kt"]
+                  - condition: "TAGSET:ai-providers:github-copilot"
+                    allow: ["/GitHubCopilotProvider.kt"]
+                  - condition: "TAGSET:ai-providers:claude-code-cli"
+                    allow: ["/claudecli/"]
+                  - condition: "TAGSET:ai-providers:codex-cli"
+                    allow: ["/codexcli/"]
 
 review:
   extensions: [".kt", ".kts", ".xml", ".properties"]

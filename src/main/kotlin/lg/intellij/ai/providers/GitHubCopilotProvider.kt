@@ -1,12 +1,12 @@
-package lg.intellij.services.ai.providers
+package lg.intellij.ai.providers
 
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lg.intellij.services.ai.ProviderModeInfo
-import lg.intellij.services.ai.base.BaseExtensionProvider
+import lg.intellij.ai.ProviderModeInfo
+import lg.intellij.ai.base.BaseExtensionProvider
 import kotlin.jvm.functions.Function1
 
 /**

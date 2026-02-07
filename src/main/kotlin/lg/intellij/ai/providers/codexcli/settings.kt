@@ -7,15 +7,14 @@
  * Commands:
  * - provider.codex-cli/SELECT_REASONING — update reasoning effort
  */
-package lg.intellij.services.ai.providers.codexcli
+package lg.intellij.ai.providers.codexcli
 
-import lg.intellij.models.CodexReasoningEffort
-import lg.intellij.services.ai.FieldCommand
-import lg.intellij.services.ai.FieldOption
-import lg.intellij.services.ai.FieldType
-import lg.intellij.services.ai.ProviderSettingsContribution
-import lg.intellij.services.ai.ProviderSettingsField
-import lg.intellij.services.ai.ProviderSettingsModule
+import lg.intellij.ai.FieldCommand
+import lg.intellij.ai.FieldOption
+import lg.intellij.ai.FieldType
+import lg.intellij.ai.ProviderSettingsContribution
+import lg.intellij.ai.ProviderSettingsField
+import lg.intellij.ai.ProviderSettingsModule
 import lg.intellij.stateengine.RuleConfig
 import lg.intellij.stateengine.command
 import lg.intellij.statepce.PCEState

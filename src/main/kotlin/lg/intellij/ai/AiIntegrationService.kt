@@ -1,18 +1,21 @@
-package lg.intellij.services.ai
+package lg.intellij.ai
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lg.intellij.services.ai.providers.ClipboardProvider
-import lg.intellij.services.ai.providers.GitHubCopilotProvider
-import lg.intellij.services.ai.providers.JetBrainsAiProvider
-import lg.intellij.services.ai.providers.JunieProvider
-import lg.intellij.services.ai.providers.claudecli.ClaudeCliProvider
-import lg.intellij.services.ai.providers.claudecli.claudeCliSettings
-import lg.intellij.services.ai.providers.codexcli.CodexCliProvider
-import lg.intellij.services.ai.providers.codexcli.codexCliSettings
+import lg.intellij.ai.providers.ClipboardProvider
+import lg.intellij.ai.providers.GitHubCopilotProvider
+import lg.intellij.ai.providers.JetBrainsAiProvider
+import lg.intellij.ai.providers.JunieProvider
+import lg.intellij.ai.providers.claudecli.ClaudeCliProvider
+import lg.intellij.ai.providers.claudecli.claudeCliSettings
+import lg.intellij.ai.providers.codexcli.CodexCliProvider
+import lg.intellij.ai.providers.codexcli.codexCliSettings
+import lg.intellij.ai.ProviderSettingsModule
+import lg.intellij.ai.AiProvider
+import lg.intellij.ai.AiProviderException
 
 /**
  * Central service for managing AI providers.

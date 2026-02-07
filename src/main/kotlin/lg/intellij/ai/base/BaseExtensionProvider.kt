@@ -1,4 +1,4 @@
-package lg.intellij.services.ai.base
+package lg.intellij.ai.base
 
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.openapi.application.EDT
@@ -9,9 +9,9 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lg.intellij.services.ai.AiProvider
-import lg.intellij.services.ai.AiProviderException
-import lg.intellij.services.ai.ProviderModeInfo
+import lg.intellij.ai.AiProvider
+import lg.intellij.ai.AiProviderException
+import lg.intellij.ai.ProviderModeInfo
 
 /**
  * Base class for Extension-based AI providers.

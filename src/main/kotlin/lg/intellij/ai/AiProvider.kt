@@ -1,4 +1,4 @@
-package lg.intellij.services.ai
+package lg.intellij.ai
 
 /**
  * Information about provider-supported mode.

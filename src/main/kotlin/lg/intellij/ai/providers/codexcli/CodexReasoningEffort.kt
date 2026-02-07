@@ -1,4 +1,4 @@
-package lg.intellij.models
+package lg.intellij.ai.providers.codexcli
 
 /**
  * Codex reasoning effort levels.

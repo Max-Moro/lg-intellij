@@ -10,8 +10,8 @@
 package lg.intellij.statepce.domains
 
 import com.intellij.openapi.project.Project
-import lg.intellij.services.ai.providers.claudecli.registerClaudeCliSettingsRules
-import lg.intellij.services.ai.providers.codexcli.registerCodexCliSettingsRules
+import lg.intellij.ai.providers.claudecli.registerClaudeCliSettingsRules
+import lg.intellij.ai.providers.codexcli.registerCodexCliSettingsRules
 
 /**
  * Register all domain rules.

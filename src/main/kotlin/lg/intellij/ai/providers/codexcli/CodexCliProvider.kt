@@ -1,4 +1,4 @@
-package lg.intellij.services.ai.providers.codexcli
+package lg.intellij.ai.providers.codexcli
 
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.project.Project
@@ -6,10 +6,9 @@ import com.intellij.terminal.ui.TerminalWidget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lg.intellij.cli.ExecutableDetector
-import lg.intellij.models.CodexReasoningEffort
-import lg.intellij.services.ai.ProviderModeInfo
-import lg.intellij.services.ai.base.BaseCliProvider
-import lg.intellij.services.ai.base.CliExecutionContext
+import lg.intellij.ai.ProviderModeInfo
+import lg.intellij.ai.base.BaseCliProvider
+import lg.intellij.ai.base.CliExecutionContext
 import kotlin.io.path.exists
 
 /**

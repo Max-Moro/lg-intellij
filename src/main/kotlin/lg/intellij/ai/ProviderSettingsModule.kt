@@ -10,7 +10,7 @@
  * 3. Module registers rules for its commands via rule() factory
  * 4. UI renders contributions dynamically from ProviderSettingsContribution
  */
-package lg.intellij.services.ai
+package lg.intellij.ai
 
 import lg.intellij.statepce.PCEState
 

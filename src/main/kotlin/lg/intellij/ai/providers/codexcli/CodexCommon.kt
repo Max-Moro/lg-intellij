@@ -1,4 +1,4 @@
-package lg.intellij.services.ai.providers.codexcli
+package lg.intellij.ai.providers.codexcli
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.project.Project

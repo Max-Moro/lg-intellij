@@ -1,4 +1,4 @@
-package lg.intellij.services.ai.providers.claudecli
+package lg.intellij.ai.providers.claudecli
 
 import com.intellij.execution.util.ExecUtil
 import java.nio.file.Path

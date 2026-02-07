@@ -15,7 +15,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.vfs.LocalFileSystem
 import lg.intellij.LgBundle
-import lg.intellij.services.ai.AiModesTemplateGenerator
+import lg.intellij.ai.AiModesTemplateGenerator
 import java.io.File
 
 /**

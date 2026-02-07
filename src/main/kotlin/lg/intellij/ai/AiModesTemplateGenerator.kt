@@ -1,4 +1,4 @@
-package lg.intellij.services.ai
+package lg.intellij.ai
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service

@@ -1,4 +1,4 @@
-package lg.intellij.services.ai.providers.codexcli
+package lg.intellij.ai.providers.codexcli
 
 import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.diagnostic.logger
@@ -6,7 +6,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import lg.intellij.models.CodexReasoningEffort
 import lg.intellij.models.ShellType
 import java.nio.file.Path
 import java.time.Instant

@@ -1,10 +1,10 @@
-package lg.intellij.services.ai.providers
+package lg.intellij.ai.providers
 
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.ide.CopyPasteManager
-import lg.intellij.services.ai.AiProvider
-import lg.intellij.services.ai.ProviderModeInfo
+import lg.intellij.ai.AiProvider
+import lg.intellij.ai.ProviderModeInfo
 import java.awt.datatransfer.StringSelection
 
 /**

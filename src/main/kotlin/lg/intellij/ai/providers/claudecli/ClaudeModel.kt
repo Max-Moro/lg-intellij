@@ -1,4 +1,4 @@
-package lg.intellij.models
+package lg.intellij.ai.providers.claudecli
 
 enum class ClaudeModel {
     HAIKU,

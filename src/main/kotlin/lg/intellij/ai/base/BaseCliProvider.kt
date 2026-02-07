@@ -1,4 +1,4 @@
-package lg.intellij.services.ai.base
+package lg.intellij.ai.base
 
 import com.intellij.notification.NotificationAction
 import com.intellij.notification.NotificationGroupManager
@@ -11,11 +11,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import lg.intellij.models.ShellType
-import lg.intellij.models.ClaudeModel
-import lg.intellij.models.CodexReasoningEffort
-import lg.intellij.services.ai.AiProvider
-import lg.intellij.services.ai.AiProviderException
-import lg.intellij.services.ai.ProviderModeInfo
+import lg.intellij.ai.providers.claudecli.ClaudeModel
+import lg.intellij.ai.providers.codexcli.CodexReasoningEffort
+import lg.intellij.ai.AiProvider
+import lg.intellij.ai.AiProviderException
+import lg.intellij.ai.ProviderModeInfo
 import lg.intellij.statepce.PCEStateStore
 import com.intellij.terminal.ui.TerminalWidget
 import org.jetbrains.plugins.terminal.TerminalToolWindowManager

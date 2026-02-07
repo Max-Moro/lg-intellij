@@ -164,8 +164,6 @@ class LgErrorReportingService {
                 }
             })
             .notify(project)
-
-        LOG.warn("CLI error:\n$stderr")
     }
 
     companion object {

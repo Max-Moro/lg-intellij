@@ -122,7 +122,6 @@ class CliExecutor(private val project: Project) {
     ): CliOutput {
         when {
             output.isTimeout -> {
-                log.warn("CLI execution timeout: $commandString")
                 throw CliTimeoutException(
                     "Process timeout after ${timeoutMs}ms",
                     timeoutMs
@@ -130,7 +129,6 @@ class CliExecutor(private val project: Project) {
             }
 
             output.exitCode != 0 -> {
-                log.warn("CLI failed with exit code ${output.exitCode}: $commandString")
                 if (output.stderr.isNotEmpty()) {
                     log.debug("Full stderr output:\n${output.stderr}")
                 }

@@ -27,11 +27,8 @@ import lg.intellij.statepce.rule
 // Commands
 // ============================================
 
-data class SelectClaudeModelPayload(val model: ClaudeModel)
-data class SelectClaudeMethodPayload(val method: ClaudeIntegrationMethod)
-
-val SelectClaudeModel = command("provider.claude-cli/SELECT_MODEL").payload<SelectClaudeModelPayload>()
-val SelectClaudeMethod = command("provider.claude-cli/SELECT_METHOD").payload<SelectClaudeMethodPayload>()
+val SelectClaudeModel = command("provider.claude-cli/SELECT_MODEL").payload<ClaudeModel>()
+val SelectClaudeMethod = command("provider.claude-cli/SELECT_METHOD").payload<ClaudeIntegrationMethod>()
 
 // ============================================
 // Constants
@@ -91,11 +88,11 @@ private fun updateClaudeSettings(
 fun registerClaudeCliSettingsRules() {
     // When Claude model selected, update provider settings
     rule.invoke(SelectClaudeModel, RuleConfig(
-        condition = { _: PCEState, _: SelectClaudeModelPayload -> true },
-        apply = { state: PCEState, payload: SelectClaudeModelPayload ->
+        condition = { _: PCEState, _: ClaudeModel -> true },
+        apply = { state: PCEState, model: ClaudeModel ->
             lgResult(
                 mutations = mapOf(
-                    "providerSettings" to updateClaudeSettings(state, mapOf("model" to payload.model))
+                    "providerSettings" to updateClaudeSettings(state, mapOf("model" to model))
                 )
             )
         }
@@ -103,11 +100,11 @@ fun registerClaudeCliSettingsRules() {
 
     // When Claude method selected, update provider settings
     rule.invoke(SelectClaudeMethod, RuleConfig(
-        condition = { _: PCEState, _: SelectClaudeMethodPayload -> true },
-        apply = { state: PCEState, payload: SelectClaudeMethodPayload ->
+        condition = { _: PCEState, _: ClaudeIntegrationMethod -> true },
+        apply = { state: PCEState, method: ClaudeIntegrationMethod ->
             lgResult(
                 mutations = mapOf(
-                    "providerSettings" to updateClaudeSettings(state, mapOf("method" to payload.method))
+                    "providerSettings" to updateClaudeSettings(state, mapOf("method" to method))
                 )
             )
         }

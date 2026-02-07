@@ -22,11 +22,8 @@ import lg.intellij.statepce.rule
 // Commands
 // ============================================
 
-data class SelectSectionPayload(val section: String)
-val SelectSection = command("section/SELECT").payload<SelectSectionPayload>()
-
-data class SectionsLoadedPayload(val sections: List<SectionInfo>)
-val SectionsLoaded = command("section/LOADED").payload<SectionsLoadedPayload>()
+val SelectSection = command("section/SELECT").payload<String>()
+val SectionsLoaded = command("section/LOADED").payload<List<SectionInfo>>()
 
 // ============================================
 // Rule Registration
@@ -41,9 +38,8 @@ fun registerSectionRules(@Suppress("unused") project: Project) {
 
     // When sections loaded, validate current selection and store in config
     rule.invoke(SectionsLoaded, RuleConfig(
-        condition = { _: PCEState, _: SectionsLoadedPayload -> true },
-        apply = { state: PCEState, payload: SectionsLoadedPayload ->
-            val sections = payload.sections
+        condition = { _: PCEState, _: List<SectionInfo> -> true },
+        apply = { state: PCEState, sections: List<SectionInfo> ->
             val currentSection = state.persistent.section
 
             val sectionNames = sections.map { it.name }
@@ -59,11 +55,11 @@ fun registerSectionRules(@Suppress("unused") project: Project) {
 
     // When section changes, update persistent state
     rule.invoke(SelectSection, RuleConfig(
-        condition = { state: PCEState, payload: SelectSectionPayload ->
-            payload.section != state.persistent.section
+        condition = { state: PCEState, section: String ->
+            section != state.persistent.section
         },
-        apply = { _: PCEState, payload: SelectSectionPayload ->
-            lgResult(mutations = mapOf("section" to payload.section))
+        apply = { _: PCEState, section: String ->
+            lgResult(mutations = mapOf("section" to section))
         }
     ))
 }

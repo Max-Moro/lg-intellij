@@ -34,7 +34,6 @@ import lg.intellij.models.Scope
 import lg.intellij.services.generation.LgStatsService
 import lg.intellij.statepce.PCEStateStore
 import lg.intellij.statepce.domains.SetTask
-import lg.intellij.statepce.domains.SetTaskPayload
 import lg.intellij.ui.components.LgGroupedTable
 import lg.intellij.ui.components.LgTaskTextField
 import lg.intellij.ui.components.LgTaskTextField.addChangeListener
@@ -191,7 +190,7 @@ class LgStatsDialog(
                         // Update shared state via coordinator dispatch
                         scope.launch {
                             LgCoordinatorService.getInstance(project).coordinator.dispatch(
-                                SetTask.create(SetTaskPayload(newText))
+                                SetTask.create(newText)
                             )
                         }
 

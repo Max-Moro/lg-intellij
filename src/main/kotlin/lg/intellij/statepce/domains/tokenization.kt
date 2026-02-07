@@ -82,20 +82,11 @@ private val json = Json {
 // Commands
 // ============================================
 
-data class SelectLibPayload(val lib: String)
-val SelectLib = command("tokenization/SELECT_LIB").payload<SelectLibPayload>()
-
-data class SetEncoderPayload(val encoder: String)
-val SetEncoder = command("tokenization/SET_ENCODER").payload<SetEncoderPayload>()
-
-data class SetCtxLimitPayload(val limit: Int)
-val SetCtxLimit = command("tokenization/SET_CTX_LIMIT").payload<SetCtxLimitPayload>()
-
-data class LibsLoadedPayload(val libs: List<String>)
-val LibsLoaded = command("tokenization/LIBS_LOADED").payload<LibsLoadedPayload>()
-
-data class EncodersLoadedPayload(val encoders: List<EncoderEntry>)
-val EncodersLoaded = command("tokenization/ENCODERS_LOADED").payload<EncodersLoadedPayload>()
+val SelectLib = command("tokenization/SELECT_LIB").payload<String>()
+val SetEncoder = command("tokenization/SET_ENCODER").payload<String>()
+val SetCtxLimit = command("tokenization/SET_CTX_LIMIT").payload<Int>()
+val LibsLoaded = command("tokenization/LIBS_LOADED").payload<List<String>>()
+val EncodersLoaded = command("tokenization/ENCODERS_LOADED").payload<List<EncoderEntry>>()
 
 // ============================================
 // Rule Registration
@@ -110,9 +101,8 @@ fun registerTokenizationRules(project: Project) {
 
     // When tokenizer libs are loaded, store them and validate selection
     rule.invoke(LibsLoaded, RuleConfig(
-        condition = { _: PCEState, _: LibsLoadedPayload -> true },
-        apply = { state: PCEState, payload: LibsLoadedPayload ->
-            val libs = payload.libs
+        condition = { _: PCEState, _: List<String> -> true },
+        apply = { state: PCEState, libs: List<String> ->
             val currentLib = state.persistent.tokenizerLib
 
             val isValid = currentLib.isNotEmpty() && currentLib in libs
@@ -125,17 +115,13 @@ fun registerTokenizationRules(project: Project) {
                     asyncOps = listOf(object : AsyncOperation {
                         override suspend fun execute(): BaseCommand {
                             val cliExecutor = project.service<CliExecutor>()
-                            val encoders = try {
-                                val stdout = cliExecutor.execute(
-                                    args = listOf("list", "encoders", "--lib", newLib),
-                                    timeoutMs = 20_000
-                                ).getOrThrow()
-                                json.decodeFromString<EncodersListSchema>(stdout).encoders
-                                    .map { EncoderEntry(name = it) }
-                            } catch (_: Exception) {
-                                emptyList()
-                            }
-                            return EncodersLoaded.create(EncodersLoadedPayload(encoders))
+                            val stdout = cliExecutor.execute(
+                                args = listOf("list", "encoders", "--lib", newLib),
+                                timeoutMs = 20_000
+                            ).getOrThrow()
+                            val encoders = json.decodeFromString<EncodersListSchema>(stdout).encoders
+                                .map { EncoderEntry(name = it) }
+                            return EncodersLoaded.create(encoders)
                         }
                     })
                 )
@@ -149,27 +135,22 @@ fun registerTokenizationRules(project: Project) {
 
     // When tokenizer lib changes, reload encoders list
     rule.invoke(SelectLib, RuleConfig(
-        condition = { state: PCEState, payload: SelectLibPayload ->
-            payload.lib != state.persistent.tokenizerLib
+        condition = { state: PCEState, lib: String ->
+            lib != state.persistent.tokenizerLib
         },
-        apply = { _: PCEState, payload: SelectLibPayload ->
-            val lib = payload.lib
+        apply = { _: PCEState, lib: String ->
             lgResult(
                 mutations = mapOf("tokenizerLib" to lib),
                 asyncOps = listOf(object : AsyncOperation {
                     override suspend fun execute(): BaseCommand {
                         val cliExecutor = project.service<CliExecutor>()
-                        val encoders = try {
-                            val stdout = cliExecutor.execute(
-                                args = listOf("list", "encoders", "--lib", lib),
-                                timeoutMs = 20_000
-                            ).getOrThrow()
-                            json.decodeFromString<EncodersListSchema>(stdout).encoders
-                                .map { EncoderEntry(name = it) }
-                        } catch (_: Exception) {
-                            emptyList()
-                        }
-                        return EncodersLoaded.create(EncodersLoadedPayload(encoders))
+                        val stdout = cliExecutor.execute(
+                            args = listOf("list", "encoders", "--lib", lib),
+                            timeoutMs = 20_000
+                        ).getOrThrow()
+                        val encoders = json.decodeFromString<EncodersListSchema>(stdout).encoders
+                            .map { EncoderEntry(name = it) }
+                        return EncodersLoaded.create(encoders)
                     }
                 })
             )
@@ -178,9 +159,8 @@ fun registerTokenizationRules(project: Project) {
 
     // When encoders are loaded, store them and validate current selection
     rule.invoke(EncodersLoaded, RuleConfig(
-        condition = { _: PCEState, _: EncodersLoadedPayload -> true },
-        apply = { state: PCEState, payload: EncodersLoadedPayload ->
-            val encoders = payload.encoders
+        condition = { _: PCEState, _: List<EncoderEntry> -> true },
+        apply = { state: PCEState, encoders: List<EncoderEntry> ->
             val currentEncoder = state.persistent.encoder
             val currentLib = state.persistent.tokenizerLib
 
@@ -196,7 +176,7 @@ fun registerTokenizationRules(project: Project) {
                 lgResult(
                     configMutations = mapOf("encoders" to encoders),
                     followUp = if (newEncoder.isNotBlank()) {
-                        listOf(SetEncoder.create(SetEncoderPayload(newEncoder)))
+                        listOf(SetEncoder.create(newEncoder))
                     } else {
                         null
                     }
@@ -207,21 +187,21 @@ fun registerTokenizationRules(project: Project) {
 
     // When encoder is set, update persistent state
     rule.invoke(SetEncoder, RuleConfig(
-        condition = { state: PCEState, payload: SetEncoderPayload ->
-            payload.encoder != state.persistent.encoder
+        condition = { state: PCEState, encoder: String ->
+            encoder != state.persistent.encoder
         },
-        apply = { _: PCEState, payload: SetEncoderPayload ->
+        apply = { _: PCEState, encoder: String ->
             lgResult(
-                mutations = mapOf("encoder" to payload.encoder)
+                mutations = mapOf("encoder" to encoder)
             )
         }
     ))
 
     // When context limit is set, validate and update persistent state
     rule.invoke(SetCtxLimit, RuleConfig(
-        condition = { _: PCEState, _: SetCtxLimitPayload -> true },
-        apply = { _: PCEState, payload: SetCtxLimitPayload ->
-            val limit = payload.limit.coerceIn(1000, 2_000_000)
+        condition = { _: PCEState, _: Int -> true },
+        apply = { _: PCEState, limit: Int ->
+            val limit = limit.coerceIn(1000, 2_000_000)
             lgResult(
                 mutations = mapOf("ctxLimit" to limit)
             )

@@ -16,7 +16,6 @@ import lg.intellij.statepce.PCEStateStore
 import lg.intellij.statepce.domains.SelectMode
 import lg.intellij.statepce.domains.SelectModePayload
 import lg.intellij.statepce.domains.SelectBranch
-import lg.intellij.statepce.domains.SelectBranchPayload
 import lg.intellij.ui.components.LgLabeledComponent
 import lg.intellij.ui.components.LgWrappingPanel
 import javax.swing.JComponent
@@ -232,7 +231,7 @@ class LgModeSetsPanel(
                 if (selected != null && selected != LgBundle.message("control.target.branch.no.git")) {
                     scope.launch {
                         coordinator.dispatch(
-                            SelectBranch.create(SelectBranchPayload(selected))
+                            SelectBranch.create(selected)
                         )
                     }
                 }

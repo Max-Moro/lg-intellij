@@ -31,14 +31,9 @@ import lg.intellij.statepce.rule
 // Commands
 // ============================================
 
-data class SelectContextPayload(val template: String)
-val SelectContext = command("context/SELECT").payload<SelectContextPayload>()
-
-data class SetTaskPayload(val text: String)
-val SetTask = command("context/SET_TASK").payload<SetTaskPayload>()
-
-data class ContextsLoadedPayload(val contexts: List<String>)
-val ContextsLoaded = command("context/LOADED").payload<ContextsLoadedPayload>()
+val SelectContext = command("context/SELECT").payload<String>()
+val SetTask = command("context/SET_TASK").payload<String>()
+val ContextsLoaded = command("context/LOADED").payload<List<String>>()
 
 // ============================================
 // Rule Registration
@@ -58,9 +53,8 @@ fun registerContextRules(project: Project) {
 
     // When contexts loaded, validate current template selection
     rule.invoke(ContextsLoaded, RuleConfig(
-        condition = { _: PCEState, _: ContextsLoadedPayload -> true },
-        apply = { state: PCEState, payload: ContextsLoadedPayload ->
-            val contexts = payload.contexts
+        condition = { _: PCEState, _: List<String> -> true },
+        apply = { state: PCEState, contexts: List<String> ->
             val currentTemplate = state.persistent.template
 
             val isValid = currentTemplate.isNotBlank() && currentTemplate in contexts
@@ -72,7 +66,7 @@ fun registerContextRules(project: Project) {
                 lgResult(
                     configMutations = mapOf("contexts" to contexts),
                     followUp = if (newTemplate.isNotBlank()) {
-                        listOf(SelectContext.create(SelectContextPayload(newTemplate)))
+                        listOf(SelectContext.create(newTemplate))
                     } else null
                 )
             }
@@ -81,11 +75,10 @@ fun registerContextRules(project: Project) {
 
     // When context changes, reload sections, mode-sets and tag-sets
     rule.invoke(SelectContext, RuleConfig(
-        condition = { state: PCEState, payload: SelectContextPayload ->
-            payload.template.isNotBlank() && payload.template != state.persistent.template
+        condition = { state: PCEState, template: String ->
+            template.isNotBlank() && template != state.persistent.template
         },
-        apply = { state: PCEState, payload: SelectContextPayload ->
-            val template = payload.template
+        apply = { state: PCEState, template: String ->
             val providerId = state.persistent.providerId
 
             val asyncOps = mutableListOf<AsyncOperation>()
@@ -94,16 +87,12 @@ fun registerContextRules(project: Project) {
             asyncOps.add(object : AsyncOperation {
                 override suspend fun execute(): BaseCommand {
                     val cliExecutor = project.service<CliExecutor>()
-                    val sections = try {
-                        val stdout = cliExecutor.execute(
-                            args = listOf("list", "sections"),
-                            timeoutMs = 30_000
-                        ).getOrThrow()
-                        json.decodeFromString<SectionsListSchema>(stdout).sections
-                    } catch (_: Exception) {
-                        emptyList()
-                    }
-                    return SectionsLoaded.create(SectionsLoadedPayload(sections))
+                    val stdout = cliExecutor.execute(
+                        args = listOf("list", "sections"),
+                        timeoutMs = 30_000
+                    ).getOrThrow()
+                    val sections = json.decodeFromString<SectionsListSchema>(stdout).sections
+                    return SectionsLoaded.create(sections)
                 }
             })
 
@@ -112,16 +101,12 @@ fun registerContextRules(project: Project) {
                 asyncOps.add(object : AsyncOperation {
                     override suspend fun execute(): BaseCommand {
                         val cliExecutor = project.service<CliExecutor>()
-                        val modeSets = try {
-                            val stdout = cliExecutor.execute(
-                                args = listOf("list", "mode-sets", "--context", template, "--provider", providerId),
-                                timeoutMs = 30_000
-                            ).getOrThrow()
-                            json.decodeFromString<ModeSetsListSchema>(stdout)
-                        } catch (_: Exception) {
-                            null
-                        }
-                        return ModeSetsLoaded.create(ModeSetsLoadedPayload(modeSets))
+                        val stdout = cliExecutor.execute(
+                            args = listOf("list", "mode-sets", "--context", template, "--provider", providerId),
+                            timeoutMs = 30_000
+                        ).getOrThrow()
+                        val modeSets = json.decodeFromString<ModeSetsListSchema>(stdout)
+                        return ModeSetsLoaded.create(modeSets)
                     }
                 })
             }
@@ -130,16 +115,12 @@ fun registerContextRules(project: Project) {
             asyncOps.add(object : AsyncOperation {
                 override suspend fun execute(): BaseCommand {
                     val cliExecutor = project.service<CliExecutor>()
-                    val tagSets = try {
-                        val stdout = cliExecutor.execute(
-                            args = listOf("list", "tag-sets", "--context", template),
-                            timeoutMs = 30_000
-                        ).getOrThrow()
-                        json.decodeFromString<TagSetsListSchema>(stdout)
-                    } catch (_: Exception) {
-                        null
-                    }
-                    return TagSetsLoaded.create(TagSetsLoadedPayload(tagSets))
+                    val stdout = cliExecutor.execute(
+                        args = listOf("list", "tag-sets", "--context", template),
+                        timeoutMs = 30_000
+                    ).getOrThrow()
+                    val tagSets = json.decodeFromString<TagSetsListSchema>(stdout)
+                    return TagSetsLoaded.create(tagSets)
                 }
             })
 
@@ -152,7 +133,7 @@ fun registerContextRules(project: Project) {
                     override suspend fun execute(): BaseCommand {
                         val gitService = LgGitService.getInstance(project)
                         val branches = gitService.getBranches()
-                        return BranchesLoaded.create(BranchesLoadedPayload(branches))
+                        return BranchesLoaded.create(branches)
                     }
                 })
             }
@@ -166,9 +147,9 @@ fun registerContextRules(project: Project) {
 
     // When task text is set, update persistent state
     rule.invoke(SetTask, RuleConfig(
-        condition = { _: PCEState, _: SetTaskPayload -> true },
-        apply = { _: PCEState, payload: SetTaskPayload ->
-            lgResult(mutations = mapOf("taskText" to payload.text))
+        condition = { _: PCEState, _: String -> true },
+        apply = { _: PCEState, text: String ->
+            lgResult(mutations = mapOf("taskText" to text))
         }
     ))
 }

@@ -32,11 +32,8 @@ import lg.intellij.ai.FieldCommand
 import lg.intellij.ai.FieldOption
 import lg.intellij.ai.FieldType
 import lg.intellij.ai.providers.claudecli.SelectClaudeMethod
-import lg.intellij.ai.providers.claudecli.SelectClaudeMethodPayload
 import lg.intellij.ai.providers.claudecli.SelectClaudeModel
-import lg.intellij.ai.providers.claudecli.SelectClaudeModelPayload
 import lg.intellij.ai.providers.codexcli.SelectCodexReasoning
-import lg.intellij.ai.providers.codexcli.SelectCodexReasoningPayload
 import lg.intellij.statepce.PCEState
 import lg.intellij.statepce.PCEStateCoordinator
 import lg.intellij.statepce.PCEStateStore
@@ -342,7 +339,7 @@ class LgControlPanel(
                                     if (!suppressDispatch) {
                                         scope.launch {
                                             coordinator.dispatch(
-                                                SetCliScope.create(SetCliScopePayload(text))
+                                                SetCliScope.create(text)
                                             )
                                         }
                                     }
@@ -363,7 +360,7 @@ class LgControlPanel(
                                     if (selected != null) {
                                         scope.launch {
                                             coordinator.dispatch(
-                                                SelectCliShell.create(SelectCliShellPayload(selected.id))
+                                                SelectCliShell.create(selected.id)
                                             )
                                         }
                                     }
@@ -446,15 +443,15 @@ class LgControlPanel(
             when (cmd.type) {
                 SelectClaudeModel.type -> {
                     val model = ClaudeModel.entries.find { it.name == value } ?: return@launch
-                    coordinator.dispatch(SelectClaudeModel.create(SelectClaudeModelPayload(model)))
+                    coordinator.dispatch(SelectClaudeModel.create(model))
                 }
                 SelectClaudeMethod.type -> {
                     val method = ClaudeIntegrationMethod.entries.find { it.name == value } ?: return@launch
-                    coordinator.dispatch(SelectClaudeMethod.create(SelectClaudeMethodPayload(method)))
+                    coordinator.dispatch(SelectClaudeMethod.create(method))
                 }
                 SelectCodexReasoning.type -> {
                     val effort = CodexReasoningEffort.entries.find { it.name == value } ?: return@launch
-                    coordinator.dispatch(SelectCodexReasoning.create(SelectCodexReasoningPayload(effort)))
+                    coordinator.dispatch(SelectCodexReasoning.create(effort))
                 }
                 else -> {
                     LOG.warn("Unknown provider settings command: ${cmd.type}")
@@ -528,7 +525,7 @@ class LgControlPanel(
                         if (selected != null) {
                             scope.launch {
                                 coordinator.dispatch(
-                                    SelectContext.create(SelectContextPayload(selected))
+                                    SelectContext.create(selected)
                                 )
                             }
                         }
@@ -550,7 +547,7 @@ class LgControlPanel(
                 if (!suppressDispatch) {
                     scope.launch {
                         coordinator.dispatch(
-                            SetTask.create(SetTaskPayload(newText))
+                            SetTask.create(newText)
                         )
                     }
                 }
@@ -573,7 +570,7 @@ class LgControlPanel(
                             if (selected != null) {
                                 scope.launch {
                                     coordinator.dispatch(
-                                        SelectProvider.create(SelectProviderPayload(selected.id))
+                                        SelectProvider.create(selected.id)
                                     )
                                 }
                             }
@@ -643,7 +640,7 @@ class LgControlPanel(
                             if (selected != null) {
                                 scope.launch {
                                     coordinator.dispatch(
-                                        SelectSection.create(SelectSectionPayload(selected))
+                                        SelectSection.create(selected)
                                     )
                                 }
                             }
@@ -689,7 +686,7 @@ class LgControlPanel(
                             if (newLib != null) {
                                 scope.launch {
                                     coordinator.dispatch(
-                                        SelectLib.create(SelectLibPayload(newLib))
+                                        SelectLib.create(newLib)
                                     )
                                 }
                             }
@@ -704,7 +701,7 @@ class LgControlPanel(
                         if (!suppressDispatch) {
                             scope.launch {
                                 coordinator.dispatch(
-                                    SetEncoder.create(SetEncoderPayload(newText))
+                                    SetEncoder.create(newText)
                                 )
                             }
                         }
@@ -724,7 +721,7 @@ class LgControlPanel(
                                 if (parsed != null) {
                                     scope.launch {
                                         coordinator.dispatch(
-                                            SetCtxLimit.create(SetCtxLimitPayload(parsed))
+                                            SetCtxLimit.create(parsed)
                                         )
                                     }
                                 }

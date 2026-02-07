@@ -25,9 +25,7 @@ import lg.intellij.statepce.rule
 // Commands
 // ============================================
 
-data class SelectCodexReasoningPayload(val effort: CodexReasoningEffort)
-
-val SelectCodexReasoning = command("provider.codex-cli/SELECT_REASONING").payload<SelectCodexReasoningPayload>()
+val SelectCodexReasoning = command("provider.codex-cli/SELECT_REASONING").payload<CodexReasoningEffort>()
 
 // ============================================
 // Constants
@@ -85,11 +83,11 @@ private fun updateCodexSettings(
 fun registerCodexCliSettingsRules() {
     // When reasoning effort selected, update provider settings
     rule.invoke(SelectCodexReasoning, RuleConfig(
-        condition = { _: PCEState, _: SelectCodexReasoningPayload -> true },
-        apply = { state: PCEState, payload: SelectCodexReasoningPayload ->
+        condition = { _: PCEState, _: CodexReasoningEffort -> true },
+        apply = { state: PCEState, effort: CodexReasoningEffort ->
             lgResult(
                 mutations = mapOf(
-                    "providerSettings" to updateCodexSettings(state, mapOf("reasoning" to payload.effort))
+                    "providerSettings" to updateCodexSettings(state, mapOf("reasoning" to effort))
                 )
             )
         }

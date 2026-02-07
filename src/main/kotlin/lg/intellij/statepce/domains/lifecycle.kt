@@ -84,7 +84,7 @@ private fun buildCatalogOps(
                 val providers = aiProviders.map {
                     ProviderInfo(it.id, it.name, it.priority)
                 }
-                return ProvidersDetected.create(ProvidersDetectedPayload(providers))
+                return ProvidersDetected.create(providers)
             }
         })
     }
@@ -93,16 +93,12 @@ private fun buildCatalogOps(
     ops.add(object : AsyncOperation {
         override suspend fun execute(): BaseCommand {
             val cliExecutor = project.service<CliExecutor>()
-            val libs = try {
-                val stdout = cliExecutor.execute(
-                    args = listOf("list", "tokenizer-libs"),
-                    timeoutMs = 20_000
-                ).getOrThrow()
-                json.decodeFromString<TokenizerLibsListSchema>(stdout).tokenizerLibs
-            } catch (_: Exception) {
-                emptyList()
-            }
-            return LibsLoaded.create(LibsLoadedPayload(libs))
+            val stdout = cliExecutor.execute(
+                args = listOf("list", "tokenizer-libs"),
+                timeoutMs = 20_000
+            ).getOrThrow()
+            val libs = json.decodeFromString<TokenizerLibsListSchema>(stdout).tokenizerLibs
+            return LibsLoaded.create(libs)
         }
     })
 
@@ -111,16 +107,12 @@ private fun buildCatalogOps(
         ops.add(object : AsyncOperation {
             override suspend fun execute(): BaseCommand {
                 val cliExecutor = project.service<CliExecutor>()
-                val sections = try {
-                    val stdout = cliExecutor.execute(
-                        args = listOf("list", "sections"),
-                        timeoutMs = 30_000
-                    ).getOrThrow()
-                    json.decodeFromString<SectionsListSchema>(stdout).sections
-                } catch (_: Exception) {
-                    emptyList()
-                }
-                return SectionsLoaded.create(SectionsLoadedPayload(sections))
+                val stdout = cliExecutor.execute(
+                    args = listOf("list", "sections"),
+                    timeoutMs = 30_000
+                ).getOrThrow()
+                val sections = json.decodeFromString<SectionsListSchema>(stdout).sections
+                return SectionsLoaded.create(sections)
             }
         })
     }
@@ -130,16 +122,12 @@ private fun buildCatalogOps(
         ops.add(object : AsyncOperation {
             override suspend fun execute(): BaseCommand {
                 val cliExecutor = project.service<CliExecutor>()
-                val contexts = try {
-                    val stdout = cliExecutor.execute(
-                        args = listOf("list", "contexts", "--provider", providerId),
-                        timeoutMs = 30_000
-                    ).getOrThrow()
-                    json.decodeFromString<ContextsListSchema>(stdout).contexts
-                } catch (_: Exception) {
-                    emptyList()
-                }
-                return ContextsLoaded.create(ContextsLoadedPayload(contexts))
+                val stdout = cliExecutor.execute(
+                    args = listOf("list", "contexts", "--provider", providerId),
+                    timeoutMs = 30_000
+                ).getOrThrow()
+                val contexts = json.decodeFromString<ContextsListSchema>(stdout).contexts
+                return ContextsLoaded.create(contexts)
             }
         })
     }
@@ -149,16 +137,12 @@ private fun buildCatalogOps(
         ops.add(object : AsyncOperation {
             override suspend fun execute(): BaseCommand {
                 val cliExecutor = project.service<CliExecutor>()
-                val modeSets = try {
-                    val stdout = cliExecutor.execute(
-                        args = listOf("list", "mode-sets", "--context", template, "--provider", providerId),
-                        timeoutMs = 30_000
-                    ).getOrThrow()
-                    json.decodeFromString<ModeSetsListSchema>(stdout)
-                } catch (_: Exception) {
-                    null
-                }
-                return ModeSetsLoaded.create(ModeSetsLoadedPayload(modeSets))
+                val stdout = cliExecutor.execute(
+                    args = listOf("list", "mode-sets", "--context", template, "--provider", providerId),
+                    timeoutMs = 30_000
+                ).getOrThrow()
+                val modeSets = json.decodeFromString<ModeSetsListSchema>(stdout)
+                return ModeSetsLoaded.create(modeSets)
             }
         })
     }
@@ -168,16 +152,12 @@ private fun buildCatalogOps(
         ops.add(object : AsyncOperation {
             override suspend fun execute(): BaseCommand {
                 val cliExecutor = project.service<CliExecutor>()
-                val tagSets = try {
-                    val stdout = cliExecutor.execute(
-                        args = listOf("list", "tag-sets", "--context", template),
-                        timeoutMs = 30_000
-                    ).getOrThrow()
-                    json.decodeFromString<TagSetsListSchema>(stdout)
-                } catch (_: Exception) {
-                    null
-                }
-                return TagSetsLoaded.create(TagSetsLoadedPayload(tagSets))
+                val stdout = cliExecutor.execute(
+                    args = listOf("list", "tag-sets", "--context", template),
+                    timeoutMs = 30_000
+                ).getOrThrow()
+                val tagSets = json.decodeFromString<TagSetsListSchema>(stdout)
+                return TagSetsLoaded.create(tagSets)
             }
         })
     }

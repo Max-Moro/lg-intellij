@@ -38,20 +38,11 @@ val SelectMode = command("adaptive/SELECT_MODE").payload<SelectModePayload>()
 data class ToggleTagPayload(val tagSetId: String, val tagId: String)
 val ToggleTag = command("adaptive/TOGGLE_TAG").payload<ToggleTagPayload>()
 
-data class SetTagsPayload(val tags: Map<String, Set<String>>)
-val SetTags = command("adaptive/SET_TAGS").payload<SetTagsPayload>()
-
-data class SelectBranchPayload(val branch: String)
-val SelectBranch = command("adaptive/SELECT_BRANCH").payload<SelectBranchPayload>()
-
-data class ModeSetsLoadedPayload(val modeSets: ModeSetsListSchema?)
-val ModeSetsLoaded = command("adaptive/MODE_SETS_LOADED").payload<ModeSetsLoadedPayload>()
-
-data class TagSetsLoadedPayload(val tagSets: TagSetsListSchema?)
-val TagSetsLoaded = command("adaptive/TAG_SETS_LOADED").payload<TagSetsLoadedPayload>()
-
-data class BranchesLoadedPayload(val branches: List<String>)
-val BranchesLoaded = command("adaptive/BRANCHES_LOADED").payload<BranchesLoadedPayload>()
+val SetTags = command("adaptive/SET_TAGS").payload<Map<String, Set<String>>>()
+val SelectBranch = command("adaptive/SELECT_BRANCH").payload<String>()
+val ModeSetsLoaded = command("adaptive/MODE_SETS_LOADED").payload<ModeSetsListSchema>()
+val TagSetsLoaded = command("adaptive/TAG_SETS_LOADED").payload<TagSetsListSchema>()
+val BranchesLoaded = command("adaptive/BRANCHES_LOADED").payload<List<String>>()
 
 // ============================================
 // Rule Registration
@@ -66,9 +57,8 @@ fun registerAdaptiveRules(project: Project) {
 
     // When mode-sets are loaded, ensure all mode-sets have valid selection
     rule.invoke(ModeSetsLoaded, RuleConfig(
-        condition = { _: PCEState, _: ModeSetsLoadedPayload -> true },
-        apply = { state: PCEState, payload: ModeSetsLoadedPayload ->
-            val modeSets = payload.modeSets ?: ModeSetsListSchema(emptyList())
+        condition = { _: PCEState, _: ModeSetsListSchema -> true },
+        apply = { state: PCEState, modeSets: ModeSetsListSchema ->
             val ctx = state.persistent.template
             val provider = state.persistent.providerId
             val savedModes = state.persistent.modesByContextProvider[ctx]?.get(provider) ?: emptyMap()
@@ -111,9 +101,8 @@ fun registerAdaptiveRules(project: Project) {
 
     // When tag-sets are loaded, remove invalid saved tags
     rule.invoke(TagSetsLoaded, RuleConfig(
-        condition = { _: PCEState, _: TagSetsLoadedPayload -> true },
-        apply = { state: PCEState, payload: TagSetsLoadedPayload ->
-            val tagSets = payload.tagSets ?: TagSetsListSchema(emptyList())
+        condition = { _: PCEState, _: TagSetsListSchema -> true },
+        apply = { state: PCEState, tagSets: TagSetsListSchema ->
             val ctx = state.persistent.template
             val savedTags = state.persistent.tagsByContext[ctx] ?: emptyMap()
 
@@ -178,7 +167,7 @@ fun registerAdaptiveRules(project: Project) {
                     override suspend fun execute(): BaseCommand {
                         val gitService = LgGitService.getInstance(project)
                         val branches = gitService.getBranches()
-                        return BranchesLoaded.create(BranchesLoadedPayload(branches))
+                        return BranchesLoaded.create(branches)
                     }
                 })
             } else {
@@ -226,9 +215,8 @@ fun registerAdaptiveRules(project: Project) {
 
     // When branches are loaded, validate target branch selection
     rule.invoke(BranchesLoaded, RuleConfig(
-        condition = { _: PCEState, _: BranchesLoadedPayload -> true },
-        apply = { state: PCEState, payload: BranchesLoadedPayload ->
-            val branches = payload.branches
+        condition = { _: PCEState, _: List<String> -> true },
+        apply = { state: PCEState, branches: List<String> ->
             val currentBranch = state.persistent.targetBranch
 
             // Validate: try current, then main/master, then first
@@ -253,13 +241,13 @@ fun registerAdaptiveRules(project: Project) {
 
     // Batch set all tags for current context (from tags dialog)
     rule.invoke(SetTags, RuleConfig(
-        condition = { _: PCEState, _: SetTagsPayload -> true },
-        apply = { state: PCEState, payload: SetTagsPayload ->
+        condition = { _: PCEState, _: Map<String, Set<String>> -> true },
+        apply = { state: PCEState, tags: Map<String, Set<String>> ->
             val ctx = state.persistent.template
 
             // Deep copy
             val newTagsByContext = state.persistent.tagsByContext.toMutableMap()
-            newTagsByContext[ctx] = payload.tags.mapValues { it.value.toMutableSet() }.toMutableMap()
+            newTagsByContext[ctx] = tags.mapValues { it.value.toMutableSet() }.toMutableMap()
 
             lgResult(
                 mutations = mapOf("tagsByContext" to newTagsByContext)
@@ -269,12 +257,12 @@ fun registerAdaptiveRules(project: Project) {
 
     // When target branch changes, update persistent state
     rule.invoke(SelectBranch, RuleConfig(
-        condition = { state: PCEState, payload: SelectBranchPayload ->
-            payload.branch != state.persistent.targetBranch
+        condition = { state: PCEState, branch: String ->
+            branch != state.persistent.targetBranch
         },
-        apply = { _: PCEState, payload: SelectBranchPayload ->
+        apply = { _: PCEState, branch: String ->
             lgResult(
-                mutations = mapOf("targetBranch" to payload.branch)
+                mutations = mapOf("targetBranch" to branch)
             )
         }
     ))

@@ -10,7 +10,6 @@ import kotlinx.coroutines.launch
 import lg.intellij.statepce.LgCoordinatorService
 import lg.intellij.statepce.PCEStateStore
 import lg.intellij.statepce.domains.SetTags
-import lg.intellij.statepce.domains.SetTagsPayload
 import lg.intellij.ui.dialogs.LgTagsDialog
 
 /**
@@ -51,7 +50,7 @@ class LgConfigureTagsAction : AnAction() {
             scope.launch {
                 val coordinator = LgCoordinatorService.getInstance(project).coordinator
                 coordinator.dispatch(
-                    SetTags.create(SetTagsPayload(newSelectedTags))
+                    SetTags.create(newSelectedTags)
                 )
             }
 

@@ -32,17 +32,10 @@ import lg.intellij.statepce.rule
 // Commands
 // ============================================
 
-data class SelectProviderPayload(val providerId: String)
-val SelectProvider = command("provider/SELECT").payload<SelectProviderPayload>()
-
-data class ProvidersDetectedPayload(val providers: List<ProviderInfo>)
-val ProvidersDetected = command("provider/DETECTED").payload<ProvidersDetectedPayload>()
-
-data class SetCliScopePayload(val scope: String)
-val SetCliScope = command("provider/SET_CLI_SCOPE").payload<SetCliScopePayload>()
-
-data class SelectCliShellPayload(val shell: ShellType)
-val SelectCliShell = command("provider/SELECT_CLI_SHELL").payload<SelectCliShellPayload>()
+val SelectProvider = command("provider/SELECT").payload<String>()
+val ProvidersDetected = command("provider/DETECTED").payload<List<ProviderInfo>>()
+val SetCliScope = command("provider/SET_CLI_SCOPE").payload<String>()
+val SelectCliShell = command("provider/SELECT_CLI_SHELL").payload<ShellType>()
 
 // ============================================
 // Rule Registration
@@ -62,9 +55,8 @@ fun registerProviderRules(project: Project) {
 
     // When providers detected, store in environment and select best available
     rule.invoke(ProvidersDetected, RuleConfig(
-        condition = { _: PCEState, _: ProvidersDetectedPayload -> true },
-        apply = { state: PCEState, payload: ProvidersDetectedPayload ->
-            val providers = payload.providers
+        condition = { _: PCEState, _: List<ProviderInfo> -> true },
+        apply = { state: PCEState, providers: List<ProviderInfo> ->
             val savedProvider = state.persistent.providerId
 
             val savedExists = providers.any { it.id == savedProvider }
@@ -77,7 +69,7 @@ fun registerProviderRules(project: Project) {
             lgResult(
                 envMutations = mapOf("providers" to providers),
                 followUp = listOf(
-                    SelectProvider.create(SelectProviderPayload(effectiveProvider))
+                    SelectProvider.create(effectiveProvider)
                 )
             )
         }
@@ -85,11 +77,10 @@ fun registerProviderRules(project: Project) {
 
     // When provider changes, reload contexts and mode-sets
     rule.invoke(SelectProvider, RuleConfig(
-        condition = { state: PCEState, payload: SelectProviderPayload ->
-            payload.providerId != state.persistent.providerId
+        condition = { state: PCEState, providerId: String ->
+            providerId != state.persistent.providerId
         },
-        apply = { state: PCEState, payload: SelectProviderPayload ->
-            val providerId = payload.providerId
+        apply = { state: PCEState, providerId: String ->
             val template = state.persistent.template
 
             val asyncOps = mutableListOf<AsyncOperation>()
@@ -98,16 +89,12 @@ fun registerProviderRules(project: Project) {
             asyncOps.add(object : AsyncOperation {
                 override suspend fun execute(): BaseCommand {
                     val cliExecutor = project.service<CliExecutor>()
-                    val contexts = try {
-                        val stdout = cliExecutor.execute(
-                            args = listOf("list", "contexts", "--provider", providerId),
-                            timeoutMs = 30_000
-                        ).getOrThrow()
-                        json.decodeFromString<ContextsListSchema>(stdout).contexts
-                    } catch (_: Exception) {
-                        emptyList()
-                    }
-                    return ContextsLoaded.create(ContextsLoadedPayload(contexts))
+                    val stdout = cliExecutor.execute(
+                        args = listOf("list", "contexts", "--provider", providerId),
+                        timeoutMs = 30_000
+                    ).getOrThrow()
+                    val contexts = json.decodeFromString<ContextsListSchema>(stdout).contexts
+                    return ContextsLoaded.create(contexts)
                 }
             })
 
@@ -117,16 +104,12 @@ fun registerProviderRules(project: Project) {
                 asyncOps.add(object : AsyncOperation {
                     override suspend fun execute(): BaseCommand {
                         val cliExecutor = project.service<CliExecutor>()
-                        val modeSets = try {
-                            val stdout = cliExecutor.execute(
-                                args = listOf("list", "mode-sets", "--context", template, "--provider", providerId),
-                                timeoutMs = 30_000
-                            ).getOrThrow()
-                            json.decodeFromString<ModeSetsListSchema>(stdout)
-                        } catch (_: Exception) {
-                            null
-                        }
-                        return ModeSetsLoaded.create(ModeSetsLoadedPayload(modeSets))
+                        val stdout = cliExecutor.execute(
+                            args = listOf("list", "mode-sets", "--context", template, "--provider", providerId),
+                            timeoutMs = 30_000
+                        ).getOrThrow()
+                        val modeSets = json.decodeFromString<ModeSetsListSchema>(stdout)
+                        return ModeSetsLoaded.create(modeSets)
                     }
                 })
             }
@@ -140,17 +123,17 @@ fun registerProviderRules(project: Project) {
 
     // When CLI scope is set, update persistent state
     rule.invoke(SetCliScope, RuleConfig(
-        condition = { _: PCEState, _: SetCliScopePayload -> true },
-        apply = { _: PCEState, payload: SetCliScopePayload ->
-            lgResult(mutations = mapOf("cliScope" to payload.scope))
+        condition = { _: PCEState, _: String -> true },
+        apply = { _: PCEState, cliScope: String ->
+            lgResult(mutations = mapOf("cliScope" to cliScope))
         }
     ))
 
     // When CLI shell is selected, update persistent state
     rule.invoke(SelectCliShell, RuleConfig(
-        condition = { _: PCEState, _: SelectCliShellPayload -> true },
-        apply = { _: PCEState, payload: SelectCliShellPayload ->
-            lgResult(mutations = mapOf("cliShell" to payload.shell))
+        condition = { _: PCEState, _: ShellType -> true },
+        apply = { _: PCEState, shell: ShellType ->
+            lgResult(mutations = mapOf("cliShell" to shell))
         }
     ))
 }

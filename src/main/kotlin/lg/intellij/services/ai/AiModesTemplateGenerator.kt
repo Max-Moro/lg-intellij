@@ -96,6 +96,11 @@ class AiModesTemplateGenerator(private val project: Project) {
             Optional.empty(), Optional.empty(),
             " Manual edits to unknown providers/modes will be preserved.",
             CommentType.BLOCK
+        ),
+        CommentLine(
+            Optional.empty(), Optional.empty(),
+            "",
+            CommentType.BLANK_LINE
         )
     )
 
@@ -138,14 +143,33 @@ class AiModesTemplateGenerator(private val project: Project) {
         // Read existing file if present
         val existingContent = if (filePath.exists()) filePath.readText() else ""
 
+        // Detect line ending from existing file or OS default
+        val eol = detectEol(existingContent)
+
         // Merge and generate new content
         val newContent = mergeAndGenerate(existingContent, allModes)
 
+        // Apply platform-appropriate line endings
+        val finalContent = if (eol == "\r\n") {
+            newContent.replace("\n", "\r\n")
+        } else {
+            newContent
+        }
+
         // Write file
-        filePath.writeText(newContent)
+        filePath.writeText(finalContent)
         log.info("Written ${filePath.absolutePath}")
 
         return filePath.absolutePath
+    }
+
+    /**
+     * Detects line ending from file content or falls back to OS default.
+     */
+    private fun detectEol(content: String): String {
+        if (content.contains("\r\n")) return "\r\n"
+        if (content.contains("\n")) return "\n"
+        return System.lineSeparator()
     }
 
     // ============================================

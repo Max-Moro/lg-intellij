@@ -748,7 +748,6 @@ class LgControlPanel(
 
             // Config Management
             add(LgCreateStarterConfigAction())
-            add(LgOpenConfigAction())
             add(LgUpdateAiModesAction())
 
             addSeparator()

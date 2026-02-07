@@ -755,6 +755,7 @@ class LgControlPanel(
             // Diagnostics
             add(LgRunDoctorAction())
             add(LgResetCacheAction())
+            add(LgClearStateAction())
 
             add(object : AnAction(
                 LgBundle.message("action.settings.text"),

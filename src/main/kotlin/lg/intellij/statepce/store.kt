@@ -427,4 +427,16 @@ class PCEStateStore(
     // Lifecycle Methods
     // ============================================
 
+    /**
+     * Clears all state to defaults.
+     * Resets persistent state (saved to disk) and in-memory state.
+     * Emits change so UI updates immediately.
+     */
+    fun clearAll() {
+        loadState(PersistentStateData())
+        configuration = createDefaultConfigurationState()
+        environment = createDefaultEnvironmentState()
+        emit()
+        LOG.debug("All state cleared to defaults")
+    }
 }

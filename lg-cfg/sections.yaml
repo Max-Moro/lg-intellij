@@ -57,15 +57,11 @@ src:
           # State PCE - LG-specific state management
           - condition: "TAGSET:intellij-plugin:state-pce"
             allow:
-              - "/statepce/types.kt"
-              - "/statepce/store.kt"
-              - "/statepce/coordinator.kt"
-              - "/statepce/LgCoordinatorService.kt"
-              - "/statepce/rule.kt"
-              - "/statepce/index.kt"
+              - "/statepce/*.kt"
               - "/statepce/domains/index.kt"
               - "/statepce/domains/lifecycle.kt"
               - "/listeners/LgConfigFileListener.kt"
+              - "/actions/LgClearStateAction.kt"
 
           # CLI Integration
           - condition: "TAGSET:intellij-plugin:cli"

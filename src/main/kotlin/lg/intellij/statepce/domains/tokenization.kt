@@ -99,8 +99,8 @@ fun registerTokenizationRules(project: Project) {
 
             if (!isValid || state.configuration.encoders.isEmpty()) {
                 lgResult(
-                    configMutations = mapOf("tokenizerLibs" to libs),
-                    mutations = mapOf("tokenizerLib" to newLib),
+                    config = { c -> c.copy(tokenizerLibs = libs) },
+                    persistent = { s -> s.copy(tokenizerLib = newLib) },
                     asyncOps = listOf(object : AsyncOperation {
                         override suspend fun execute(): BaseCommand {
                             val cliClient = project.service<CliClient>()
@@ -111,7 +111,7 @@ fun registerTokenizationRules(project: Project) {
                 )
             } else {
                 lgResult(
-                    configMutations = mapOf("tokenizerLibs" to libs)
+                    config = { c -> c.copy(tokenizerLibs = libs) }
                 )
             }
         }
@@ -124,7 +124,7 @@ fun registerTokenizationRules(project: Project) {
         },
         apply = { _: PCEState, lib: String ->
             lgResult(
-                mutations = mapOf("tokenizerLib" to lib),
+                persistent = { s -> s.copy(tokenizerLib = lib) },
                 asyncOps = listOf(object : AsyncOperation {
                     override suspend fun execute(): BaseCommand {
                         val cliClient = project.service<CliClient>()
@@ -148,12 +148,12 @@ fun registerTokenizationRules(project: Project) {
 
             if (isValid) {
                 lgResult(
-                    configMutations = mapOf("encoders" to encoders)
+                    config = { c -> c.copy(encoders = encoders) }
                 )
             } else {
                 val newEncoder = selectBestEncoder(currentLib, encoderNames)
                 lgResult(
-                    configMutations = mapOf("encoders" to encoders),
+                    config = { c -> c.copy(encoders = encoders) },
                     followUp = if (newEncoder.isNotBlank()) {
                         listOf(SetEncoder.create(newEncoder))
                     } else {
@@ -170,9 +170,7 @@ fun registerTokenizationRules(project: Project) {
             encoder != state.persistent.encoder
         },
         apply = { _: PCEState, encoder: String ->
-            lgResult(
-                mutations = mapOf("encoder" to encoder)
-            )
+            lgResult(persistent = { s -> s.copy(encoder = encoder) })
         }
     ))
 
@@ -181,9 +179,7 @@ fun registerTokenizationRules(project: Project) {
         condition = { _: PCEState, _: Int -> true },
         apply = { _: PCEState, limit: Int ->
             val limit = limit.coerceIn(1000, 2_000_000)
-            lgResult(
-                mutations = mapOf("ctxLimit" to limit)
-            )
+            lgResult(persistent = { s -> s.copy(ctxLimit = limit) })
         }
     ))
 }

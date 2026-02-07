@@ -15,6 +15,7 @@ import lg.intellij.models.SectionInfo
 import lg.intellij.stateengine.RuleConfig
 import lg.intellij.stateengine.command
 import lg.intellij.statepce.PCEState
+import lg.intellij.statepce.PersistentState
 import lg.intellij.statepce.lgResult
 import lg.intellij.statepce.rule
 
@@ -47,8 +48,10 @@ fun registerSectionRules(@Suppress("unused") project: Project) {
             val newSection = if (isValid) currentSection else (sectionNames.firstOrNull() ?: "")
 
             lgResult(
-                configMutations = mapOf("sections" to sections),
-                mutations = if (currentSection != newSection) mapOf("section" to newSection) else null
+                config = { c -> c.copy(sections = sections) },
+                persistent = if (currentSection != newSection) {
+                    { s: PersistentState -> s.copy(section = newSection) }
+                } else null
             )
         }
     ))
@@ -59,7 +62,7 @@ fun registerSectionRules(@Suppress("unused") project: Project) {
             section != state.persistent.section
         },
         apply = { _: PCEState, section: String ->
-            lgResult(mutations = mapOf("section" to section))
+            lgResult(persistent = { s -> s.copy(section = section) })
         }
     ))
 }

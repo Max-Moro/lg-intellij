@@ -20,6 +20,7 @@ import lg.intellij.stateengine.BaseCommand
 import lg.intellij.stateengine.RuleConfig
 import lg.intellij.stateengine.command
 import lg.intellij.statepce.PCEState
+import lg.intellij.statepce.PersistentState
 import lg.intellij.statepce.lgResult
 import lg.intellij.statepce.rule
 
@@ -51,11 +52,11 @@ fun registerContextRules(project: Project) {
             val isValid = currentTemplate.isNotBlank() && currentTemplate in contexts
 
             if (isValid) {
-                lgResult(configMutations = mapOf("contexts" to contexts))
+                lgResult(config = { c -> c.copy(contexts = contexts) })
             } else {
                 val newTemplate = contexts.firstOrNull() ?: ""
                 lgResult(
-                    configMutations = mapOf("contexts" to contexts),
+                    config = { c -> c.copy(contexts = contexts) },
                     followUp = if (newTemplate.isNotBlank()) {
                         listOf(SelectContext.create(newTemplate))
                     } else null
@@ -118,7 +119,7 @@ fun registerContextRules(project: Project) {
             }
 
             lgResult(
-                mutations = mapOf("template" to template),
+                persistent = { s -> s.copy(template = template) },
                 asyncOps = asyncOps
             )
         }
@@ -128,7 +129,7 @@ fun registerContextRules(project: Project) {
     rule.invoke(SetTask, RuleConfig(
         condition = { _: PCEState, _: String -> true },
         apply = { _: PCEState, text: String ->
-            lgResult(mutations = mapOf("taskText" to text))
+            lgResult(persistent = { s -> s.copy(taskText = text) })
         }
     ))
 }

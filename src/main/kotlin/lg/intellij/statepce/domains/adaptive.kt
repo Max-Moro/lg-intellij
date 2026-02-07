@@ -25,8 +25,12 @@ import lg.intellij.stateengine.BaseCommand
 import lg.intellij.stateengine.RuleConfig
 import lg.intellij.stateengine.command
 import lg.intellij.statepce.PCEState
+import lg.intellij.statepce.PersistentState
 import lg.intellij.statepce.lgResult
 import lg.intellij.statepce.rule
+import lg.intellij.statepce.withModes
+import lg.intellij.statepce.withContextTags
+import lg.intellij.statepce.withMode
 
 // ============================================
 // Commands
@@ -86,15 +90,9 @@ fun registerAdaptiveRules(project: Project) {
                 }
             }
 
-            // Deep copy for nested structure
-            val newModesByCtxProvider = state.persistent.modesByContextProvider.toMutableMap()
-            val contextModes = (newModesByCtxProvider[ctx]?.toMutableMap() ?: mutableMapOf())
-            contextModes[provider] = actualizedModes.toMutableMap()
-            newModesByCtxProvider[ctx] = contextModes
-
             lgResult(
-                configMutations = mapOf("modeSets" to modeSets),
-                mutations = mapOf("modesByContextProvider" to newModesByCtxProvider)
+                config = { c -> c.copy(modeSets = modeSets) },
+                persistent = { s -> s.withModes(ctx, provider, actualizedModes) }
             )
         }
     ))
@@ -125,17 +123,15 @@ fun registerAdaptiveRules(project: Project) {
             val hasChanges = savedTags.mapValues { it.value.toSet() } != validatedTags.mapValues { it.value.toSet() }
 
             if (hasChanges) {
-                // Deep copy
-                val newTagsByContext = state.persistent.tagsByContext.toMutableMap()
-                newTagsByContext[ctx] = validatedTags
-
                 lgResult(
-                    configMutations = mapOf("tagSets" to tagSets),
-                    mutations = mapOf("tagsByContext" to newTagsByContext)
+                    config = { c -> c.copy(tagSets = tagSets) },
+                    persistent = { s ->
+                        s.withContextTags(ctx, validatedTags.mapValues { it.value.toSet() })
+                    }
                 )
             } else {
                 lgResult(
-                    configMutations = mapOf("tagSets" to tagSets)
+                    config = { c -> c.copy(tagSets = tagSets) }
                 )
             }
         }
@@ -153,14 +149,6 @@ fun registerAdaptiveRules(project: Project) {
             val ctx = state.persistent.template
             val provider = state.persistent.providerId
 
-            // Deep copy for nested structure
-            val newModesByCtxProvider = state.persistent.modesByContextProvider.toMutableMap()
-            val contextModes = (newModesByCtxProvider[ctx]?.toMutableMap() ?: mutableMapOf())
-            val providerModes = (contextModes[provider]?.toMutableMap() ?: mutableMapOf())
-            providerModes[payload.modeSetId] = payload.modeId
-            contextModes[provider] = providerModes
-            newModesByCtxProvider[ctx] = contextModes
-
             // Load branches when switching to review mode
             val asyncOps = if (payload.modeId == "review") {
                 listOf(object : AsyncOperation {
@@ -175,7 +163,7 @@ fun registerAdaptiveRules(project: Project) {
             }
 
             lgResult(
-                mutations = mapOf("modesByContextProvider" to newModesByCtxProvider),
+                persistent = { s -> s.withMode(ctx, provider, payload.modeSetId, payload.modeId) },
                 asyncOps = asyncOps
             )
         }
@@ -186,30 +174,25 @@ fun registerAdaptiveRules(project: Project) {
         condition = { _: PCEState, _: ToggleTagPayload -> true },
         apply = { state: PCEState, payload: ToggleTagPayload ->
             val ctx = state.persistent.template
-            val currentTags = state.persistent.tagsByContext[ctx] ?: emptyMap()
-            val tagsInSet = currentTags[payload.tagSetId]?.toMutableSet() ?: mutableSetOf()
 
-            val isCurrentlySelected = payload.tagId in tagsInSet
-            if (isCurrentlySelected) {
-                tagsInSet.remove(payload.tagId)
-            } else {
-                tagsInSet.add(payload.tagId)
-            }
+            lgResult(persistent = { s ->
+                val currentTags = s.tagsByContext[ctx] ?: emptyMap()
+                val currentSet = currentTags[payload.tagSetId] ?: emptySet()
 
-            // Deep copy
-            val newTagsByContext = state.persistent.tagsByContext.toMutableMap()
-            val newTags = currentTags.toMutableMap()
+                val updatedSet = if (payload.tagId in currentSet) {
+                    currentSet - payload.tagId
+                } else {
+                    currentSet + payload.tagId
+                }
 
-            if (tagsInSet.isNotEmpty()) {
-                newTags[payload.tagSetId] = tagsInSet
-            } else {
-                newTags.remove(payload.tagSetId)
-            }
-            newTagsByContext[ctx] = newTags
+                val newTags = if (updatedSet.isNotEmpty()) {
+                    currentTags + (payload.tagSetId to updatedSet)
+                } else {
+                    currentTags - payload.tagSetId
+                }
 
-            lgResult(
-                mutations = mapOf("tagsByContext" to newTagsByContext)
-            )
+                s.withContextTags(ctx, newTags)
+            })
         }
     ))
 
@@ -226,15 +209,11 @@ fun registerAdaptiveRules(project: Project) {
                 ?: branches.firstOrNull()
                 ?: ""
 
-            val mutations = if (newBranch != currentBranch) {
-                mapOf("targetBranch" to newBranch)
-            } else {
-                null
-            }
-
             lgResult(
-                envMutations = mapOf("branches" to branches),
-                mutations = mutations
+                env = { e -> e.copy(branches = branches) },
+                persistent = if (newBranch != currentBranch) {
+                    { s: PersistentState -> s.copy(targetBranch = newBranch) }
+                } else null
             )
         }
     ))
@@ -245,13 +224,7 @@ fun registerAdaptiveRules(project: Project) {
         apply = { state: PCEState, tags: Map<String, Set<String>> ->
             val ctx = state.persistent.template
 
-            // Deep copy
-            val newTagsByContext = state.persistent.tagsByContext.toMutableMap()
-            newTagsByContext[ctx] = tags.mapValues { it.value.toMutableSet() }.toMutableMap()
-
-            lgResult(
-                mutations = mapOf("tagsByContext" to newTagsByContext)
-            )
+            lgResult(persistent = { s -> s.withContextTags(ctx, tags) })
         }
     ))
 
@@ -261,9 +234,7 @@ fun registerAdaptiveRules(project: Project) {
             branch != state.persistent.targetBranch
         },
         apply = { _: PCEState, branch: String ->
-            lgResult(
-                mutations = mapOf("targetBranch" to branch)
-            )
+            lgResult(persistent = { s -> s.copy(targetBranch = branch) })
         }
     ))
 }

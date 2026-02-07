@@ -20,6 +20,7 @@ import lg.intellij.stateengine.command
 import lg.intellij.statepce.PCEState
 import lg.intellij.statepce.lgResult
 import lg.intellij.statepce.rule
+import lg.intellij.statepce.withProviderSetting
 
 // ============================================
 // Commands
@@ -53,24 +54,6 @@ private fun getCodexSettings(state: PCEState): CodexSettings {
     )
 }
 
-/**
- * Creates updated providerSettings map with Codex settings changes.
- */
-private fun updateCodexSettings(
-    state: PCEState,
-    updates: Map<String, Any?>
-): MutableMap<String, MutableMap<String, Any?>> {
-    val newProviderSettings = state.persistent.providerSettings.toMutableMap()
-    val codexSettings = (newProviderSettings[SETTINGS_KEY]?.toMutableMap()) ?: mutableMapOf()
-
-    for ((key, value) in updates) {
-        codexSettings[key] = value
-    }
-
-    newProviderSettings[SETTINGS_KEY] = codexSettings
-    return newProviderSettings
-}
-
 // ============================================
 // Rule Registration
 // ============================================
@@ -84,12 +67,10 @@ fun registerCodexCliSettingsRules() {
     // When reasoning effort selected, update provider settings
     rule.invoke(SelectCodexReasoning, RuleConfig(
         condition = { _: PCEState, _: CodexReasoningEffort -> true },
-        apply = { state: PCEState, effort: CodexReasoningEffort ->
-            lgResult(
-                mutations = mapOf(
-                    "providerSettings" to updateCodexSettings(state, mapOf("reasoning" to effort))
-                )
-            )
+        apply = { _: PCEState, effort: CodexReasoningEffort ->
+            lgResult(persistent = { s ->
+                s.withProviderSetting(SETTINGS_KEY, "reasoning", effort)
+            })
         }
     ))
 }

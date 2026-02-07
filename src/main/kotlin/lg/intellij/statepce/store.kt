@@ -3,10 +3,7 @@ package lg.intellij.statepce
 import com.intellij.openapi.components.*
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import lg.intellij.models.ModeSetsListSchema
-import lg.intellij.models.SectionInfo
 import lg.intellij.models.ShellType
-import lg.intellij.models.TagSetsListSchema
 import lg.intellij.stateengine.StateListener
 import lg.intellij.stateengine.StateStore
 import lg.intellij.statepce.domains.DEFAULT_CTX_LIMIT
@@ -18,23 +15,25 @@ import lg.intellij.statepce.domains.DEFAULT_TOKENIZER_LIB
 // ============================================
 
 /**
- * Extended rule result for LG with three mutation types.
- * Inherits asyncOps and followUp from base RuleResult.
+ * Extended rule result for LG with typed mutation lambdas.
+ *
+ * Each lambda receives current state and returns updated state.
+ * Uses Kotlin's .copy() for type-safe immutable updates.
  *
  * Each mutation type targets a different part of PCEState:
- * - mutations -> PersistentState (saved between sessions)
- * - configMutations -> ConfigurationState (loaded from CLI)
- * - envMutations -> EnvironmentState (detected at runtime)
+ * - persistent -> PersistentState (saved between sessions)
+ * - config -> ConfigurationState (loaded from CLI)
+ * - env -> EnvironmentState (detected at runtime)
  */
 interface LGRuleResult : RuleResult {
-    /** Mutations to persistent state (saved to workspace.xml) */
-    val mutations: Map<String, Any?>?
+    /** Mutation lambda for persistent state (saved to workspace.xml) */
+    val persistent: ((PersistentState) -> PersistentState)?
 
-    /** Mutations to configuration state (in-memory, from CLI) */
-    val configMutations: Map<String, Any?>?
+    /** Mutation lambda for configuration state (in-memory, from CLI) */
+    val config: ((ConfigurationState) -> ConfigurationState)?
 
-    /** Mutations to environment state (in-memory, runtime) */
-    val envMutations: Map<String, Any?>?
+    /** Mutation lambda for environment state (in-memory, runtime) */
+    val env: ((EnvironmentState) -> EnvironmentState)?
 }
 
 /**
@@ -43,21 +42,21 @@ interface LGRuleResult : RuleResult {
  * Example usage:
  * ```
  * lgResult(
- *     mutations = mapOf("providerId" to "claude-cli"),
+ *     persistent = { s -> s.copy(providerId = "claude-cli") },
  *     asyncOps = listOf(loadCatalogsOp)
  * )
  * ```
  */
 fun lgResult(
-    mutations: Map<String, Any?>? = null,
-    configMutations: Map<String, Any?>? = null,
-    envMutations: Map<String, Any?>? = null,
+    persistent: ((PersistentState) -> PersistentState)? = null,
+    config: ((ConfigurationState) -> ConfigurationState)? = null,
+    env: ((EnvironmentState) -> EnvironmentState)? = null,
     asyncOps: List<AsyncOperation>? = null,
     followUp: List<BaseCommand>? = null
 ): LGRuleResult = object : LGRuleResult {
-    override val mutations = mutations
-    override val configMutations = configMutations
-    override val envMutations = envMutations
+    override val persistent = persistent
+    override val config = config
+    override val env = env
     override val asyncOps = asyncOps
     override val followUp = followUp
 }
@@ -192,24 +191,24 @@ class PCEStateStore(
     }
 
     /**
-     * Apply mutations from rule result.
+     * Apply typed mutation lambdas from rule result.
      *
-     * Dispatches mutations to appropriate handlers based on type:
-     * - mutations -> updatePersistent() (saved to disk)
-     * - configMutations -> updateConfiguration() (in-memory)
-     * - envMutations -> updateEnvironment() (in-memory)
+     * Each lambda receives current state snapshot and returns updated state.
+     * Persistent mutations are synced back to BaseState for platform persistence.
      */
     override suspend fun applyMutations(result: LGRuleResult) {
-        result.mutations?.takeIf { it.isNotEmpty() }?.let {
-            updatePersistent(it)
+        result.persistent?.let { mutator ->
+            val current = toPersistentState()
+            val updated = mutator(current)
+            syncToPersistentData(updated)
         }
 
-        result.configMutations?.takeIf { it.isNotEmpty() }?.let {
-            updateConfiguration(it)
+        result.config?.let { mutator ->
+            configuration = mutator(configuration)
         }
 
-        result.envMutations?.takeIf { it.isNotEmpty() }?.let {
-            updateEnvironment(it)
+        result.env?.let { mutator ->
+            environment = mutator(environment)
         }
     }
 
@@ -245,15 +244,18 @@ class PCEStateStore(
     // ============================================
 
     /**
-     * Converts BaseState data to PersistentState data class.
+     * Converts BaseState data to immutable PersistentState snapshot.
+     *
+     * Uses Map covariance (MutableMap is-a Map) for nested map types.
+     * providerSettings requires explicit conversion (String → Any?).
      */
     private fun toPersistentState(): PersistentState {
         return PersistentState(
             providerId = state.providerId ?: "",
             template = state.template ?: "",
             section = state.section ?: "",
-            modesByContextProvider = state.modesByContextProvider.toMutableMap(),
-            tagsByContext = state.tagsByContext.toMutableMap(),
+            modesByContextProvider = state.modesByContextProvider.toMap(),
+            tagsByContext = state.tagsByContext.toMap(),
             tokenizerLib = state.tokenizerLib ?: DEFAULT_TOKENIZER_LIB,
             encoder = state.encoder ?: DEFAULT_ENCODER,
             ctxLimit = state.ctxLimit,
@@ -266,14 +268,14 @@ class PCEStateStore(
     }
 
     /**
-     * Converts string-based provider settings to Any-based.
+     * Converts string-based provider settings to Any-based (immutable).
      */
     private fun convertProviderSettings(
         source: Map<String, MutableMap<String, String>>
-    ): MutableMap<String, MutableMap<String, Any?>> {
+    ): Map<String, Map<String, Any?>> {
         return source.mapValues { (_, settings) ->
-            settings.mapValues { (_, v) -> v as Any? }.toMutableMap()
-        }.toMutableMap()
+            settings.mapValues { (_, v) -> v as Any? }
+        }
     }
 
     // ============================================
@@ -281,80 +283,47 @@ class PCEStateStore(
     // ============================================
 
     /**
-     * Updates persistent state (automatically saved by platform).
+     * Syncs immutable PersistentState back to mutable BaseState for platform persistence.
      *
-     * Applies partial updates to the BaseState properties.
-     * Platform detects changes via property delegates and saves automatically.
+     * This is the ONLY place where PersistentState → PersistentStateData conversion happens.
+     * BaseState property delegates detect actual changes via equals().
      */
-    private fun updatePersistent(mutations: Map<String, Any?>) {
-        for ((key, value) in mutations) {
-            when (key) {
-                "providerId" -> state.providerId = value as? String ?: ""
-                "template" -> state.template = value as? String ?: ""
-                "section" -> state.section = value as? String ?: ""
-                "tokenizerLib" -> state.tokenizerLib = value as? String ?: DEFAULT_TOKENIZER_LIB
-                "encoder" -> state.encoder = value as? String ?: DEFAULT_ENCODER
-                "ctxLimit" -> state.ctxLimit = value as? Int ?: DEFAULT_CTX_LIMIT
-                "cliScope" -> state.cliScope = value as? String ?: ""
-                "cliShell" -> state.cliShell = value as? ShellType ?: ShellType.getDefault()
-                "targetBranch" -> state.targetBranch = value as? String ?: ""
-                "taskText" -> state.taskText = value as? String ?: ""
-                "modesByContextProvider" -> {
-                    @Suppress("UNCHECKED_CAST")
-                    state.modesByContextProvider = (value as? Map<String, MutableMap<String, MutableMap<String, String>>>)
-                        ?.toMutableMap() ?: mutableMapOf()
-                }
-                "tagsByContext" -> {
-                    @Suppress("UNCHECKED_CAST")
-                    state.tagsByContext = (value as? Map<String, MutableMap<String, MutableSet<String>>>)
-                        ?.toMutableMap() ?: mutableMapOf()
-                }
-                "providerSettings" -> {
-                    @Suppress("UNCHECKED_CAST")
-                    val anyMap = value as? Map<String, MutableMap<String, Any?>> ?: emptyMap()
-                    // Convert Any? to String for storage
-                    state.providerSettings = anyMap.mapValues { (_, settings) ->
-                        settings.mapValues { (_, v) -> v?.toString() ?: "" }.toMutableMap()
-                    }.toMutableMap()
-                }
-            }
-        }
+    private fun syncToPersistentData(updated: PersistentState) {
+        state.providerId = updated.providerId
+        state.template = updated.template
+        state.section = updated.section
+        state.tokenizerLib = updated.tokenizerLib
+        state.encoder = updated.encoder
+        state.ctxLimit = updated.ctxLimit
+        state.cliScope = updated.cliScope
+        state.cliShell = updated.cliShell
+        state.targetBranch = updated.targetBranch
+        state.taskText = updated.taskText
 
-        LOG.debug("Persistent state updated: ${mutations.keys.joinToString()}")
-    }
-
-    /**
-     * Updates configuration state (in-memory only).
-     *
-     * Creates a new ConfigurationState instance with updated fields.
-     */
-    private fun updateConfiguration(mutations: Map<String, Any?>) {
+        // Convert immutable maps to mutable for BaseState storage
         @Suppress("UNCHECKED_CAST")
-        configuration = configuration.copy(
-            contexts = mutations["contexts"] as? List<String> ?: configuration.contexts,
-            sections = mutations["sections"] as? List<SectionInfo> ?: configuration.sections,
-            modeSets = mutations["modeSets"] as? ModeSetsListSchema ?: configuration.modeSets,
-            tagSets = mutations["tagSets"] as? TagSetsListSchema ?: configuration.tagSets,
-            tokenizerLibs = mutations["tokenizerLibs"] as? List<String> ?: configuration.tokenizerLibs,
-            encoders = mutations["encoders"] as? List<EncoderEntry> ?: configuration.encoders
-        )
+        state.modesByContextProvider = updated.modesByContextProvider
+            .mapValues { (_, providerMap) ->
+                providerMap.mapValues { (_, modes) ->
+                    modes.toMutableMap()
+                }.toMutableMap()
+            }.toMutableMap()
 
-        LOG.debug("Configuration state updated: ${mutations.keys.joinToString()}")
-    }
-
-    /**
-     * Updates environment state (in-memory only).
-     *
-     * Creates a new EnvironmentState instance with updated fields.
-     */
-    private fun updateEnvironment(mutations: Map<String, Any?>) {
         @Suppress("UNCHECKED_CAST")
-        environment = environment.copy(
-            providers = mutations["providers"] as? List<ProviderInfo> ?: environment.providers,
-            branches = mutations["branches"] as? List<String> ?: environment.branches
-        )
+        state.tagsByContext = updated.tagsByContext
+            .mapValues { (_, tagMap) ->
+                tagMap.mapValues { (_, tags) ->
+                    tags.toMutableSet()
+                }.toMutableMap()
+            }.toMutableMap()
 
-        LOG.debug("Environment state updated: ${mutations.keys.joinToString()}")
+        // Convert Any? values to String for storage
+        state.providerSettings = updated.providerSettings
+            .mapValues { (_, settings) ->
+                settings.mapValues { (_, v) -> v?.toString() ?: "" }.toMutableMap()
+            }.toMutableMap()
+
+        LOG.debug("Persistent state synced")
     }
 
     // ============================================

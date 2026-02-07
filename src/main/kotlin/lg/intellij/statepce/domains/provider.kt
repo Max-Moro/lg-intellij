@@ -21,6 +21,7 @@ import lg.intellij.stateengine.BaseCommand
 import lg.intellij.stateengine.RuleConfig
 import lg.intellij.stateengine.command
 import lg.intellij.statepce.PCEState
+import lg.intellij.statepce.PersistentState
 import lg.intellij.statepce.ProviderInfo
 import lg.intellij.statepce.lgResult
 import lg.intellij.statepce.rule
@@ -59,7 +60,7 @@ fun registerProviderRules(project: Project) {
             }
 
             lgResult(
-                envMutations = mapOf("providers" to providers),
+                env = { e -> e.copy(providers = providers) },
                 followUp = listOf(
                     SelectProvider.create(effectiveProvider)
                 )
@@ -99,7 +100,7 @@ fun registerProviderRules(project: Project) {
             }
 
             lgResult(
-                mutations = mapOf("providerId" to providerId),
+                persistent = { s -> s.copy(providerId = providerId) },
                 asyncOps = asyncOps
             )
         }
@@ -109,7 +110,7 @@ fun registerProviderRules(project: Project) {
     rule.invoke(SetCliScope, RuleConfig(
         condition = { _: PCEState, _: String -> true },
         apply = { _: PCEState, cliScope: String ->
-            lgResult(mutations = mapOf("cliScope" to cliScope))
+            lgResult(persistent = { s -> s.copy(cliScope = cliScope) })
         }
     ))
 
@@ -117,7 +118,7 @@ fun registerProviderRules(project: Project) {
     rule.invoke(SelectCliShell, RuleConfig(
         condition = { _: PCEState, _: ShellType -> true },
         apply = { _: PCEState, shell: ShellType ->
-            lgResult(mutations = mapOf("cliShell" to shell))
+            lgResult(persistent = { s -> s.copy(cliShell = shell) })
         }
     ))
 }

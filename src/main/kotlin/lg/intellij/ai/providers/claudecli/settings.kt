@@ -22,6 +22,7 @@ import lg.intellij.stateengine.command
 import lg.intellij.statepce.PCEState
 import lg.intellij.statepce.lgResult
 import lg.intellij.statepce.rule
+import lg.intellij.statepce.withProviderSetting
 
 // ============================================
 // Commands
@@ -58,24 +59,6 @@ private fun getClaudeSettings(state: PCEState): ClaudeSettings {
     )
 }
 
-/**
- * Creates updated providerSettings map with Claude settings changes.
- */
-private fun updateClaudeSettings(
-    state: PCEState,
-    updates: Map<String, Any?>
-): MutableMap<String, MutableMap<String, Any?>> {
-    val newProviderSettings = state.persistent.providerSettings.toMutableMap()
-    val claudeSettings = (newProviderSettings[SETTINGS_KEY]?.toMutableMap()) ?: mutableMapOf()
-
-    for ((key, value) in updates) {
-        claudeSettings[key] = value
-    }
-
-    newProviderSettings[SETTINGS_KEY] = claudeSettings
-    return newProviderSettings
-}
-
 // ============================================
 // Rule Registration
 // ============================================
@@ -89,24 +72,20 @@ fun registerClaudeCliSettingsRules() {
     // When Claude model selected, update provider settings
     rule.invoke(SelectClaudeModel, RuleConfig(
         condition = { _: PCEState, _: ClaudeModel -> true },
-        apply = { state: PCEState, model: ClaudeModel ->
-            lgResult(
-                mutations = mapOf(
-                    "providerSettings" to updateClaudeSettings(state, mapOf("model" to model))
-                )
-            )
+        apply = { _: PCEState, model: ClaudeModel ->
+            lgResult(persistent = { s ->
+                s.withProviderSetting(SETTINGS_KEY, "model", model)
+            })
         }
     ))
 
     // When Claude method selected, update provider settings
     rule.invoke(SelectClaudeMethod, RuleConfig(
         condition = { _: PCEState, _: ClaudeIntegrationMethod -> true },
-        apply = { state: PCEState, method: ClaudeIntegrationMethod ->
-            lgResult(
-                mutations = mapOf(
-                    "providerSettings" to updateClaudeSettings(state, mapOf("method" to method))
-                )
-            )
+        apply = { _: PCEState, method: ClaudeIntegrationMethod ->
+            lgResult(persistent = { s ->
+                s.withProviderSetting(SETTINGS_KEY, "method", method)
+            })
         }
     ))
 }

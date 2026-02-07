@@ -25,7 +25,7 @@ enum class GenerationTarget(val prefix: String, val displayName: String) {
  */
 @Service(Service.Level.PROJECT)
 class LgGenerationService(private val project: Project) {
-    
+
     private val cliExecutor: CliExecutor
         get() = project.service()
 
@@ -34,27 +34,37 @@ class LgGenerationService(private val project: Project) {
 
     /**
      * Generates content for the specified target.
-     * 
+     *
      * @param targetType Type of target (section or context)
      * @param targetName Name of target (e.g., "all", "common", etc.)
      * @return Generated content or null if generation failed (user already notified)
      */
     suspend fun generate(targetType: GenerationTarget, targetName: String): String? {
         return withContext(Dispatchers.IO) {
-            val params = CliArgsBuilder.fromStore(store)
             val target = "${targetType.prefix}:$targetName"
-            val (args, stdinData) = CliArgsBuilder.buildRenderArgs(target, params)
-            
+            val isContext = targetType == GenerationTarget.CONTEXT
+
+            // For sections, find section info and pass it for filtering
+            val sectionInfo = if (!isContext) {
+                store.getBusinessState().configuration.sections.find { it.name == targetName }
+            } else null
+
+            val params = CliArgsBuilder.buildCliParams(
+                store,
+                BuildParamsOptions(includeProvider = isContext, sectionInfo = sectionInfo)
+            )
+            val (args, stdinData) = CliArgsBuilder.buildCliArgs("render", target, params)
+
             LOG.debug("Generating ${targetType.displayName} for '$targetName' with args: $args")
-            
+
             val result = cliExecutor.execute(
                 args = args,
                 stdinData = stdinData,
                 timeoutMs = 120_000
             )
-            
+
             val operationName = "${targetType.displayName.replaceFirstChar { it.uppercase() }} Generation"
-            
+
             result.handleWith(
                 project = project,
                 operationName = operationName,
@@ -65,7 +75,7 @@ class LgGenerationService(private val project: Project) {
             }
         }
     }
-    
+
     companion object {
         private val LOG = logger<LgGenerationService>()
     }

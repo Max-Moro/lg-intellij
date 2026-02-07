@@ -17,7 +17,7 @@ import lg.intellij.statepce.PCEStateStore
  */
 @Service(Service.Level.PROJECT)
 class LgStatsService(private val project: Project) {
-    
+
     private val cliExecutor: CliExecutor
         get() = project.service()
 
@@ -29,7 +29,7 @@ class LgStatsService(private val project: Project) {
         isLenient = true
         coerceInputValues = true // Coerce invalid values to defaults
     }
-    
+
     /**
      * Fetches statistics for the specified target.
      *
@@ -40,17 +40,28 @@ class LgStatsService(private val project: Project) {
      */
     suspend fun getStats(target: String): ReportSchema? {
         return withContext(Dispatchers.IO) {
-            val params = CliArgsBuilder.fromStore(store)
-            val (args, stdinData) = CliArgsBuilder.buildReportArgs(target, params)
-            
+            val isContext = target.startsWith("ctx:")
+
+            // For sections, find section info and pass it for filtering
+            val sectionInfo = if (!isContext) {
+                val sectionName = target.removePrefix("sec:")
+                store.getBusinessState().configuration.sections.find { it.name == sectionName }
+            } else null
+
+            val params = CliArgsBuilder.buildCliParams(
+                store,
+                BuildParamsOptions(includeProvider = isContext, sectionInfo = sectionInfo)
+            )
+            val (args, stdinData) = CliArgsBuilder.buildCliArgs("report", target, params)
+
             LOG.debug("Fetching stats for '$target' with args: $args")
-            
+
             val result = cliExecutor.execute(
                 args = args,
                 stdinData = stdinData,
                 timeoutMs = 120_000
             )
-            
+
             result.handleWith(
                 project = project,
                 operationName = "Stats Collection",
@@ -59,30 +70,30 @@ class LgStatsService(private val project: Project) {
                 // Parse JSON manually to replace problematic 'meta' field with empty map
                 val jsonElement = json.parseToJsonElement(success.data)
                 val jsonObject = jsonElement.jsonObject
-                
+
                 // Replace 'meta' field with empty object in all file objects
                 val cleanedFiles = jsonObject["files"]?.jsonArray?.map { fileElement ->
                     val fileObj = fileElement.jsonObject.toMutableMap()
                     fileObj["meta"] = JsonObject(emptyMap()) // Replace with empty object
                     JsonObject(fileObj)
                 }?.let { JsonArray(it) }
-                
+
                 val cleanedJson = jsonObject.toMutableMap().apply {
                     if (cleanedFiles != null) {
                         put("files", cleanedFiles)
                     }
                 }
-                
+
                 val report = json.decodeFromJsonElement<ReportSchema>(
                     JsonObject(cleanedJson)
                 )
-                
+
                 LOG.info("Stats fetched successfully for '$target'")
                 report
             }
         }
     }
-    
+
     companion object {
         private val LOG = logger<LgStatsService>()
     }

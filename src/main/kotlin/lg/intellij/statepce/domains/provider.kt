@@ -14,6 +14,7 @@ package lg.intellij.statepce.domains
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import lg.intellij.ai.ProviderInfo
 import lg.intellij.cli.CliClient
 import lg.intellij.models.ShellType
 import lg.intellij.stateengine.AsyncOperation
@@ -21,8 +22,6 @@ import lg.intellij.stateengine.BaseCommand
 import lg.intellij.stateengine.RuleConfig
 import lg.intellij.stateengine.command
 import lg.intellij.statepce.PCEState
-import lg.intellij.statepce.PersistentState
-import lg.intellij.statepce.ProviderInfo
 import lg.intellij.statepce.lgResult
 import lg.intellij.statepce.rule
 

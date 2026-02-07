@@ -26,7 +26,6 @@ import lg.intellij.stateengine.BaseCommand
 import lg.intellij.stateengine.NoPayloadRuleConfig
 import lg.intellij.stateengine.command
 import lg.intellij.statepce.PCEState
-import lg.intellij.statepce.ProviderInfo
 import lg.intellij.statepce.lgResult
 import lg.intellij.statepce.rule
 
@@ -58,10 +57,7 @@ private fun buildCatalogOps(
         ops.add(object : AsyncOperation {
             override suspend fun execute(): BaseCommand {
                 val aiService = AiIntegrationService.getInstance()
-                val aiProviders = aiService.detectAvailableProvidersInfo()
-                val providers = aiProviders.map {
-                    ProviderInfo(it.id, it.name, it.priority)
-                }
+                val providers = aiService.detectAvailableProviders()
                 return ProvidersDetected.create(providers)
             }
         })

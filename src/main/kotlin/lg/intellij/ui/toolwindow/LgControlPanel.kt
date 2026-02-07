@@ -37,7 +37,7 @@ import lg.intellij.ai.providers.codexcli.SelectCodexReasoning
 import lg.intellij.statepce.PCEState
 import lg.intellij.statepce.PCEStateCoordinator
 import lg.intellij.statepce.PCEStateStore
-import lg.intellij.statepce.ProviderInfo
+import lg.intellij.ai.ProviderInfo
 import lg.intellij.statepce.domains.*
 import lg.intellij.ui.components.LgEncoderCompletionField
 import lg.intellij.ui.components.LgLabeledComponent

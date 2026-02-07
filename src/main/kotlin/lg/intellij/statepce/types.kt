@@ -4,6 +4,7 @@ import lg.intellij.models.ModeSetsListSchema
 import lg.intellij.models.SectionInfo
 import lg.intellij.models.ShellType
 import lg.intellij.models.TagSetsListSchema
+import lg.intellij.ai.ProviderInfo
 import lg.intellij.statepce.domains.DEFAULT_CTX_LIMIT
 import lg.intellij.statepce.domains.DEFAULT_ENCODER
 import lg.intellij.statepce.domains.DEFAULT_TOKENIZER_LIB
@@ -12,19 +13,6 @@ import lg.intellij.statepce.domains.DEFAULT_TOKENIZER_LIB
 typealias BaseCommand = lg.intellij.stateengine.BaseCommand
 typealias RuleResult = lg.intellij.stateengine.RuleResult
 typealias AsyncOperation = lg.intellij.stateengine.AsyncOperation
-
-// ============================================
-// Provider Info
-// ============================================
-
-/**
- * Information about an AI provider for UI display.
- */
-data class ProviderInfo(
-    val id: String,
-    val name: String,
-    val priority: Int
-)
 
 // ============================================
 // Encoder Entry

@@ -4,7 +4,7 @@
  * This file documents the public API of the statepce package.
  *
  * Public surface:
- * - types.kt: PCEState, PersistentState, ConfigurationState, EnvironmentState, ProviderInfo, EncoderEntry
+ * - types.kt: PCEState, PersistentState, ConfigurationState, EnvironmentState, EncoderEntry
  * - store.kt: PCEStateStore, LGRuleResult, lgResult(), emptyLgResult()
  * - rule.kt: rule (factory), getAllRules()
  * - coordinator.kt: PCEStateCoordinator (typealias), createPCECoordinator(project)

@@ -1,6 +1,15 @@
 package lg.intellij.ai
 
 /**
+ * Information about an AI provider for UI display.
+ */
+data class ProviderInfo(
+    val id: String,
+    val name: String,
+    val priority: Int
+)
+
+/**
  * Information about provider-supported mode.
  * Used for generating ai-interaction.sec.yaml
  */

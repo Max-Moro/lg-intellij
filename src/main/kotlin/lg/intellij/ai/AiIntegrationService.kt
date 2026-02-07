@@ -79,25 +79,34 @@ class AiIntegrationService {
     }
 
     /**
-     * Detects available providers and returns ProviderInfo list for UI display.
-     * Delegates to [detectAvailableProviders] and enriches with provider metadata.
-     * Sorted by priority (descending).
+     * Detects available providers in the current environment.
+     *
+     * Checks all registered providers and returns
+     * list of available ones sorted by priority (descending).
+     *
+     * @return List of available providers with metadata (sorted by priority desc)
      */
-    suspend fun detectAvailableProvidersInfo(): List<ProviderInfo> {
-        val availableIds = detectAvailableProviders()
-        return availableIds.mapNotNull { id ->
-            providers[id]?.let { ProviderInfo(id, it.name, it.priority) }
-        }
-    }
+    suspend fun detectAvailableProviders(): List<ProviderInfo> = withContext(Dispatchers.IO) {
+        val available = mutableListOf<ProviderInfo>()
 
-    /**
-     * Provider information for UI display.
-     */
-    data class ProviderInfo(
-        val id: String,
-        val name: String,
-        val priority: Int
-    )
+        for ((id, provider) in providers) {
+            try {
+                if (provider.isAvailable()) {
+                    available.add(ProviderInfo(id, provider.name, provider.priority))
+                    log.debug("Provider '$id' is available (priority: ${provider.priority})")
+                } else {
+                    log.debug("Provider '$id' is not available")
+                }
+            } catch (e: Exception) {
+                log.warn("Failed to check availability of provider '$id'", e)
+            }
+        }
+
+        available.sortByDescending { it.priority }
+
+        log.info("Detected ${available.size} available providers: ${available.map { it.id }}")
+        available
+    }
 
     /**
      * Get all supported modes from all providers.
@@ -116,39 +125,6 @@ class AiIntegrationService {
         }
 
         return allModes
-    }
-
-    /**
-     * Detects available providers in the current environment.
-     *
-     * Checks all registered providers and returns
-     * list of available ones sorted by priority (descending).
-     *
-     * @return List of available provider IDs (sorted by priority desc)
-     */
-    suspend fun detectAvailableProviders(): List<String> = withContext(Dispatchers.IO) {
-        val available = mutableListOf<Pair<String, Int>>() // id to priority
-
-        for ((id, provider) in providers) {
-            try {
-                if (provider.isAvailable()) {
-                    available.add(id to provider.priority)
-                    log.debug("Provider '$id' is available (priority: ${provider.priority})")
-                } else {
-                    log.debug("Provider '$id' is not available")
-                }
-            } catch (e: Exception) {
-                log.warn("Failed to check availability of provider '$id'", e)
-            }
-        }
-
-        // Sort by priority (descending)
-        available.sortByDescending { it.second }
-
-        val result = available.map { it.first }
-        log.info("Detected ${result.size} available providers: $result")
-
-        result
     }
 
     /**

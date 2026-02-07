@@ -9,11 +9,6 @@ import lg.intellij.statepce.domains.DEFAULT_CTX_LIMIT
 import lg.intellij.statepce.domains.DEFAULT_ENCODER
 import lg.intellij.statepce.domains.DEFAULT_TOKENIZER_LIB
 
-// Re-export engine types for convenience
-typealias BaseCommand = lg.intellij.stateengine.BaseCommand
-typealias RuleResult = lg.intellij.stateengine.RuleResult
-typealias AsyncOperation = lg.intellij.stateengine.AsyncOperation
-
 // ============================================
 // Encoder Entry
 // ============================================

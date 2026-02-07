@@ -4,6 +4,9 @@ import com.intellij.openapi.components.*
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import lg.intellij.models.ShellType
+import lg.intellij.stateengine.AsyncOperation
+import lg.intellij.stateengine.BaseCommand
+import lg.intellij.stateengine.RuleResult
 import lg.intellij.stateengine.StateListener
 import lg.intellij.stateengine.StateStore
 import lg.intellij.statepce.domains.DEFAULT_CTX_LIMIT

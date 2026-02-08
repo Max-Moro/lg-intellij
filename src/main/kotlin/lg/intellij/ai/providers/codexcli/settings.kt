@@ -15,6 +15,7 @@ import lg.intellij.ai.FieldType
 import lg.intellij.ai.ProviderSettingsContribution
 import lg.intellij.ai.ProviderSettingsField
 import lg.intellij.ai.ProviderSettingsModule
+import lg.intellij.ai.resolveEnum
 import lg.intellij.stateengine.RuleConfig
 import lg.intellij.stateengine.command
 import lg.intellij.statepce.PCEState
@@ -50,7 +51,7 @@ private fun getCodexSettings(state: PCEState): CodexSettings {
     val settings = state.persistent.providerSettings[SETTINGS_KEY] ?: emptyMap()
 
     return CodexSettings(
-        reasoning = (settings["reasoning"] as? CodexReasoningEffort) ?: CodexReasoningEffort.MEDIUM
+        reasoning = resolveEnum(settings["reasoning"], CodexReasoningEffort.MEDIUM)
     )
 }
 

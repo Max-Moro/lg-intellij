@@ -119,3 +119,21 @@ data class FieldCommand(
     /** Key name for the value in command payload */
     val payloadKey: String
 )
+
+// ============================================
+// Provider Settings Utilities
+// ============================================
+
+/**
+ * Resolves a value from providerSettings to an enum.
+ *
+ * Handles both direct enum instances (in-memory after rule apply)
+ * and String values (after persistence round-trip via syncToPersistentData).
+ */
+inline fun <reified T : Enum<T>> resolveEnum(value: Any?, default: T): T {
+    return when (value) {
+        is T -> value
+        is String -> runCatching { enumValueOf<T>(value) }.getOrNull() ?: default
+        else -> default
+    }
+}

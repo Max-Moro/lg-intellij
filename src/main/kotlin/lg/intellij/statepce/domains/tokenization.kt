@@ -162,10 +162,10 @@ fun registerTokenizationRules(project: Project) {
         }
     ))
 
-    // When encoder is set, update persistent state
+    // When encoder is set, update persistent state (reject blank values)
     rule.invoke(SetEncoder, RuleConfig(
         condition = { state: PCEState, encoder: String ->
-            encoder != state.persistent.encoder
+            encoder.isNotBlank() && encoder != state.persistent.encoder
         },
         apply = { _: PCEState, encoder: String ->
             lgResult(persistent = { s -> s.copy(encoder = encoder) })

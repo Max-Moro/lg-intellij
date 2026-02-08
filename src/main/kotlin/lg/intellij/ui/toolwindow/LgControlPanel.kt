@@ -701,7 +701,7 @@ class LgControlPanel(
                 // Encoder Completion Field
                 encoderField = LgEncoderCompletionField(project, this@LgControlPanel).apply {
                     whenTextChangedFromUi(this@LgControlPanel) { newText ->
-                        if (!suppressDispatch) {
+                        if (!suppressDispatch && newText.isNotBlank()) {
                             scope.launch {
                                 coordinator.dispatch(
                                     SetEncoder.create(newText)

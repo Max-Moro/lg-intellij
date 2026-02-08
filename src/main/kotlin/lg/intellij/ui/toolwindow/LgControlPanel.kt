@@ -519,6 +519,9 @@ class LgControlPanel(
         // Context selector row
         row {
             templateCombo = ComboBox<String>().apply {
+                renderer = SimpleListCellRenderer.create { label, value, _ ->
+                    label.text = if (value != null && value.endsWith("/_")) value.dropLast(2) else value ?: ""
+                }
                 addActionListener {
                     if (!suppressDispatch) {
                         val selected = selectedItem as? String

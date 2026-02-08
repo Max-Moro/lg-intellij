@@ -13,9 +13,6 @@ import lg.intellij.ai.providers.claudecli.ClaudeCliProvider
 import lg.intellij.ai.providers.claudecli.claudeCliSettings
 import lg.intellij.ai.providers.codexcli.CodexCliProvider
 import lg.intellij.ai.providers.codexcli.codexCliSettings
-import lg.intellij.ai.ProviderSettingsModule
-import lg.intellij.ai.AiProvider
-import lg.intellij.ai.AiProviderException
 
 /**
  * Central service for managing AI providers.

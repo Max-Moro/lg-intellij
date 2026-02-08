@@ -20,7 +20,6 @@ import lg.intellij.stateengine.BaseCommand
 import lg.intellij.stateengine.RuleConfig
 import lg.intellij.stateengine.command
 import lg.intellij.statepce.PCEState
-import lg.intellij.statepce.PersistentState
 import lg.intellij.statepce.lgResult
 import lg.intellij.statepce.rule
 

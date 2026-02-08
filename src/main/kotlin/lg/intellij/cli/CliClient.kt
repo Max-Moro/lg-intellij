@@ -53,10 +53,14 @@ class CliClient(private val project: Project) {
         }
     }
 
-    /** List sections for the current project. */
-    suspend fun listSections(): List<SectionInfo> {
+    /** List sections, optionally filtered by context. */
+    suspend fun listSections(context: String? = null): List<SectionInfo> {
+        val args = mutableListOf("list", "sections")
+        if (!context.isNullOrBlank()) {
+            args.add("--context"); args.add(context.trim())
+        }
         return listCommand(
-            "list", "sections",
+            *args.toTypedArray(),
             timeoutMs = 30_000,
             emptyDefault = emptyList()
         ) { raw ->

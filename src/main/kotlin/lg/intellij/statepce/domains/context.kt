@@ -74,11 +74,11 @@ fun registerContextRules(project: Project) {
 
             val asyncOps = mutableListOf<AsyncOperation>()
 
-            // Reload sections
+            // Reload sections filtered by new context
             asyncOps.add(object : AsyncOperation {
                 override suspend fun execute(): BaseCommand {
                     val cliClient = project.service<CliClient>()
-                    val sections = cliClient.listSections()
+                    val sections = cliClient.listSections(template)
                     return SectionsLoaded.create(sections)
                 }
             })

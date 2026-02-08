@@ -72,12 +72,12 @@ private fun buildCatalogOps(
         }
     })
 
-    // Sections (loaded if template exists)
+    // Sections (loaded if template exists, filtered by context)
     if (template.isNotBlank()) {
         ops.add(object : AsyncOperation {
             override suspend fun execute(): BaseCommand {
                 val cliClient = project.service<CliClient>()
-                val sections = cliClient.listSections()
+                val sections = cliClient.listSections(template)
                 return SectionsLoaded.create(sections)
             }
         })

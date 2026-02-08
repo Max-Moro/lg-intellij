@@ -1,3 +1,6 @@
+---
+include: ["/ai-interaction", "/dev-stage"]
+---
 {% if scope:local %}{% if tag:agent %}
 ${tpl:agent/index}
 
@@ -20,11 +23,7 @@ ${review}
 
 ${src}
 
-{% endif %}
----
-
-${md@self:architecture, if:(TAGSET:intellij-plugin:state-pce OR TAGSET:intellij-plugin:state-engine)}
-{% if task AND scope:local %}
+{% endif %}{% if task AND scope:local %}
 ---
 
 # Current task description

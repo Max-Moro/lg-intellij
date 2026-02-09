@@ -2,6 +2,7 @@ package lg.intellij.statepce
 
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import lg.intellij.cli.CliException
 import lg.intellij.stateengine.CoordinatorLogger
 import lg.intellij.stateengine.StateCoordinator
 import lg.intellij.statepce.domains.registerAllDomainRules
@@ -31,7 +32,13 @@ private val lgLogger = object : CoordinatorLogger {
     }
 
     override fun error(msg: String, error: Throwable?) {
-        LOG.error("[Coordinator] $msg", error)
+        if (error is CliException) {
+            // CLI errors: message already contains command, exit code, and stderr
+            // JVM stacktrace is noise (always the same CliExecutor dispatch chain)
+            LOG.warn("[Coordinator] $msg\n${error.message}")
+        } else {
+            LOG.error("[Coordinator] $msg", error)
+        }
     }
 }
 

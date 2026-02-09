@@ -2,6 +2,7 @@ package lg.intellij.actions
 
 import com.intellij.icons.AllIcons
 import lg.intellij.LgBundle
+import lg.intellij.cli.CliTarget
 import lg.intellij.statepce.PCEStateStore
 
 /**
@@ -17,7 +18,7 @@ class LgShowContextStatsAction : LgShowStatsAction(
         val selectedTemplate = store.getBusinessState().persistent.template
 
         return if (selectedTemplate.isNotBlank()) {
-            "ctx:$selectedTemplate" to selectedTemplate
+            CliTarget.build("ctx", selectedTemplate) to selectedTemplate
         } else {
             null to null
         }

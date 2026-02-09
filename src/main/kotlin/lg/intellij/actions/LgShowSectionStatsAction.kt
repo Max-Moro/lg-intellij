@@ -2,6 +2,7 @@ package lg.intellij.actions
 
 import com.intellij.icons.AllIcons
 import lg.intellij.LgBundle
+import lg.intellij.cli.CliTarget
 import lg.intellij.statepce.PCEStateStore
 
 /**
@@ -17,7 +18,7 @@ class LgShowSectionStatsAction : LgShowStatsAction(
         val selectedSection = store.getBusinessState().persistent.section
 
         return if (selectedSection.isNotBlank()) {
-            "sec:$selectedSection" to selectedSection
+            CliTarget.build("sec", selectedSection) to selectedSection
         } else {
             null to null
         }

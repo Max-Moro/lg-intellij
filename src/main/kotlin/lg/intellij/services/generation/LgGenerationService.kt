@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lg.intellij.cli.CliClient
 import lg.intellij.cli.CliException
+import lg.intellij.cli.CliTarget
 import lg.intellij.services.LgErrorReportingService
 import lg.intellij.statepce.PCEStateStore
 
@@ -42,7 +43,7 @@ class LgGenerationService(private val project: Project) {
      */
     suspend fun generate(targetType: GenerationTarget, targetName: String): String? {
         return withContext(Dispatchers.IO) {
-            val target = "${targetType.prefix}:$targetName"
+            val target = CliTarget.build(targetType.prefix, targetName)
             val isContext = targetType == GenerationTarget.CONTEXT
 
             val sectionInfo = if (!isContext) {

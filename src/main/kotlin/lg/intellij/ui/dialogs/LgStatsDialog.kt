@@ -28,6 +28,7 @@ import lg.intellij.LgBundle
 import lg.intellij.actions.LgGenerateContextAction
 import lg.intellij.actions.LgGenerateListingAction
 import lg.intellij.actions.LgSendToAiAction
+import lg.intellij.cli.CliTarget
 import lg.intellij.statepce.LgCoordinatorService
 import lg.intellij.models.ReportSchema
 import lg.intellij.models.Scope
@@ -138,11 +139,7 @@ class LgStatsDialog(
     }
     
     private fun extractName(target: String): String {
-        return when {
-            target.startsWith("ctx:") -> target.removePrefix("ctx:")
-            target.startsWith("sec:") -> target.removePrefix("sec:")
-            else -> target
-        }
+        return CliTarget.extractName(target)
     }
     
     override fun createCenterPanel(): JComponent {

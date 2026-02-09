@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lg.intellij.cli.CliClient
 import lg.intellij.cli.CliException
+import lg.intellij.cli.CliTarget
 import lg.intellij.models.ReportSchema
 import lg.intellij.services.LgErrorReportingService
 import lg.intellij.statepce.PCEStateStore
@@ -29,15 +30,15 @@ class LgStatsService(private val project: Project) {
      *
      * All parameters (tokenization, modes, tags, taskText) are taken from PCEStateStore.
      *
-     * @param target Target specifier (e.g., "sec:all", "ctx:template-name")
+     * @param target Target specifier (e.g., "sec:all", "ctx:template-name", "sec@scope:name")
      * @return Parsed statistics report or null if stats collection failed (user already notified)
      */
     suspend fun getStats(target: String): ReportSchema? {
         return withContext(Dispatchers.IO) {
-            val isContext = target.startsWith("ctx:")
+            val isContext = CliTarget.isContext(target)
 
             val sectionInfo = if (!isContext) {
-                val sectionName = target.removePrefix("sec:")
+                val sectionName = CliTarget.extractName(target)
                 store.getBusinessState().configuration.sections.find { it.name == sectionName }
             } else null
 

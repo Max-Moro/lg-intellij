@@ -12,6 +12,7 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.runBlocking
 import lg.intellij.LgBundle
+import lg.intellij.cli.CliTarget
 import lg.intellij.services.generation.LgStatsService
 import lg.intellij.statepce.PCEStateStore
 import lg.intellij.ui.toolwindow.LgIncludedFilesPanel
@@ -34,7 +35,7 @@ class LgShowIncludedFilesAction : AnAction(
         val statsService = project.service<LgStatsService>()
 
         val selectedSection = store.getBusinessState().persistent.section
-        val target = "sec:$selectedSection"
+        val target = CliTarget.build("sec", selectedSection)
         
         object : Task.Backgroundable(
             project,
